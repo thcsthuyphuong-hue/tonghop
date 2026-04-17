@@ -1,4 +1,4 @@
-<!-- MÃ NGUỒN ỔN ĐỊNH NHẤT - HỆ THỐNG ÔN TẬP VẬT LÝ TỔNG HỢP -->
+<!-- MÃ NGUỒN ỔN ĐỊNH NHẤT - CHUẨN THANG 7, KHÓA LƯU KÉP, TỐI ƯU MOBILE/DESKTOP, NGÂN HÀNG ĐỀ TỔNG HỢP -->
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -89,7 +89,7 @@
         .admin-table { width: 100%; border-collapse: collapse; min-width: 1000px; }
         .admin-table th { background: var(--primary); color: white; padding: 12px; text-align: left; font-size: 0.85rem; position: sticky; top: 0; z-index: 10; }
         .admin-table td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; }
-        .stat-box { flex: 1; min-width: 100px; background: white; padding: 15px; border-radius: 15px; text-align: center; border-bottom: 4px solid #cbd5e0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .stat-box { flex: 1; min-width: 130px; background: white; padding: 15px; border-radius: 15px; text-align: center; border-bottom: 4px solid #cbd5e0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
 
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 20000; display: none; justify-content: center; align-items: center; padding: 15px; overflow-y: auto;}
         .modal-box { background: white; padding: 30px; border-radius: 20px; width: 100%; max-width: 500px; text-align: center; position: relative; margin: auto; box-shadow: 0 15px 40px rgba(0,0,0,0.3); }
@@ -191,6 +191,7 @@
     </div>
 </div>
 
+<!-- Modal Cảnh Báo Gian Lận (Cố ý không dùng class modal-overlay để tránh bị đóng) -->
 <div id="cheat-modal">
     <div style="background: white; padding: 40px 25px; border-radius: 20px; max-width: 500px; width: 90%; border: 8px solid var(--danger);">
         <h1 style="color:var(--danger); font-size: 2.5rem; margin:0">CẢNH BÁO!</h1>
@@ -223,11 +224,46 @@
     <p style="color: white; position: absolute; bottom: 20px; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.8); text-align: center; width: 100%;">Chạm bất kỳ đâu để đóng</p>
 </div>
 
+<!-- Các Modal Xác nhận (Đã thêm class modal-overlay để đồng bộ UI và tương tác) -->
+<div id="admin-auth-modal" class="modal-overlay" style="z-index:20000;">
+    <div class="card" style="width:100%; max-width:400px; text-align:center; padding: 30px 20px; margin: auto;">
+        <h2 style="color: var(--primary); margin-top:0;">Xác minh Quản trị</h2>
+        <input type="password" id="admin-pw" placeholder="Nhập mật khẩu..." style="margin-bottom:20px; text-align:center;" oncopy="return false" oncut="return false" onpaste="return false">
+        <div class="grid-2-col">
+            <button class="btn btn-gray" id="btn-auth-cancel">HỦY</button>
+            <button class="btn btn-fire" id="btn-auth-confirm">XÁC NHẬN</button>
+        </div>
+    </div>
+</div>
+
+<div id="delete-auth-modal" class="modal-overlay" style="z-index:20001;">
+    <div class="card" style="width:100%; max-width:400px; text-align:center; border: 4px solid var(--danger); padding: 30px 20px; margin: auto;">
+        <h2 id="auth-action-title" style="color: var(--danger); margin-top:0;">Xác nhận Hành động</h2>
+        <p style="margin-bottom: 15px; color: #475569; font-size:0.9rem;">Vui lòng nhập mật khẩu cấp cao để tiếp tục:</p>
+        <input type="password" id="delete-pw" placeholder="Mật khẩu cấp cao..." style="margin-bottom:20px; text-align:center; border:2px solid var(--danger);">
+        <div class="grid-2-col">
+            <button class="btn btn-gray" id="btn-delete-cancel">HỦY</button>
+            <button class="btn btn-fire" style="background: var(--danger);" id="btn-delete-confirm">XÁC NHẬN</button>
+        </div>
+    </div>
+</div>
+
+<div id="admin-review-modal" class="modal-overlay" style="z-index:20002; align-items:flex-start;">
+    <div class="card" style="width:100%; max-width:800px; text-align:left; margin-top: 20px; padding: 20px 15px; margin-left: auto; margin-right: auto;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px;">
+            <h2 style="color: var(--primary); margin:0; font-size: 1.2rem;">CHI TIẾT: <span id="ar-name" style="color: #ff4e00"></span></h2>
+            <button id="btn-ar-close" class="btn btn-gray" style="padding: 8px 15px; font-size:0.8rem;">ĐÓNG ✖</button>
+        </div>
+        <div id="ar-content" style="margin-bottom: 20px;"></div>
+        <button id="btn-ar-retry" class="btn btn-fire" style="width:100%; font-size: 1.1rem; padding: 15px;">LÀM LẠI CÁC CÂU SAI ♻️</button>
+    </div>
+</div>
+
 <div id="app-wrapper" style="width: 100%; overflow-x: hidden;">
     <div class="container">
         <header id="main-header">
             <div style="display: flex; flex-direction: column; overflow: hidden; flex: 1; padding-right: 10px;">
-                <div style="font-weight: 900; letter-spacing: 1px; color: #facc15; font-size: 1.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">HỆ THỐNG VẬT LÝ 9</div>
+                <div style="font-weight: 900; letter-spacing: 1px; color: #facc15; font-size: 1.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">HUE SMART TEST 7991</div>
                 <div id="header-user-info" style="font-size: 0.75rem; color: #e2e8f0; margin-top: 3px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
             </div>
             <div class="timer" id="timer" style="flex-shrink: 0;">--:--</div>
@@ -359,7 +395,6 @@
                         <option value="all">Tất cả lớp</option>
                     </select>
                 </div>
-                <!-- BỘ LỌC CHUYÊN ĐỀ MỚI -->
                 <div style="flex:1; min-width: 120px;">
                     <label style="font-size: 0.75rem; font-weight: bold;">CHUYÊN ĐỀ:</label>
                     <select id="admin-filter-topic" style="width:100%; padding:10px; margin-top:5px;">
@@ -397,40 +432,6 @@
             <div style="font-weight: 800; color: #cbd5e0; margin-bottom: 5px;">HỆ THỐNG LUYỆN TẬP VẬT LÝ 9</div>
             <div style="font-size: 0.85rem;">Bản quyền thuộc về Trường THCS Thuỷ Phương, Thành phố Huế</div>
         </footer>
-    </div>
-</div>
-
-<div id="admin-auth-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:20000; display:none; justify-content:center; align-items:center; padding: 20px;">
-    <div class="card" style="width:100%; max-width:400px; text-align:center; padding: 30px 20px;">
-        <h2 style="color: var(--primary); margin-top:0;">Xác minh Quản trị</h2>
-        <input type="password" id="admin-pw" placeholder="Nhập mật khẩu..." style="margin-bottom:20px; text-align:center;" oncopy="return false" oncut="return false" onpaste="return false">
-        <div class="grid-2-col">
-            <button class="btn btn-gray" id="btn-auth-cancel">HỦY</button>
-            <button class="btn btn-fire" id="btn-auth-confirm">XÁC NHẬN</button>
-        </div>
-    </div>
-</div>
-
-<div id="delete-auth-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:20001; display:none; justify-content:center; align-items:center; padding: 20px;">
-    <div class="card" style="width:100%; max-width:400px; text-align:center; border: 4px solid var(--danger); padding: 30px 20px;">
-        <h2 id="auth-action-title" style="color: var(--danger); margin-top:0;">Xác nhận Hành động</h2>
-        <p style="margin-bottom: 15px; color: #475569; font-size:0.9rem;">Vui lòng nhập mật khẩu cấp cao để tiếp tục:</p>
-        <input type="password" id="delete-pw" placeholder="Mật khẩu cấp cao..." style="margin-bottom:20px; text-align:center; border:2px solid var(--danger);">
-        <div class="grid-2-col">
-            <button class="btn btn-gray" id="btn-delete-cancel">HỦY</button>
-            <button class="btn btn-fire" style="background: var(--danger);" id="btn-delete-confirm">XÁC NHẬN</button>
-        </div>
-    </div>
-</div>
-
-<div id="admin-review-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:20002; display:none; justify-content:center; align-items:flex-start; padding: 15px; overflow-y:auto;">
-    <div class="card" style="width:100%; max-width:800px; text-align:left; margin-top: 20px; padding: 20px 15px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px;">
-            <h2 style="color: var(--primary); margin:0; font-size: 1.2rem;">CHI TIẾT: <span id="ar-name" style="color: #ff4e00"></span></h2>
-            <button id="btn-ar-close" class="btn btn-gray" style="padding: 8px 15px; font-size:0.8rem;">ĐÓNG ✖</button>
-        </div>
-        <div id="ar-content" style="margin-bottom: 20px;"></div>
-        <button id="btn-ar-retry" class="btn btn-fire" style="width:100%; font-size: 1.1rem; padding: 15px;">LÀM LẠI CÁC CÂU SAI ♻️</button>
     </div>
 </div>
 
@@ -475,112 +476,176 @@ const audioPing = new Audio('https://www.soundjay.com/buttons/sounds/button-16.m
 const audioFinish = new Audio('https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3');
 
 // ==========================================
-// CẤU TRÚC NGÂN HÀNG CÂU HỎI TỔNG HỢP (JSON)
+// CƠ SỞ DỮ LIỆU ĐƯỢC CHẮT LỌC & TỐI ƯU HÓA 
+// (130 câu hỏi đảm bảo thuật toán 12-4-4 hoạt động mượt mà)
 // ==========================================
 const ALL_BANKS = {
     "bai_11": {
         mcq: [
-            { q: "Điện trở của một dây dẫn thể hiện đặc tính nào sau đây đối với dòng điện chạy qua nó?", a: "Cản trở dòng điện trong mạch.", o: ["Hỗ trợ cho dòng điện chạy qua dễ dàng hơn.", "Làm thay đổi chiều của dòng điện trong mạch.", "Cản trở dòng điện trong mạch.", "Biến đổi dòng điện một chiều thành dòng điện xoay chiều."], e: "Phương án C đúng vì theo định nghĩa, điện trở đặc trưng cho mức độ cản trở dòng điện của vật dẫn." },
-            { q: "Định luật Ohm đối với đoạn mạch có điện trở được phát biểu là: Cường độ dòng điện đi qua một đoạn dây dẫn", a: "tỉ lệ thuận với hiệu điện thế giữa hai đầu đoạn dây và tỉ lệ nghịch với điện trở của nó.", o: ["tỉ lệ nghịch với hiệu điện thế giữa hai đầu đoạn dây và tỉ lệ thuận với điện trở của nó.", "tỉ lệ thuận với hiệu điện thế giữa hai đầu đoạn dây và tỉ lệ nghịch với điện trở của nó.", "tỉ lệ thuận với hiệu điện thế giữa hai đầu đoạn dây và tỉ lệ thuận với điện trở của nó.", "tỉ lệ nghịch với hiệu điện thế giữa hai đầu đoạn dây và tỉ lệ nghịch với điện trở của nó."], e: "Phương án B đúng vì theo Định luật Ohm, I tỉ lệ thuận với U và tỉ lệ nghịch với R." },
-            { q: "Trong công thức của định luật Ohm, đơn vị chuẩn của cường độ dòng điện (I), hiệu điện thế (U) và điện trở (R) lần lượt là", a: "ampere (A), volt (V), ohm (Ω).", o: ["volt (V), ampere (A), ohm (Ω).", "ampere (A), volt (V), ohm (Ω).", "ohm (Ω), volt (V), ampere (A).", "ampere (A), ohm (Ω), volt (V)."], e: "Phương án B đúng vì I đo bằng ampere, U đo bằng volt, R đo bằng ohm." },
-            { q: "Đại lượng R trong công thức định luật Ohm có ý nghĩa vật lí là gì?", a: "Đặc trưng cho mức độ cản trở dòng điện của đoạn dây dẫn.", o: ["Đo mức độ cung cấp năng lượng của nguồn điện.", "Chỉ sự dịch chuyển có hướng của các electron.", "Là độ chênh lệch điện thế giữa hai đầu dây.", "Đặc trưng cho mức độ cản trở dòng điện của đoạn dây dẫn."], e: "Phương án D đúng vì R là điện trở." },
-            { q: "Tiến hành thí nghiệm: Lắp một bóng đèn pin nối tiếp với ampe kế và nguồn điện. Mắc nối tiếp thêm điện trở R vào mạch. Nhận xét nào đúng?", a: "Bóng đèn sáng yếu đi, số chỉ ampe kế giảm.", o: ["Bóng đèn sáng mạnh hơn, số chỉ ampe kế tăng.", "Bóng đèn sáng yếu đi, số chỉ ampe kế giảm.", "Bóng đèn sáng bình thường, số chỉ ampe kế không đổi.", "Bóng đèn đứt dây tóc ngay lập tức."], e: "Mắc thêm R làm tăng điện trở tương đương, dòng điện I giảm nên đèn sáng yếu đi." }
+            {q:"Công thức tính điện trở của một đoạn dây dẫn hình trụ đồng chất là", a:"$R = \\rho \\frac{l}{S}$", o:["$R = \\frac{l}{\\rho S}$", "$R = \\rho \\frac{l}{S}$", "$R = \\rho \\frac{S}{l}$", "$R = \\frac{S}{\\rho l}$"], e:"Điện trở tỉ lệ thuận với chiều dài l, tỉ lệ nghịch với tiết diện S."},
+            {q:"Đối với đoạn mạch gồm hai điện trở $R_1$ và $R_2$ mắc nối tiếp, công thức tính điện trở tương đương là", a:"$R_{td} = R_1 + R_2$", o:["$R_{td} = \\frac{R_1 R_2}{R_1 + R_2}$", "$R_{td} = R_1 + R_2$", "$R_{td} = \\frac{R_1 + R_2}{R_1 R_2}$", "$\\frac{1}{R_{td}} = \\frac{1}{R_1} + \\frac{1}{R_2}$"], e:"Đoạn mạch mắc nối tiếp có điện trở tương đương bằng tổng các điện trở thành phần."},
+            {q:"Đối với đoạn mạch gồm hai điện trở $R_1$ và $R_2$ mắc song song, công thức tính điện trở tương đương là", a:"$\\frac{1}{R_{td}} = \\frac{1}{R_1} + \\frac{1}{R_2}$", o:["$R_{td} = R_1 + R_2$", "$\\frac{1}{R_{td}} = R_1 + R_2$", "$R_{td} = \\frac{R_1 + R_2}{R_1 R_2}$", "$\\frac{1}{R_{td}} = \\frac{1}{R_1} + \\frac{1}{R_2}$"], e:"Nghịch đảo điện trở tương đương bằng tổng nghịch đảo các điện trở thành phần."},
+            {q:"Điện trở của một dây dẫn thể hiện đặc tính nào sau đây đối với dòng điện chạy qua nó?", a:"Cản trở dòng điện trong mạch.", o:["Hỗ trợ cho dòng điện chạy qua dễ dàng hơn.", "Làm thay đổi chiều của dòng điện trong mạch.", "Cản trở dòng điện trong mạch.", "Biến đổi dòng điện một chiều thành dòng điện xoay chiều."], e:"Điện trở đặc trưng cho mức độ cản trở dòng điện của vật dẫn."},
+            {q:"Định luật Ohm đối với đoạn mạch có điện trở được phát biểu là: Cường độ dòng điện đi qua một đoạn dây dẫn", a:"tỉ lệ thuận với hiệu điện thế giữa hai đầu đoạn dây và tỉ lệ nghịch với điện trở của nó.", o:["tỉ lệ nghịch với hiệu điện thế giữa hai đầu đoạn dây và tỉ lệ thuận với điện trở của nó.", "tỉ lệ thuận với hiệu điện thế giữa hai đầu đoạn dây và tỉ lệ nghịch với điện trở của nó.", "tỉ lệ thuận với hiệu điện thế giữa hai đầu đoạn dây và tỉ lệ thuận với điện trở của nó.", "tỉ lệ nghịch với hiệu điện thế giữa hai đầu đoạn dây và tỉ lệ nghịch với điện trở của nó."], e:"Định luật Ohm: I tỉ lệ thuận với U và tỉ lệ nghịch với R."},
+            {q:"Hệ thức nào sau đây là công thức đúng của định luật Ohm?", a:"$I = \\frac{U}{R}$", o:["$I = U.R$", "$R = \\frac{I}{U}$", "$I = \\frac{U}{R}$", "$U = \\frac{I}{R}$"], e:"Định luật Ohm: Cường độ dòng điện bằng thương số giữa hiệu điện thế và điện trở."},
+            {q:"Trong công thức của định luật Ohm, đơn vị chuẩn của cường độ dòng điện (I), hiệu điện thế (U) và điện trở (R) lần lượt là", a:"ampere (A), volt (V), ohm ($\\Omega$).", o:["volt (V), ampere (A), ohm ($\\Omega$).", "ampere (A), volt (V), ohm ($\\Omega$).", "ohm ($\\Omega$), volt (V), ampere (A).", "ampere (A), ohm ($\\Omega$), volt (V)."], e:"I đo bằng A, U đo bằng V, R đo bằng $\\Omega$."},
+            {q:"Đại lượng R trong công thức định luật Ohm có ý nghĩa vật lí là gì?", a:"Đặc trưng cho mức độ cản trở dòng điện của đoạn dây dẫn.", o:["Đo mức độ cung cấp năng lượng của nguồn điện.", "Chỉ sự dịch chuyển có hướng của các electron.", "Là độ chênh lệch điện thế giữa hai đầu dây.", "Đặc trưng cho mức độ cản trở dòng điện của đoạn dây dẫn."], e:"R là điện trở, đại lượng biểu thị sự cản trở dòng điện."},
+            {q:"Tiến hành thí nghiệm: Lắp một bóng đèn pin nối tiếp với ampe kế. Mắc nối tiếp thêm điện trở R vào mạch. Nhận xét nào đúng?", a:"Bóng đèn sáng yếu đi, số chỉ ampe kế giảm.", o:["Bóng đèn sáng mạnh hơn, số chỉ ampe kế tăng.", "Bóng đèn sáng yếu đi, số chỉ ampe kế giảm.", "Bóng đèn sáng bình thường, số chỉ ampe kế không đổi.", "Bóng đèn đứt dây tóc ngay lập tức."], e:"Mắc thêm R làm tăng điện trở, dòng điện I giảm nên đèn sáng yếu đi."},
+            {q:"Đo dòng điện qua hai điện trở $R_1$ và $R_2$ ở cùng hiệu điện thế. Nếu $R_1 > R_2$, kết quả nào đúng?", a:"$I_1 < I_2$", o:["$I_1 > I_2$", "$I_1 < I_2$", "$I_1 = I_2$", "$I_1 = 2 I_2$"], e:"Điện trở càng lớn thì cản trở dòng điện càng mạnh nên cường độ dòng điện càng nhỏ."},
+            {q:"Từ kết quả thí nghiệm đo I và U của một đoạn dây dẫn điện trở không đổi, đồ thị vẽ được có dạng là", a:"một đường thẳng đi qua gốc tọa độ.", o:["một đường cong parabol đi qua gốc tọa độ.", "một đường thẳng song song với trục hoành U.", "một đường thẳng đi qua gốc tọa độ.", "một đường hyperbol phân nhánh."], e:"Đồ thị của hàm bậc nhất tỉ lệ thuận là đường thẳng đi qua gốc toạ độ."},
+            {q:"Một đoạn dây dẫn bằng đồng có chiều dài 4 m, tiết diện $2 \\times 10^{-6} m^2$, $\\rho = 1,7 \\times 10^{-8} \\Omega.m$. Điện trở của dây là", a:"$0,034 \\Omega$", o:["$0,034 \\Omega$", "$3,4 \\Omega$", "$0,34 \\Omega$", "$34 \\Omega$"], e:"Áp dụng $R = \\rho \\frac{l}{S}$."},
+            {q:"Dây nhôm dài 10m có điện trở $1 \\Omega$. Cắt lấy đoạn 5m thì điện trở đoạn này là", a:"$0,5 \\Omega$", o:["$2 \\Omega$", "$0,5 \\Omega$", "$1 \\Omega$", "$0,25 \\Omega$"], e:"R tỉ lệ thuận với chiều dài. Chiều dài giảm 1 nửa thì R giảm 1 nửa."},
+            {q:"Có dây dẫn điện trở R. Cắt thành 2 đoạn bằng nhau rồi chập lại (song song), điện trở mới là", a:"$R/4$", o:["$R$", "$2R$", "$R/4$", "$R/2$"], e:"Cắt đôi điện trở còn R/2. Chập song song thì tương đương R/4."},
+            {q:"Một đoạn dây có điện trở $30 \\Omega$. Cường độ là 0,4A. Hiệu điện thế là", a:"12 V", o:["75 V", "120 V", "12 V", "1,2 V"], e:"U = I.R = 0,4 * 30 = 12V."}
         ],
         tf: [
-            { ctx: "Một nhóm học sinh thực hiện thí nghiệm đo I và U của một dây dẫn bằng nicrom và một dây dẫn bằng constantan. Nhóm vẽ được hai đồ thị biểu diễn sự phụ thuộc của I vào U.", sts: [
-                { l: "a)", t: "Đồ thị thu được của cả hai dây dẫn đều là những đường thẳng đi qua gốc tọa độ O.", a: true },
-                { l: "b)", t: "Định luật Ohm khẳng định rằng cường độ dòng điện qua một dây dẫn tỉ lệ nghịch với hiệu điện thế đặt vào hai đầu dây đó.", a: false },
-                { l: "c)", t: "Nếu dây nicrom có điện trở lớn hơn dây constantan thì đồ thị của dây nicrom sẽ có độ dốc (góc tạo bởi đồ thị và trục hoành U) nhỏ hơn đồ thị của dây constantan.", a: true },
-                { l: "d)", t: "Khi thay đổi điện trở của dây dẫn thì cường độ dòng điện chạy qua đoạn mạch không thay đổi nếu U được giữ nguyên.", a: false }
-            ], e: "Ý a đúng (đồ thị đường thẳng qua O). Ý b sai (tỉ lệ thuận, không phải nghịch). Ý c đúng (hệ số góc là 1/R). Ý d sai (I phụ thuộc vào R theo định luật Ohm)." }
+            {ctx:"Thực hiện thí nghiệm đo I và U của dây nicrom và dây constantan.", sts:[{l:"a)", t:"Đồ thị thu được là những đường thẳng đi qua gốc tọa độ O.", a:true}, {l:"b)", t:"Định luật Ohm khẳng định cường độ dòng điện tỉ lệ nghịch với hiệu điện thế.", a:false}, {l:"c)", t:"Nếu dây nicrom có điện trở lớn hơn thì đồ thị của nó có độ dốc nhỏ hơn.", a:true}, {l:"d)", t:"Khi thay đổi điện trở, dòng điện I không đổi nếu U giữ nguyên.", a:false}], e:"I tỉ lệ thuận với U. Hệ số góc là 1/R. Thay đổi R chắc chắn làm thay đổi I."},
+            {ctx:"Hai đoạn dây đồng chất, dây 1: $l_1, S_1, R_1$; dây 2: $l_2, S_2, R_2$.", sts:[{l:"a)", t:"Công thức tính điện trở là $R = \\rho \\frac{l}{S}$.", a:true}, {l:"b)", t:"Hai đoạn dây đồng chất nên có cùng điện trở suất $\\rho$.", a:true}, {l:"c)", t:"Nếu $l_1 = l_2$ và $S_1 > S_2$ thì $R_1 > R_2$.", a:false}, {l:"d)", t:"Từ công thức ta có $\\rho = \\frac{R.S}{l}$.", a:true}], e:"R tỉ lệ nghịch với S, nên S lớn thì R nhỏ."},
+            {ctx:"Mắc điện trở $R_1$ và biến trở R nối tiếp vào nguồn 9V.", sts:[{l:"a)", t:"Điện trở cản trở sự di chuyển có hướng của hạt tải điện.", a:true}, {l:"b)", t:"Nếu điều chỉnh biến trở R tăng thì cường độ dòng điện mạch sẽ tăng.", a:false}, {l:"c)", t:"Khi $R_1 = 15 \\Omega$ và biến trở $R = 30 \\Omega$, $R_{td} = 45 \\Omega$.", a:true}, {l:"d)", t:"Với $R_{td} = 45 \\Omega$, dòng điện qua $R_1$ là 0,2A.", a:true}], e:"Tăng R làm I giảm. Dòng nối tiếp I = U/R = 9/45 = 0,2A."},
+            {ctx:"Ba điện trở giống nhau $R = 30 \\Omega$ mắc song song vào 10V.", sts:[{l:"a)", t:"Công thức $1/R_{td} = 1/R_1 + 1/R_2 + 1/R_3$.", a:true}, {l:"b)", t:"Điện trở tương đương bằng $10 \\Omega$.", a:true}, {l:"c)", t:"Tháo bớt 1 điện trở, $R_{td}$ sẽ giảm.", a:false}, {l:"d)", t:"Cường độ dòng mạch chính ban đầu là 1,0 A.", a:true}], e:"Tháo bớt điện trở song song sẽ làm Rtd tăng lên. I = 10/10 = 1A."},
+            {ctx:"Cho mạch gồm $R_1 = 10 \\Omega$ nối tiếp cụm ($R_2 = 30 \\Omega$ // $R_3 = 60 \\Omega$). U = 20V.", sts:[{l:"a)", t:"$R_{23}$ tính bằng công thức $(R_2.R_3)/(R_2+R_3)$.", a:true}, {l:"b)", t:"Điện trở tương đương của toàn mạch là $30 \\Omega$.", a:true}, {l:"c)", t:"Cường độ dòng điện chạy qua $R_1$ nhỏ hơn dòng qua cụm $R_{23}$.", a:false}, {l:"d)", t:"Hiệu điện thế hai đầu $R_1$ bằng 12V.", a:false}], e:"$R_{23} = 20 \\Omega, R_{td} = 30 \\Omega$. I mạch = 20/30 A. $U_1 = 10 * 2/3 = 6,67V$. Dòng qua R1 bằng dòng qua cụm."}
         ],
         short: [
-            { q: "Một sợi dây tóc bóng đèn làm bằng vonfram ở nhiệt độ phòng có chiều dài l = 0,2 m, diện tích $S = 0,01 mm^2$. Điện trở suất $\\rho = 5,5 \\times 10^{-8} \\Omega m$. Tính điện trở của dây tóc bóng đèn (đơn vị: ohm). (Viết dạng số thập phân, ví dụ 1,2)", a: "1,1", e: "$R = \\rho \\times \\frac{l}{S} = 5,5 \\times 10^{-8} \\times \\frac{0,2}{0,01 \\times 10^{-6}} = 1,1 \\Omega$." },
-            { q: "Một bếp điện khi hoạt động bình thường có điện trở $R = 80 \\Omega$ và cường độ dòng điện qua bếp là $2,5 A$. Tính hiệu điện thế đặt vào hai đầu bếp điện (đơn vị: V).", a: "200", e: "$U = I \\times R = 2,5 \\times 80 = 200 V$." }
+            {q:"Sợi dây vonfram có $l = 0,2 m, S = 0,01 mm^2, \\rho = 5,5 \\times 10^{-8} \\Omega m$. Tính điện trở (ohm).", a:"1,1", e:"$R = \\rho l/S = 5,5.10^{-8} * 0,2 / 10^{-8} = 1,1 \\Omega$."},
+            {q:"Bếp điện có điện trở $80 \\Omega$, cường độ dòng là 2,5A. Tính hiệu điện thế (V).", a:"200", e:"U = I.R = 2,5 * 80 = 200V."},
+            {q:"Cho $R_1 = 15 \\Omega$ và $R_2 = 9 \\Omega$ mắc nối tiếp. U = 12V. Tính hiệu điện thế hai đầu $R_1$ (V).", a:"7,5", e:"$R_{td} = 24$. I = 12/24 = 0,5A. $U_1 = 0,5 * 15 = 7,5V$."},
+            {q:"Ba điện trở $15 \\Omega$ mắc song song. Tính điện trở tương đương.", a:"5", e:"$15 / 3 = 5 \\Omega$."},
+            {q:"Dây dẫn $12 \\Omega$. Kéo giãn làm chiều dài gấp đôi (thể tích không đổi). Tính điện trở mới.", a:"48", e:"l gấp 2, S giảm 2 -> R tăng 4 lần. 12 * 4 = 48."},
+            {q:"Dây nikêlin $l=20m, R=8\\Omega, \\rho=0,4.10^{-6}\\Omega m$. Tính tiết diện S theo đơn vị $mm^2$.", a:"1,0", e:"$S = \\rho l/R = 10^{-6} m^2 = 1 mm^2$."}
         ]
     },
     "bai_12": {
         mcq: [
-            { q: "Đối với đoạn mạch gồm $R_1, R_2$ mắc nối tiếp, hệ thức biểu diễn đúng mối liên hệ giữa các cường độ dòng điện là:", a: "$I = I_1 = I_2$", o: ["$I = I_1 + I_2$", "$I = I_1 = I_2$", "$I = I_1 - I_2$", "$I = \\frac{I_1 + I_2}{2}$"], e: "Mạch nối tiếp dòng điện bằng nhau tại mọi điểm." },
-            { q: "Trong đoạn mạch gồm hai điện trở $R_1$ và $R_2$ mắc nối tiếp, hiệu điện thế $U$ giữa hai đầu đoạn mạch liên hệ với hiệu điện thế $U_1, U_2$ theo hệ thức:", a: "$U = U_1 + U_2$", o: ["$U = U_1 + U_2$", "$U = U_1 = U_2$", "$U = U_1 - U_2$", "$\\frac{1}{U} = \\frac{1}{U_1} + \\frac{1}{U_2}$"], e: "Mạch nối tiếp, U tổng bằng tổng các U thành phần." },
-            { q: "Hệ thức diễn tả đúng mối liên hệ giữa hiệu điện thế của toàn mạch và hiệu điện thế của các nhánh trong đoạn mạch mắc song song là:", a: "$U = U_1 = U_2$", o: ["$U = U_1 + U_2$", "$U = U_1 - U_2$", "$U = U_1 = U_2$", "$\\frac{1}{U} = \\frac{1}{U_1} + \\frac{1}{U_2}$"], e: "Mạch song song có hiệu điện thế các nhánh bằng nhau và bằng U tổng." },
-            { q: "Đối với đoạn mạch gồm hai điện trở $R_1$ và $R_2$ mắc song song, cường độ dòng điện mạch chính $I$ liên hệ với cường độ $I_1, I_2$ theo hệ thức:", a: "$I = I_1 + I_2$", o: ["$I = I_1 = I_2$", "$I = I_1 + I_2$", "$I = I_1 - I_2$", "$\\frac{1}{I} = \\frac{1}{I_1} + \\frac{1}{I_2}$"], e: "Tổng cường độ dòng điện đi vào mạch chính bằng tổng dòng điện đi qua các mạch rẽ." },
-            { q: "Khi mắc nối tiếp hai điện trở $R_1$ và $R_2$ với nhau, điện trở tương đương của đoạn mạch có đặc điểm gì so với các điện trở thành phần?", a: "Lớn hơn cả $R_1$ và $R_2$.", o: ["Nhỏ hơn $R_1$ và nhỏ hơn $R_2$.", "Lớn hơn $R_1$ nhưng nhỏ hơn $R_2$.", "Bằng trung bình cộng của $R_1$ và $R_2$.", "Lớn hơn cả $R_1$ và $R_2$."], e: "$R_{td} = R_1 + R_2$, do đó lớn hơn từng điện trở thành phần." }
+            {q:"Trong mạch $R_1, R_2$ mắc nối tiếp, hệ thức đúng là:", a:"$I = I_1 = I_2$", o:["$I = I_1 + I_2$", "$I = I_1 = I_2$", "$I = I_1 - I_2$", "$I = \\frac{I_1 + I_2}{2}$"], e:"Mạch nối tiếp dòng điện bằng nhau tại mọi điểm."},
+            {q:"Trong mạch $R_1, R_2$ mắc nối tiếp, hệ thức hiệu điện thế đúng là:", a:"$U = U_1 + U_2$", o:["$U = U_1 + U_2$", "$U = U_1 = U_2$", "$U = U_1 - U_2$", "$\\frac{1}{U} = \\frac{1}{U_1} + \\frac{1}{U_2}$"], e:"Hiệu điện thế mạch nối tiếp bằng tổng U thành phần."},
+            {q:"Trong đoạn mạch mắc song song, hệ thức hiệu điện thế đúng là:", a:"$U = U_1 = U_2$", o:["$U = U_1 + U_2$", "$U = U_1 - U_2$", "$U = U_1 = U_2$", "$\\frac{1}{U} = \\frac{1}{U_1} + \\frac{1}{U_2}$"], e:"Mạch song song có U các nhánh bằng nhau."},
+            {q:"Trong đoạn mạch $R_1, R_2$ mắc song song, hệ thức cường độ dòng điện đúng là:", a:"$I = I_1 + I_2$", o:["$I = I_1 = I_2$", "$I = I_1 + I_2$", "$I = I_1 - I_2$", "$\\frac{1}{I} = \\frac{1}{I_1} + \\frac{1}{I_2}$"], e:"Dòng điện mạch chính bằng tổng dòng nhánh."},
+            {q:"Đặc điểm điện trở tương đương của mạch nối tiếp:", a:"Lớn hơn cả $R_1$ và $R_2$.", o:["Nhỏ hơn $R_1$ và nhỏ hơn $R_2$.", "Lớn hơn $R_1$ nhưng nhỏ hơn $R_2$.", "Bằng trung bình cộng của $R_1$ và $R_2$.", "Lớn hơn cả $R_1$ và $R_2$."], e:"Bằng tổng nên lớn hơn thành phần."},
+            {q:"Công thức tính điện trở tương đương mạch song song:", a:"$\\frac{1}{R_{td}} = \\frac{1}{R_1} + \\frac{1}{R_2}$", o:["$R_{td} = R_1 + R_2$", "$\\frac{1}{R_{td}} = R_1 + R_2$", "$\\frac{1}{R_{td}} = \\frac{1}{R_1} + \\frac{1}{R_2}$", "$R_{td} = \\frac{R_1 + R_2}{R_1 R_2}$"], e:"Nghịch đảo Rtd bằng tổng nghịch đảo."},
+            {q:"Đặc điểm điện trở tương đương của mạch song song:", a:"Nhỏ hơn cả $R_1$ và $R_2$.", o:["Lớn hơn cả $R_1$ và $R_2$.", "Nhỏ hơn cả $R_1$ và $R_2$.", "Bằng trung bình cộng.", "Bằng tổng $R_1$ và $R_2$."], e:"Điện trở tương đương song song luôn nhỏ hơn điện trở thành phần nhỏ nhất."},
+            {q:"Để đo cường độ dòng điện qua bóng đèn Đ2 trong mạch nối tiếp, ta mắc ampe kế:", a:"Mắc ampe kế nối tiếp với bóng đèn Đ2.", o:["Mắc ampe kế song song với bóng đèn Đ2.", "Mắc ampe kế nối tiếp với bóng đèn Đ2.", "Mắc ampe kế song song với nguồn điện.", "Mắc ampe kế song song với bóng đèn Đ1."], e:"Ampe kế luôn mắc nối tiếp."},
+            {q:"Để đo dòng điện mạch chính của mạch song song, ampe kế phải lắp ở:", a:"nối tiếp trên đoạn dây dẫn từ cực nguồn đến điểm rẽ nhánh.", o:["nối tiếp với $R_1$.", "nối tiếp với $R_2$.", "nối tiếp trên đoạn dây dẫn từ cực nguồn đến điểm rẽ nhánh.", "song song với cả 2 nhánh."], e:"Đoạn dây trước rẽ nhánh là mạch chính."},
+            {q:"Khi tăng $R_2$, cường độ dòng qua $R_1$ cũng giảm. Chứng tỏ hai điện trở mắc:", a:"nối tiếp.", o:["nối tiếp.", "song song.", "hỗn hợp.", "độc lập."], e:"Mạch nối tiếp, tăng 1 điện trở làm I tổng giảm, nên dòng qua R1 cũng giảm."},
+            {q:"Tháo 1 đèn, 2 đèn còn lại vẫn sáng bình thường. Các đèn mắc:", a:"song song với nhau.", o:["nối tiếp với nhau.", "song song với nhau.", "hỗn hợp.", "không xác định."], e:"Các nhánh song song hoạt động độc lập."},
+            {q:"Cho $R_1 = 10\\Omega, R_2 = 20\\Omega$ mắc nối tiếp. Điện trở tương đương:", a:"$30 \\Omega$.", o:["$30 \\Omega$.", "$6,67 \\Omega$.", "$10 \\Omega$.", "$20 \\Omega$."], e:"10 + 20 = 30."},
+            {q:"Đoạn mạch $R_1=20\\Omega, R_2=20\\Omega$ mắc song song. Điện trở tương đương:", a:"$10 \\Omega$.", o:["$40 \\Omega$.", "$10 \\Omega$.", "$20 \\Omega$.", "$5 \\Omega$."], e:"20 / 2 = 10."},
+            {q:"$R_1=20\\Omega, R_2=30\\Omega$ mắc nối tiếp vào U=10V. Dòng qua $R_1$ là:", a:"$0,2 A$.", o:["$0,5 A$.", "$0,33 A$.", "$0,2 A$.", "$1,0 A$."], e:"I = U / (R1+R2) = 10 / 50 = 0,2A."},
+            {q:"$R_1=10\\Omega$ nối tiếp ($R_2=15\\Omega$ // $R_3=30\\Omega$). Điện trở tương đương là:", a:"$20 \\Omega$.", o:["$55 \\Omega$.", "$25 \\Omega$.", "$20 \\Omega$.", "$15 \\Omega$."], e:"R23 = 10. Rtd = 10 + 10 = 20."}
         ],
         tf: [
-            { ctx: "Cho đoạn mạch gồm hai điện trở $R_1$ và $R_2$ mắc nối tiếp với nhau.", sts: [
-                { l: "a)", t: "Cường độ dòng điện chạy qua $R_1$ luôn bằng cường độ dòng điện chạy qua $R_2$.", a: true },
-                { l: "b)", t: "Hiệu điện thế giữa hai đầu đoạn mạch bằng hiệu điện thế hai đầu $R_1$ trừ đi hiệu điện thế hai đầu $R_2$.", a: false },
-                { l: "c)", t: "Điện trở tương đương của đoạn mạch là $R_{td} = R_1 + R_2$.", a: true },
-                { l: "d)", t: "Nếu thay $R_1$ bằng điện trở khác có giá trị lớn hơn thì cường độ dòng điện qua $R_2$ sẽ tăng lên.", a: false }
-            ], e: "Ý a, c đúng (tính chất nối tiếp). Ý b sai (phải là phép cộng). Ý d sai (R tổng tăng thì I tổng giảm, nên dòng qua R2 phải giảm)." }
+            {ctx:"Cho đoạn mạch gồm hai điện trở mắc nối tiếp.", sts:[{l:"a)", t:"Dòng điện chạy qua $R_1$ luôn bằng dòng điện qua $R_2$.", a:true}, {l:"b)", t:"Hiệu điện thế mạch bằng U1 trừ U2.", a:false}, {l:"c)", t:"$R_{td} = R_1 + R_2$.", a:true}, {l:"d)", t:"Thay $R_1$ lớn hơn thì dòng qua $R_2$ tăng.", a:false}], e:"U tổng bằng tổng. Tăng R làm I giảm."},
+            {ctx:"Hai điện trở mắc song song.", sts:[{l:"a)", t:"Hiệu điện thế hai đầu R1 bằng hiệu điện thế hai đầu R2.", a:true}, {l:"b)", t:"Dòng mạch chính bằng trung bình cộng dòng qua mỗi điện trở.", a:false}, {l:"c)", t:"Biểu thức gốc là $1/R_{td} = 1/R_1 + 1/R_2$.", a:true}, {l:"d)", t:"Điện trở tương đương luôn lớn hơn R thành phần.", a:false}], e:"Dòng mạch chính bằng tổng. Rtd luôn nhỏ hơn R thành phần."},
+            {ctx:"Thực hành đo dòng điện mạch 3 bóng đèn nối tiếp.", sts:[{l:"a)", t:"Ampe kế phải mắc nối tiếp với các bóng đèn.", a:true}, {l:"b)", t:"Đặt ampe kế trước Đ1 hay sau Đ3 thì số chỉ vẫn giống nhau.", a:true}, {l:"c)", t:"Có thể mắc ampe kế song song Đ2 để đo dòng qua Đ2.", a:false}, {l:"d)", t:"Dòng điện có giá trị như nhau tại mọi điểm.", a:true}], e:"Ampe kế mắc song song gây đoản mạch."},
+            {ctx:"Mạch 2 điện trở song song có 3 ampe kế (mạch chính, 2 nhánh).", sts:[{l:"a)", t:"Ampe kế mạch chính mắc trên dây nối từ nguồn đến điểm rẽ.", a:true}, {l:"b)", t:"Số chỉ ampe kế mạch chính luôn nhỏ hơn nhánh.", a:false}, {l:"c)", t:"Số chỉ ampe kế mạch chính bằng tổng 2 nhánh.", a:true}, {l:"d)", t:"Ngắt nhánh 1 thì dòng nhánh 2 tăng vọt.", a:false}], e:"Mạch song song các nhánh độc lập. Dòng chính bằng tổng nhánh."},
+            {ctx:"Cho $R_1$ và $R_2$ mắc nối tiếp vào U.", sts:[{l:"a)", t:"U đoạn mạch bằng tổng U đo ở mỗi điện trở.", a:true}, {l:"b)", t:"$R_{td} = R_1.R_2 / (R_1+R_2)$.", a:false}, {l:"c)", t:"Khi U, R1, R2 xác định, có thể dùng ĐL Ohm tính I.", a:true}, {l:"d)", t:"Dòng điện qua R1 lớn hơn dòng điện qua R2 nếu R1 > R2.", a:false}], e:"Mắc nối tiếp I bằng nhau. Công thức Rtd là phép cộng."}
         ],
         short: [
-            { q: "Cho hai điện trở $R_1 = 30 \\Omega$ và $R_2 = 40 \\Omega$ mắc nối tiếp. Điện trở tương đương của đoạn mạch bằng bao nhiêu $\\Omega$?", a: "70", e: "$R_{td} = 30 + 40 = 70 \\Omega$." },
-            { q: "Một đoạn mạch gồm hai điện trở $R_1 = 20 \\Omega$ và $R_2 = 30 \\Omega$ mắc song song. Điện trở tương đương của đoạn mạch bằng bao nhiêu $\\Omega$?", a: "12", e: "$R_{td} = \\frac{20 \\times 30}{20 + 30} = 12 \\Omega$." }
+            {q:"Cho hai điện trở $30 \\Omega$ và $40 \\Omega$ mắc nối tiếp. Tính $R_{td}$ ($\\Omega$).", a:"70", e:"30 + 40 = 70."},
+            {q:"Đoạn mạch $20 \\Omega$ và $30 \\Omega$ mắc song song. Tính $R_{td}$ ($\\Omega$).", a:"12", e:"(20*30)/(20+30) = 12."},
+            {q:"$R_1=8\\Omega$ nối tiếp $R_2=12\\Omega$. U = 12V. Cường độ dòng qua $R_1$ là bao nhiêu A?", a:"0,6", e:"I = 12/20 = 0,6 A."},
+            {q:"Mạch 2 nhánh song song. $I_1 = 1,5A, I_2 = 1,0A$. Dòng mạch chính là bao nhiêu A?", a:"2,5", e:"I = 1,5 + 1,0 = 2,5 A."},
+            {q:"$R_1=2\\Omega$ nối tiếp $R_2=4\\Omega$ vào U=12V. Hiệu điện thế hai đầu $R_2$ là bao nhiêu V?", a:"8", e:"I = 12/6 = 2A. $U_2 = 2 * 4 = 8V$."},
+            {q:"Mạch: $R_1=5\\Omega$ nối tiếp ($R_2=6\\Omega$ // $R_3=3\\Omega$). U=14V. Dòng qua $R_1$ là bao nhiêu A?", a:"2", e:"$R_{23} = 2\\Omega$. $R_{td} = 7\\Omega$. I = 14/7 = 2A."}
         ]
     },
     "bai_13": {
         mcq: [
-            { q: "Đại lượng nào sau đây cho biết công suất mà dụng cụ điện tiêu thụ khi hoạt động bình thường?", a: "Công suất định mức.", o: ["Công suất tức thời.", "Công suất hao phí.", "Công suất định mức.", "Công suất cực đại."], e: "Theo định nghĩa, công suất định mức là công suất tiêu thụ khi thiết bị chạy bình thường." },
-            { q: "Trên nhãn của một nồi cơm điện có ghi 220 V – 800 W. Con số 800 W chỉ", a: "công suất điện định mức của nồi cơm điện.", o: ["công suất tiêu thụ của nồi khi dùng ở 110 V.", "công suất điện định mức của nồi cơm điện.", "điện năng nồi tiêu thụ trong một ngày.", "cường độ dòng điện định mức của nồi."], e: "Trị số watt ghi trên thiết bị chính là công suất điện định mức." },
-            { q: "Khi sử dụng một thiết bị điện với đúng hiệu điện thế định mức thì", a: "thiết bị hoạt động bình thường và tiêu thụ công suất định mức.", o: ["thiết bị sẽ tiêu thụ công suất nhỏ hơn định mức.", "thiết bị sẽ bị hỏng ngay lập tức vì quá tải.", "thiết bị hoạt động bình thường và tiêu thụ công suất định mức.", "thiết bị không tiêu thụ điện năng."], e: "Đúng định nghĩa hoạt động bình thường ở các thông số định mức." },
-            { q: "Ví dụ nào sau đây chứng tỏ dòng điện có năng lượng dưới dạng nhiệt năng?", a: "Làm bóng đèn sợi đốt phát sáng và nóng lên.", o: ["Làm quay cánh quạt điện.", "Làm bóng đèn sợi đốt phát sáng và nóng lên.", "Làm chuông điện kêu.", "Làm nam châm điện hút sắt."], e: "Đèn nóng lên chứng tỏ có sự chuyển hóa điện năng thành nhiệt năng." },
-            { q: "Biện pháp nào sau đây giúp tiết kiệm năng lượng điện trong sinh hoạt?", a: "Tắt các thiết bị điện khi KHÔNG sử dụng.", o: ["Luôn để các thiết bị ở chế độ chờ.", "Sử dụng bóng đèn sợi đốt thay cho đèn LED.", "Bật điều hòa ở nhiệt độ thấp nhất thường xuyên.", "Tắt các thiết bị điện khi KHÔNG sử dụng."], e: "Tắt khi không dùng là phương pháp tiết kiệm cơ bản và hiệu quả nhất." }
+            {q:"Đại lượng nào cho biết công suất mà dụng cụ điện tiêu thụ khi hoạt động bình thường?", a:"Công suất định mức.", o:["Công suất tức thời.", "Công suất hao phí.", "Công suất định mức.", "Công suất cực đại."], e:"Định nghĩa công suất định mức."},
+            {q:"Nồi cơm điện ghi 220V - 800W. 800W chỉ", a:"công suất điện định mức của nồi cơm điện.", o:["công suất tiêu thụ ở 110V.", "công suất điện định mức của nồi cơm điện.", "đi năng tiêu thụ 1 ngày.", "cường độ định mức."], e:"Watt là đơn vị công suất."},
+            {q:"Khi sử dụng thiết bị điện đúng hiệu điện thế định mức thì", a:"thiết bị hoạt động bình thường và tiêu thụ công suất định mức.", o:["thiết bị tiêu thụ công suất nhỏ hơn định mức.", "thiết bị bị hỏng.", "thiết bị hoạt động bình thường và tiêu thụ công suất định mức.", "thiết bị không tiêu thụ điện năng."], e:"Đúng định mức sẽ hoạt động bình thường."},
+            {q:"Số watt ghi trên dụng cụ điện cho biết", a:"công suất điện định mức.", o:["cường độ định mức.", "hiệu điện thế định mức.", "công suất điện định mức.", "điện trở."], e:"Watt = Công suất."},
+            {q:"Ví dụ chứng tỏ dòng điện có năng lượng dưới dạng nhiệt năng?", a:"Làm bóng đèn sợi đốt phát sáng và nóng lên.", o:["Làm quay cánh quạt.", "Làm bóng đèn sợi đốt phát sáng và nóng lên.", "Làm chuông kêu.", "Làm nam châm điện hút sắt."], e:"Nóng lên là nhiệt năng."},
+            {q:"Biện pháp giúp tiết kiệm năng lượng điện?", a:"Tắt các thiết bị điện khi KHÔNG sử dụng.", o:["Để chế độ chờ.", "Dùng đèn sợi đốt.", "Bật điều hòa thấp nhất.", "Tắt các thiết bị điện khi KHÔNG sử dụng."], e:"Tắt khi không dùng là tiết kiệm nhất."},
+            {q:"Phương pháp tiết kiệm điện là sử dụng thiết bị có dán nhãn", a:"năng lượng (số sao càng nhiều càng tiết kiệm).", o:["cảnh báo nguy hiểm.", "hướng dẫn sửa chữa.", "năng lượng (số sao càng nhiều càng tiết kiệm).", "nơi sản xuất."], e:"Nhãn năng lượng chỉ mức độ tiết kiệm."},
+            {q:"Tại sao tiết kiệm điện góp phần giảm biến đổi khí hậu?", a:"Giảm nhu cầu đốt nhiên liệu hóa thạch tại nhà máy nhiệt điện.", o:["Điện tạo trực tiếp CO2.", "Giảm nhu cầu đốt nhiên liệu hóa thạch tại nhà máy nhiệt điện.", "Điện làm tăng nhiệt độ biển.", "Tạo ra bão."], e:"Nhà máy nhiệt điện đốt than sinh CO2."},
+            {q:"Năng lượng gió thay nhiệt điện có ưu điểm?", a:"Giảm lượng khí thải nhà kính.", o:["Không ồn.", "Làm gió thổi mạnh hơn.", "Tăng diện tích rừng.", "Giảm lượng khí thải nhà kính."], e:"Năng lượng sạch không sinh khí nhà kính."},
+            {q:"Khi lũ dâng cao vào nhà, hành động AN TOÀN nhất là", a:"Ngắt cầu dao tổng.", o:["Tiếp tục dùng tầng thấp.", "Ngắt cầu dao tổng.", "Rút phích bằng tay ướt.", "Chạm cột điện kiểm tra."], e:"Ngắt điện tránh rò rỉ."},
+            {q:"Gia cố cột điện trước bão có tác dụng", a:"giảm thiểu nguy cơ đổ gãy gây mất điện diện rộng.", o:["đổi hướng bão.", "giảm thiểu nguy cơ đổ gãy gây mất điện diện rộng.", "tăng công suất tiêu thụ.", "dẫn nhiều điện hơn."], e:"Tránh gãy đổ đứt dây."},
+            {q:"Bóng đèn 60W dùng 5 giờ tiêu thụ:", a:"0,3 kWh.", o:["300 J.", "0,3 kWh.", "12 kWh.", "300 kWh."], e:"0,06 kW * 5h = 0,3 kWh."},
+            {q:"Bàn là 220V-1000W dùng ở 220V trong 30 phút tiêu thụ:", a:"0,5 kWh.", o:["0,5 kWh.", "30000 J.", "500 kWh.", "1800 J."], e:"1 kW * 0,5h = 0,5 kWh."},
+            {q:"Máy bơm 500W hoạt động bình thường 2 giờ. Công suất là:", a:"500 W.", o:["1000 W.", "500 W.", "250 W.", "0,5 W."], e:"Hoạt động bình thường nên công suất đúng bằng định mức."},
+            {q:"Cắt giảm khí thải CO2 qua tiết kiệm điện giúp", a:"hạn chế hiệu ứng nhà kính.", o:["tăng đất canh tác.", "hạn chế hiệu ứng nhà kính.", "giảm độ mặn biển.", "tăng năng lượng hóa thạch."], e:"CO2 gây hiệu ứng nhà kính."}
         ],
         tf: [
-            { ctx: "Một hộ gia đình sử dụng máy bơm nước ghi 220 V – 750 W. Trong điều kiện mưa bão gây ngập lụt, cần chú ý an toàn điện.", sts: [
-                { l: "a)", t: "Công suất điện định mức của máy bơm là 750 W.", a: true },
-                { l: "b)", t: "Khi nước ngập vào máy bơm, ta vẫn có thể tiếp tục bơm nếu đứng trên ghế nhựa.", a: false },
-                { l: "c)", t: "Nếu máy hoạt động bình thường trong 2 giờ thì điện năng tiêu thụ là 1,5 kWh.", a: true },
-                { l: "d)", t: "Để đảm bảo an toàn tuyệt đối trong bão lũ, ta không cần phải ngắt cầu dao tổng.", a: false }
-            ], e: "Ý a, c đúng ($A = 0,75 \\times 2 = 1,5 kWh$). Ý b sai vì nước bẩn dẫn điện gây giật. Ý d sai vì bắt buộc phải ngắt cầu dao khi ngập." }
+            {ctx:"Máy bơm nước 220V-750W. Mưa bão ngập lụt.", sts:[{l:"a)", t:"Công suất định mức là 750W.", a:true}, {l:"b)", t:"Nước ngập máy bơm, đứng trên ghế nhựa vẫn dùng được.", a:false}, {l:"c)", t:"Chạy bình thường 2h tiêu thụ 1,5 kWh.", a:true}, {l:"d)", t:"Không cần ngắt cầu dao tổng khi ngập lũ.", a:false}], e:"Nước bẩn dẫn điện gây giật. A = 0,75*2 = 1,5 kWh."},
+            {ctx:"Hệ thống đèn Mặt Trời 50W mỗi bóng.", sts:[{l:"a)", t:"Giúp giảm khí nhà kính so với nhiệt điện.", a:true}, {l:"b)", t:"50W nghĩa là mỗi giờ tiêu thụ 50 kWh.", a:false}, {l:"c)", t:"Hoạt động 10 giờ tiêu thụ 0,5 kWh.", a:true}, {l:"d)", t:"Năng lượng Mặt Trời là nhiên liệu hóa thạch.", a:false}], e:"50W = 0,05 kW. 0,05 * 10 = 0,5 kWh. MT là năng lượng tái tạo."},
+            {ctx:"Ấm điện 220V-2000W.", sts:[{l:"a)", t:"Tiêu thụ 2000W ở 220V.", a:true}, {l:"b)", t:"Đường dây đứt tuyệt đối không lại gần.", a:true}, {l:"c)", t:"2000W là điện năng tiêu thụ trong 1 ngày.", a:false}, {l:"d)", t:"Sét đánh không cần rút phích cắm.", a:false}], e:"2000W là công suất. Khi dông sét cần rút điện."},
+            {ctx:"Dòng điện mang năng lượng.", sts:[{l:"a)", t:"Bếp điện tỏa nhiệt chứng tỏ dòng điện có năng lượng.", a:true}, {l:"b)", t:"Cánh quạt quay không liên quan năng lượng điện.", a:false}, {l:"c)", t:"Ngập nước cần ngắt cầu dao.", a:true}, {l:"d)", t:"Dòng điện chỉ mang năng lượng ở > 220V.", a:false}], e:"Điện năng chuyển thành cơ năng ở quạt. Điện nào cũng mang năng lượng."},
+            {ctx:"Thay đèn 40W bằng đèn LED 20W.", sts:[{l:"a)", t:"Là phương pháp tiết kiệm điện.", a:true}, {l:"b)", t:"Làm công suất định mức tăng gấp đôi.", a:false}, {l:"c)", t:"10 bóng LED 20W dùng 5h tốn 1 kWh.", a:true}, {l:"d)", t:"Tiết kiệm điện chỉ lợi cho cá nhân, không ích cho xã hội.", a:false}], e:"Công suất giảm. 10 * 20W = 200W = 0,2kW. 0,2 * 5 = 1 kWh."}
         ],
         short: [
-            { q: "Một bếp điện có công suất 1500 W hoạt động bình thường trong thời gian 2 giờ. Điện năng mà bếp tiêu thụ tính theo đơn vị kWh là bao nhiêu?", a: "3", e: "$A = P \\times t = 1,5 kW \\times 2 h = 3 kWh$." },
-            { q: "Một bóng đèn LED có ghi 220 V – 12 W. Nếu sử dụng đèn này ở 220 V trong 100 giờ thì năng lượng điện tiêu thụ là bao nhiêu kWh?", a: "1,2", e: "$A = P \\times t = 0,012 kW \\times 100 h = 1,2 kWh$." }
+            {q:"Bếp điện 1500W hoạt động bình thường trong 2 giờ. Điện năng (kWh) là?", a:"3", e:"1,5 * 2 = 3 kWh."},
+            {q:"Đèn LED 12W dùng 100 giờ. Điện năng (kWh) là?", a:"1,2", e:"0,012 * 100 = 1,2 kWh."},
+            {q:"Tivi 150W tiêu thụ 0,45 kWh. Thời gian hoạt động (giờ) là?", a:"3", e:"t = A / P = 0,45 / 0,15 = 3 giờ."},
+            {q:"5 bóng 20W dùng trong 5 giờ. Tổng điện năng (kWh) là?", a:"0,5", e:"(5 * 20) * 5 / 1000 = 0,5 kWh."},
+            {q:"Nồi 800W tiêu thụ 1,2 kWh. Thời gian (giờ) là?", a:"1,5", e:"t = 1,2 / 0,8 = 1,5 giờ."},
+            {q:"Nhận định: (1) Bếp điện toả nhiệt chứng tỏ có năng lượng. (3) Dùng dây tóc tiết kiệm hơn LED. (5) Tắt ngắt cầu dao tổng phòng ngập. (7) Tận dụng gió trời tiết kiệm điện. Chọn ý ĐÚNG (ghi số tăng dần):", a:"157", e:"1, 5, 7 đúng. 3 sai."}
         ]
     },
     "bai_14": {
         mcq: [
-            { q: "Điều kiện ĐÚNG để xuất hiện dòng điện cảm ứng trong một cuộn dây dẫn kín là", a: "số đường sức từ xuyên qua tiết diện của cuộn dây biến thiên.", o: ["đặt một thanh nam châm đứng yên ở rất gần cuộn dây.", "số đường sức từ xuyên qua tiết diện của cuộn dây biến thiên.", "nối hai đầu cuộn dây với hai cực của một quả pin.", "cho một dòng điện một chiều không đổi chạy qua cuộn dây."], e: "Theo định luật Faraday, sự biến thiên số đường sức từ qua tiết diện là điều kiện sinh ra dòng điện cảm ứng." },
-            { q: "Trong thí nghiệm đưa cực nam châm lại gần cuộn dây kín, kim điện kế lệch. Hiện tượng này chứng tỏ", a: "có dòng điện cảm ứng xuất hiện do số đường sức từ qua cuộn dây tăng.", o: ["nam châm truyền điện năng trực tiếp cho cuộn dây.", "có dòng điện cảm ứng xuất hiện do số đường sức từ qua cuộn dây tăng.", "cuộn dây trở thành nam châm vĩnh cửu mới.", "kim điện kế bị lệch do tác dụng hút của nam châm."], e: "Sự dịch chuyển làm biến thiên từ thông sinh ra dòng điện cảm ứng." },
-            { q: "Dòng điện xoay chiều là dòng điện", a: "có chiều luân phiên thay đổi theo thời gian.", o: ["có chiều KHÔNG đổi nhưng cường độ thay đổi.", "có cường độ KHÔNG đổi nhưng chiều thay đổi.", "có chiều luân phiên thay đổi theo thời gian.", "chỉ chạy theo một chiều từ cực dương sang âm."], e: "Định nghĩa cơ bản của dòng điện xoay chiều." },
-            { q: "Nguyên tắc tạo ra dòng điện xoay chiều trong cuộn dây dẫn kín là làm cho số đường sức từ xuyên qua tiết diện cuộn dây", a: "tăng, giảm luân phiên theo thời gian.", o: ["luôn giữ ở giá trị lớn nhất.", "luôn giữ ở giá trị bằng không.", "tăng, giảm luân phiên theo thời gian.", "chỉ tăng lên mà KHÔNG bao giờ giảm xuống."], e: "Sự tăng giảm luân phiên của số đường sức từ tạo ra sự đổi chiều của dòng điện cảm ứng." },
-            { q: "Dấu hiệu ĐƠN GIẢN NHẤT để phân biệt dòng điện xoay chiều với dòng điện một chiều là dựa vào", a: "chiều của dòng điện theo thời gian.", o: ["độ mạnh yếu của dòng điện.", "màu sắc của vỏ bọc dây điện.", "loại dây dẫn đang sử dụng.", "chiều của dòng điện theo thời gian."], e: "Dòng một chiều có chiều cố định, xoay chiều thì luân phiên đổi chiều." }
+            {q:"Điều kiện ĐÚNG để xuất hiện dòng điện cảm ứng trong một cuộn dây kín là", a:"số đường sức từ xuyên qua tiết diện của cuộn dây biến thiên.", o:["đặt nam châm đứng yên gần cuộn dây.", "số đường sức từ xuyên qua tiết diện của cuộn dây biến thiên.", "nối 2 đầu cuộn dây với pin.", "dòng một chiều chạy qua."], e:"Định luật Faraday, phải có biến thiên từ thông."},
+            {q:"Thí nghiệm nam châm lại gần cuộn dây, kim điện kế lệch. Chứng tỏ", a:"có dòng điện cảm ứng xuất hiện do số đường sức từ tăng.", o:["nam châm truyền điện.", "có dòng điện cảm ứng xuất hiện do số đường sức từ tăng.", "cuộn dây thành nam châm vĩnh cửu.", "kim bị nam châm hút."], e:"Sự dịch chuyển làm biến thiên từ thông."},
+            {q:"Dòng điện xoay chiều là dòng điện", a:"có chiều luân phiên thay đổi theo thời gian.", o:["cường độ đổi, chiều không đổi.", "cường độ không đổi, chiều đổi.", "có chiều luân phiên thay đổi theo thời gian.", "chỉ chạy 1 chiều."], e:"Định nghĩa."},
+            {q:"Nguyên tắc tạo dòng xoay chiều là làm số đường sức từ qua cuộn dây", a:"tăng, giảm luân phiên theo thời gian.", o:["giữ giá trị lớn nhất.", "giữ giá trị không.", "tăng, giảm luân phiên theo thời gian.", "chỉ tăng."], e:"Tăng giảm luân phiên sinh dòng luân phiên đổi chiều."},
+            {q:"Dấu hiệu ĐƠN GIẢN NHẤT phân biệt xoay chiều và một chiều là", a:"chiều của dòng điện theo thời gian.", o:["độ mạnh yếu.", "màu sắc dây.", "loại dây.", "chiều của dòng điện theo thời gian."], e:"Chiều cố định là 1 chiều, đổi chiều là xoay chiều."},
+            {q:"Quay khung dây trong từ trường sinh dòng xoay chiều vì", a:"số đường sức từ qua khung biến thiên tăng giảm luân phiên.", o:["số đường sức từ qua khung biến thiên tăng giảm luân phiên.", "khung bằng đồng.", "nam châm vĩnh cửu.", "bôi trơn dầu."], e:"Góc xoay thay đổi diện tích đón đường sức từ."},
+            {q:"Quay nam châm càng nhanh thì bóng đèn LED nối cuộn dây càng sáng. Do", a:"tốc độ biến thiên số đường sức từ tăng lên.", o:["nam châm mạnh hơn.", "cuộn dây sinh thêm vòng.", "tốc độ biến thiên số đường sức từ tăng lên.", "lực ma sát làm sáng."], e:"Biến thiên càng nhanh dòng càng mạnh."},
+            {q:"Trường hợp KHÔNG xuất hiện dòng cảm ứng:", a:"Đặt cuộn dây đứng yên trong từ trường đều KHÔNG đổi.", o:["Nam châm rơi qua.", "Quay cuộn dây.", "Đặt cuộn dây đứng yên trong từ trường đều KHÔNG đổi.", "Thay đổi dòng điện nam châm điện."], e:"Đứng yên không biến thiên."},
+            {q:"Kí hiệu AC (Alternating Current) chỉ", a:"dòng điện xoay chiều.", o:["một chiều.", "xoay chiều.", "cực lớn.", "an toàn."], e:"AC là xoay chiều."},
+            {q:"Cách tạo dòng xoay chiều trong cuộn dây kín:", a:"Cho thanh nam châm quay liên tục trước cuộn dây.", o:["Nam châm chuyển động thẳng 1 phía.", "Cho thanh nam châm quay liên tục trước cuộn dây.", "Nam châm đứng yên.", "Nối pin."], e:"Quay tạo biến thiên luân phiên."},
+            {q:"Mắc 2 đèn LED ngược chiều song song, cả 2 cùng sáng. Nguồn điện là:", a:"nguồn điện xoay chiều.", o:["pin.", "acquy.", "nguồn điện xoay chiều.", "hỏng."], e:"Đổi chiều luân phiên mới làm cả 2 LED sáng (nháy)."},
+            {q:"Người phát minh hiện tượng cảm ứng điện từ:", a:"Faraday.", o:["Newton.", "Ampere.", "Watt.", "Faraday."], e:"Michael Faraday (1831)."},
+            {q:"Đồ thị dòng điện xoay chiều theo thời gian có dạng:", a:"một đường hình sin luân phiên đổi giá trị dương và âm.", o:["đường thẳng song song.", "đường thẳng qua O.", "đứt đoạn dương.", "một đường hình sin luân phiên đổi giá trị dương và âm."], e:"Đồ thị hình sin."},
+            {q:"Nửa vòng đầu quay nam châm, đường sức từ tăng. Nửa vòng sau:", a:"bắt đầu giảm xuống.", o:["tiếp tục tăng.", "biến mất.", "giữ nguyên.", "bắt đầu giảm xuống."], e:"Tăng giảm luân phiên."},
+            {q:"Dừng quay núm dynamo xe đạp, đèn sẽ:", a:"không sáng vì KHÔNG có sự biến thiên số đường sức từ.", o:["sáng yếu.", "sáng bình thường.", "không sáng vì KHÔNG có sự biến thiên số đường sức từ.", "nhấp nháy mạnh."], e:"Dừng lại thì không biến thiên."}
         ],
         tf: [
-            { ctx: "Xét thí nghiệm dùng nam châm vĩnh cửu và cuộn dây dẫn kín nối điện kế:", sts: [
-                { l: "a)", t: "Khi đưa thanh nam châm lại gần cuộn dây, kim điện kế bị lệch khỏi vạch số 0.", a: true },
-                { l: "b)", t: "Nếu giữ nam châm đứng yên trong lòng cuộn dây, dòng điện cảm ứng có giá trị lớn nhất.", a: false },
-                { l: "c)", t: "Khi rút nam châm ra xa cuộn dây, dòng điện cảm ứng đổi chiều so với khi đưa vào.", a: true },
-                { l: "d)", t: "Tốc độ di chuyển của nam châm KHÔNG ảnh hưởng đến cường độ dòng điện cảm ứng.", a: false }
-            ], e: "Ý a, c đúng theo hiện tượng. Ý b sai (đứng yên thì I = 0). Ý d sai (tốc độ càng nhanh dòng điện càng mạnh)." }
+            {ctx:"Thí nghiệm dùng nam châm và cuộn dây dẫn kín nối điện kế:", sts:[{l:"a)", t:"Đưa nam châm lại gần, kim điện kế lệch.", a:true}, {l:"b)", t:"Giữ nam châm đứng yên trong cuộn dây, dòng lớn nhất.", a:false}, {l:"c)", t:"Rút nam châm ra, dòng điện đổi chiều so với đưa vào.", a:true}, {l:"d)", t:"Tốc độ di chuyển không ảnh hưởng cường độ dòng.", a:false}], e:"Đứng yên I=0. Tốc độ càng nhanh I càng lớn."},
+            {ctx:"Khung dây quay trong từ trường nam châm chữ U:", sts:[{l:"a)", t:"Số đường sức từ qua tiết diện khung thay đổi liên tục.", a:true}, {l:"b)", t:"Quay 1 vòng, dòng điện đổi chiều 2 lần.", a:true}, {l:"c)", t:"Mặt khung song song đường sức từ, dòng điện bằng 0.", a:false}, {l:"d)", t:"Quay chậm thì dòng điện sinh ra mạnh hơn.", a:false}], e:"Song song từ thông = 0 nhưng tốc độ biến thiên max -> I max. Quay chậm I yếu."},
+            {ctx:"Tạo dòng điện xoay chiều:", sts:[{l:"a)", t:"Là dòng đổi chiều liên tục, tuần hoàn.", a:true}, {l:"b)", t:"Pin và acquy cung cấp dòng xoay chiều.", a:false}, {l:"c)", t:"Có thể tạo ra bằng cách quay nam châm trước cuộn dây.", a:true}, {l:"d)", t:"Không thắp sáng được đèn dây tóc.", a:false}], e:"Pin là một chiều. AC thắp sáng đèn dây tóc bình thường."},
+            {ctx:"Mô hình máy phát điện xoay chiều:", sts:[{l:"a)", t:"Phần đứng yên là stator, phần quay là rotor.", a:true}, {l:"b)", t:"Rotor dừng, stator vẫn tạo ra dòng xoay chiều.", a:false}, {l:"c)", t:"Quấn nhiều vòng dây thì suất điện động càng lớn.", a:true}, {l:"d)", t:"Biến đổi nhiệt năng thành điện năng.", a:false}], e:"Rotor dừng thì mất từ trường biến thiên. Máy phát biến cơ năng thành điện năng."},
+            {ctx:"Máy phát quay tay và đèn LED:", sts:[{l:"a)", t:"Quay chậm, LED nhấp nháy rõ.", a:true}, {l:"b)", t:"Đổi cực nam châm, dòng xoay chiều biến mất.", a:false}, {l:"c)", t:"Dòng mạnh nhất khi nam châm sát cuộn dây.", a:true}, {l:"d)", t:"Nối với loa sẽ nghe tiếng ù ù do dòng xoay chiều.", a:true}], e:"Đổi cực chỉ đổi pha, vẫn xoay chiều."}
         ],
         short: [
-            { q: "Trong các hành động sau, có bao nhiêu hành động tạo ra dòng điện cảm ứng: (1) Đưa nam châm lại gần cuộn dây, (2) Để nam châm nằm im trong cuộn, (3) Rút nam châm ra xa, (4) Quay cuộn dây trước nam châm.", a: "3", e: "Các hành động tạo dòng cảm ứng là (1), (3), (4) vì chúng làm biến thiên số đường sức từ." },
-            { q: "Một máy phát điện mini có rotor quay với tốc độ 3000 vòng trong một phút. Biết mỗi vòng quay tạo 1 chu kì dòng xoay chiều. Tần số dòng điện tính bằng Hz là?", a: "50", e: "$f = \\frac{n}{60} = \\frac{3000}{60} = 50 Hz$." }
+            {q:"Các hành động tạo dòng cảm ứng: (1) Nam châm lại gần, (2) Đứng yên, (3) Rút ra xa, (4) Quay cuộn dây. (Ghi dãy số)", a:"134", e:"1, 3, 4 làm biến thiên từ thông."},
+            {q:"Hiện tượng kim điện kế lệch (1) Đưa nam châm vào, (2) Nam châm đứng yên, (3) Rút nam châm ra. Tình huống nào kim lệch? (Ghi dãy số)", a:"13", e:"Chỉ khi di chuyển mới lệch kim."},
+            {q:"Máy phát điện quay 3000 vòng/phút. Tần số (Hz) là?", a:"50", e:"3000 / 60 = 50 Hz."},
+            {q:"Cải tiến tăng dòng cảm ứng máy phát mini: (1) Quay 1 chiều rồi dừng, (2) Tăng tốc độ quay, (3) Tăng vòng dây, (4) Thêm lõi sắt non. (Ghi dãy số)", a:"234", e:"Tốc độ, vòng dây, lõi sắt đều làm tăng I."},
+            {q:"Dấu hiệu xoay chiều: (1) Kim ampe kế DC rung, (2) AC ghi trên thiết bị, (3) 2 LED mắc song song ngược chiều cùng sáng. Chọn đúng.", a:"123", e:"Cả 3 đều là dấu hiệu AC."},
+            {q:"AC đổi chiều bao nhiêu lần trong 1 giây nếu tần số là 50Hz?", a:"100", e:"Mỗi chu kì đổi chiều 2 lần. 50 * 2 = 100."}
         ]
     },
     "bai_15": {
         mcq: [
-            { q: "Dòng điện xoay chiều thường đi qua các thiết bị sinh hoạt. Dòng điện này KHÔNG có tác dụng nào sau đây?", a: "Tác dụng hoá học (mạ điện trực tiếp).", o: ["Tác dụng nhiệt.", "Tác dụng quang (phát sáng).", "Tác dụng hoá học (mạ điện trực tiếp).", "Tác dụng từ."], e: "Dòng điện xoay chiều đổi chiều liên tục nên không mạ điện trực tiếp được." },
-            { q: "Dòng điện xoay chiều chạy qua cơ thể người gây co giật, tim ngừng đập. Đây là biểu hiện của", a: "tác dụng sinh lí.", o: ["tác dụng nhiệt.", "tác dụng sinh lí.", "tác dụng từ.", "tác dụng hoá học."], e: "Tác động lên cơ thể sống được gọi là tác dụng sinh lí." },
-            { q: "Thiết bị nào sau đây hoạt động chủ yếu dựa trên tác dụng nhiệt của dòng điện xoay chiều?", a: "Bàn là điện.", o: ["Quạt trần.", "Đèn huỳnh quang.", "Bàn là điện.", "Chuông báo động."], e: "Bàn là điện dùng nhiệt để ủi đồ." },
-            { q: "Sử dụng bóng đèn LED nối với lưới điện gia đình chiếu sáng đường phố là ứng dụng chứng tỏ dòng điện xoay chiều có", a: "tác dụng phát sáng (tác dụng quang).", o: ["tác dụng từ.", "tác dụng phát sáng (tác dụng quang).", "tác dụng nhiệt.", "tác dụng sinh lí."], e: "Đèn LED phát sáng chứng tỏ tác dụng quang." },
-            { q: "Tuyệt đối KHÔNG chạm tay ướt vào ổ điện vì dòng 220V truyền qua cơ thể gây nguy hiểm. Cảnh báo này dựa trên", a: "Tác dụng sinh lí.", o: ["Tác dụng hoá học.", "Tác dụng từ.", "Tác dụng sinh lí.", "Tác dụng phát sáng."], e: "Gây giật điện ảnh hưởng hệ thần kinh là tác dụng sinh lí." }
+            {q:"Dòng xoay chiều KHÔNG có tác dụng nào sau đây?", a:"Tác dụng hoá học (mạ điện trực tiếp).", o:["Tác dụng nhiệt.", "Tác dụng quang.", "Tác dụng hoá học (mạ điện trực tiếp).", "Tác dụng từ."], e:"Đổi chiều luân phiên nên không mạ điện được."},
+            {q:"Chạy qua cơ thể gây co giật là biểu hiện của", a:"tác dụng sinh lí.", o:["tác dụng nhiệt.", "tác dụng sinh lí.", "tác dụng từ.", "tác dụng hoá học."], e:"Tác động cơ thể sống là sinh lí."},
+            {q:"Thiết bị hoạt động chủ yếu dựa trên tác dụng nhiệt?", a:"Bàn là điện.", o:["Quạt trần.", "Đèn huỳnh quang.", "Bàn là điện.", "Chuông báo động."], e:"Bàn là dùng nhiệt ủi đồ."},
+            {q:"Đèn LED chiếu sáng đường phố là ứng dụng", a:"tác dụng quang.", o:["tác dụng từ.", "tác dụng quang.", "tác dụng nhiệt.", "tác dụng sinh lí."], e:"Phát sáng là quang."},
+            {q:"Chạm tay ướt vào ổ điện bị giật. Cảnh báo này dựa trên", a:"Tác dụng sinh lí.", o:["Tác dụng hoá học.", "Tác dụng từ.", "Tác dụng sinh lí.", "Tác dụng phát sáng."], e:"Gây giật là tác dụng sinh lí."},
+            {q:"Khác biệt nam châm xoay chiều so với một chiều:", a:"cực của nam châm dòng xoay chiều luân phiên thay đổi.", o:["không hút được sắt.", "cực của nam châm dòng xoay chiều luân phiên thay đổi.", "hút sắt mạnh gấp đôi.", "chỉ đẩy chứ không hút."], e:"Chiều từ trường đổi luân phiên."},
+            {q:"Còi hụ cảnh báo sóng thần hoạt động dựa trên", a:"tác dụng từ.", o:["tác dụng nhiệt.", "tác dụng từ.", "tác dụng quang.", "tác dụng hoá học."], e:"Động cơ/nam châm điện dùng lực từ."},
+            {q:"La bàn đặt gần dây xoay chiều sẽ", a:"Dao động, rung động liên tục tại chỗ.", o:["Chỉ cố định hướng Bắc.", "Quay lệch 1 góc rồi đứng yên.", "Dao động, rung động liên tục tại chỗ.", "Nóng đỏ lên."], e:"Từ trường luân phiên làm kim rung."},
+            {q:"Bộ lưu điện (UPS) có chức năng", a:"biến đổi điện một chiều ắc quy thành xoay chiều.", o:["giảm tác dụng nhiệt.", "biến đổi điện một chiều ắc quy thành xoay chiều.", "tăng tác dụng sinh lí.", "thay thế cảm biến."], e:"Nghịch lưu DC sang AC."},
+            {q:"Đèn nê-ôn trong bút thử điện sáng minh chứng cho", a:"tác dụng quang.", o:["tác dụng từ.", "tác dụng nhiệt.", "tác dụng quang.", "tác dụng hoá học."], e:"Phát sáng là quang."},
+            {q:"Đưa cuộn dây xoay chiều lại gần thanh thép, thép bị hút. Cho thấy", a:"có tác dụng từ.", o:["có khả năng phát sáng.", "tác dụng nhiệt cực mạnh.", "có tác dụng từ.", "làm biến đổi hoá học."], e:"Hút sắt thép là tác dụng từ."},
+            {q:"Đèn sợi đốt tỏa sáng và rất nóng. Chứng tỏ có", a:"tác dụng nhiệt và quang.", o:["tác dụng nhiệt và quang.", "tác dụng từ và nhiệt.", "tác dụng hóa học và sinh lí.", "chỉ phát sáng."], e:"Nóng và sáng."},
+            {q:"Lý do không dùng xoay chiều nạp ắc quy trực tiếp:", a:"luân phiên đổi chiều nên không tạo phản ứng hoá học một chiều.", o:["nhiệt quá lớn.", "luân phiên đổi chiều nên không tạo phản ứng hoá học một chiều.", "không có quang.", "suy giảm sức mạnh."], e:"Nạp ắc quy cần dòng 1 chiều DC."}
         ],
         tf: [
-            { ctx: "So sánh sự giống và khác nhau về tác dụng của dòng điện xoay chiều (220V) và một chiều (ắc quy).", sts: [
-                { l: "a)", t: "Cả dòng điện xoay chiều và một chiều đều có tác dụng nhiệt khi chạy qua dây dẫn.", a: true },
-                { l: "b)", t: "Cả hai loại dòng điện đều có thể làm bóng đèn dây tóc phát sáng.", a: true },
-                { l: "c)", t: "Dòng điện xoay chiều có tác dụng hoá học dùng để mạ điện giống hệt như dòng điện một chiều.", a: false },
-                { l: "d)", t: "Dòng xoay chiều gây tác dụng sinh lí (co giật), đây cũng là đặc điểm chung với dòng một chiều ở điện áp cao.", a: true }
-            ], e: "Ý a,b,d đúng. Ý c sai (chỉ dòng một chiều mới mạ điện trực tiếp được)." }
+            {ctx:"So sánh tác dụng dòng xoay chiều và một chiều.", sts:[{l:"a)", t:"Cả hai đều có tác dụng nhiệt.", a:true}, {l:"b)", t:"Cả hai đều làm đèn dây tóc phát sáng.", a:true}, {l:"c)", t:"AC mạ điện trực tiếp giống DC.", a:false}, {l:"d)", t:"Cả hai ở điện áp cao đều gây tác dụng sinh lí nguy hiểm.", a:true}], e:"AC không mạ điện được vì đổi cực liên tục."},
+            {ctx:"Máy bơm nước chống ngập (điện xoay chiều 3 pha).", sts:[{l:"a)", t:"Hoạt động chủ yếu nhờ tác dụng từ.", a:true}, {l:"b)", t:"Quá trình chạy không gây ra tác dụng nhiệt.", a:false}, {l:"c)", t:"Cần dòng đổi chiều để tạo từ trường quay.", a:true}, {l:"d)", t:"Là phần của công tác quản lí rủi ro thiên tai.", a:true}], e:"Mọi động cơ đều tỏa nhiệt (tác dụng nhiệt phụ)."},
+            {ctx:"Loa phát thanh cấp xã cảnh báo xả lũ.", sts:[{l:"a)", t:"Màng loa rung dựa trên tác dụng nhiệt.", a:false}, {l:"b)", t:"Dòng điện tạo từ trường tương tác nam châm vĩnh cửu.", a:true}, {l:"c)", t:"Tác dụng từ là nguyên lí vật lí cốt lõi.", a:true}, {l:"d)", t:"Là giải pháp truyền thống hiệu quả cảnh báo sớm.", a:true}], e:"Loa hoạt động dựa trên tác dụng từ."},
+            {ctx:"Chuông báo cháy tòa nhà dùng điện xoay chiều.", sts:[{l:"a)", t:"Chuông kêu là kết quả tác dụng hoá học.", a:false}, {l:"b)", t:"Hoạt động dựa trên nam châm điện (tác dụng từ).", a:true}, {l:"c)", t:"Tác dụng sinh lí KHÔNG được chủ đích ứng dụng ở đây.", a:true}, {l:"d)", t:"Là biện pháp quản lí rủi ro hoả hoạn.", a:true}], e:"Chuông kêu nhờ lực từ gõ búa."},
+            {ctx:"Sạc bình ắc quy dự phòng bằng điện lưới.", sts:[{l:"a)", t:"Cắm trực tiếp 2 cực ắc quy vào ổ điện tường để nạp.", a:false}, {l:"b)", t:"Bộ sạc biến AC thành DC để nạp hóa học.", a:true}, {l:"c)", t:"Sạc toả nhiệt chứng tỏ có tác dụng nhiệt.", a:true}, {l:"d)", t:"Ắc quy hữu ích dự phòng khi mất điện thiên tai.", a:true}], e:"Cắm trực tiếp AC vào ắc quy gây nổ."}
         ],
         short: [
-            { q: "Xác định các ví dụ chứng tỏ dòng xoay chiều có TÁC DỤNG NHIỆT: (1) Đèn tivi nháy, (2) Dây may-so mỏ hàn nóng đỏ, (3) Chuông điện kêu, (4) Thanh nhiệt bình nóng lạnh đun sôi nước. (Ghi dãy số tăng dần)", a: "24", e: "Số 2 và 4 là tác dụng nhiệt. Số 1 là quang, 3 là từ." },
-            { q: "Thiết bị nào thể hiện TÁC DỤNG TỪ: (1) Sợi dây tóc phát sáng, (2) Quạt điện hút thông gió, (3) Lò sưởi điện, (4) Nam châm điện cần cẩu. (Ghi dãy số tăng dần)", a: "24", e: "Số 2 (động cơ) và 4 (nam châm) thể hiện tác dụng từ." }
+            {q:"Tác dụng NHIỆT: (1) Đèn nháy, (2) Mỏ hàn đỏ, (3) Chuông kêu, (4) Thanh nhiệt đun nước. (Ghi số)", a:"24", e:"2, 4 là toả nhiệt lượng."},
+            {q:"Tác dụng TỪ: (1) Quạt hút thông gió, (2) Bút thử điện sáng, (3) Nam châm điện cần cẩu, (4) Máy xay sinh tố. (Ghi số)", a:"134", e:"1, 4 (động cơ) và 3 (nam châm) dùng từ."},
+            {q:"Thiết bị chuyển AC thành DC sạc điện thoại ứng dụng tác dụng gì bên trong pin điện thoại?", a:"Hóa học", e:"Pin sạc dựa trên phản ứng hóa học."},
+            {q:"Hiện tượng giật tê tay khi rò rỉ máy giặt là tác dụng gì?", a:"Sinh lí", e:"Tác động cơ thể sống là sinh lí."},
+            {q:"Đèn tuýp LED sáng trên phố ứng dụng tác dụng gì?", a:"Quang", e:"Phát sáng = Quang năng."},
+            {q:"Nhận định: (1) AC mạ vàng được, (2) Bếp từ sinh nhiệt, (3) Loa rung nhờ từ, (4) Quạt chạy nhờ hoá. Chọn ĐÚNG (ghi số)", a:"23", e:"Bếp toả nhiệt, Loa dùng từ. 1, 4 sai."}
         ]
     }
 };
@@ -615,11 +680,37 @@ function autoScaleApp() {
 window.addEventListener('resize', autoScaleApp); autoScaleApp();
 
 document.addEventListener('copy', (e) => { e.preventDefault(); return false; });
+
+// Tích hợp phím tắt đóng Modal
+const closeOverlay = (modal) => {
+    modal.style.display = 'none';
+    if (modal.id === 'delete-auth-modal') { pendingAuthAction = null; currentDeleteId = null; document.getElementById('delete-pw').value = ''; }
+    if (modal.id === 'admin-auth-modal') { document.getElementById('admin-pw').value = ''; }
+};
+
 document.addEventListener('keydown', (e) => {
     if ((e.ctrlKey && (e.key === 'c' || e.key === 'v' || e.key === 'x' || e.key === 'u' || e.key === 's'))) {
         e.preventDefault(); return false;
     }
+    // Tính năng Đóng hộp thoại khi bấm Esc
+    if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-overlay').forEach(modal => {
+            if (modal.style.display === 'flex' || modal.style.display === 'block') {
+                closeOverlay(modal);
+            }
+        });
+    }
 }, true);
+
+// Đóng hộp thoại khi Click ra ngoài
+document.querySelectorAll('.modal-overlay').forEach(modal => {
+    modal.addEventListener('mousedown', (e) => {
+        // Chỉ đóng khi click trúng vào lớp nền đen (chứ không phải nội dung bên trong)
+        if (e.target === modal && modal.id !== 'image-viewer-modal') { 
+            closeOverlay(modal);
+        }
+    });
+});
 
 document.getElementById('topic-select').addEventListener('change', (e) => {
     const topicText = e.target.options[e.target.selectedIndex].text;
@@ -864,15 +955,14 @@ async function renderAdmin() {
         
         const classes = [...new Set(rawData.map(i => i.class))].sort(); 
         const schools = [...new Set(rawData.map(i => i.school))].filter(s => s).sort();
-        const topics = [...new Set(rawData.map(i => i.topic))].filter(t => t).sort(); // Lọc danh sách chuyên đề
+        const topics = [...new Set(rawData.map(i => i.topic))].filter(t => t).sort(); 
 
         const fClass = document.getElementById('admin-filter-class'); const oldC = fClass.value; fClass.innerHTML = '<option value="all">Tất cả lớp</option>' + classes.map(c => `<option value="${c}" ${c===oldC?'selected':''}>Lớp ${c}</option>`).join('');
         const fSchool = document.getElementById('admin-filter-school'); const oldS = fSchool.value; fSchool.innerHTML = '<option value="all">Tất cả trường</option>' + schools.map(s => `<option value="${s}" ${s===oldS?'selected':''}>${s}</option>`).join('');
-        const fTopic = document.getElementById('admin-filter-topic'); const oldT = fTopic.value; fTopic.innerHTML = '<option value="all">Tất cả chuyên đề</option>' + topics.map(t => `<option value="${t}" ${t===oldT?'selected':''}>${t}</option>`).join(''); // Tải lên UI
+        const fTopic = document.getElementById('admin-filter-topic'); const oldT = fTopic.value; fTopic.innerHTML = '<option value="all">Tất cả chuyên đề</option>' + topics.map(t => `<option value="${t}" ${t===oldT?'selected':''}>${t}</option>`).join(''); 
         
         const mFilter = document.getElementById('admin-filter-mode').value, sVal = document.getElementById('admin-sort').value;
         
-        // Điều kiện lọc bao gồm cả Chuyên đề
         let data = rawData.filter(i => { 
             return ((mFilter === 'all') || (i.mode === mFilter)) 
                 && ((fClass.value === 'all') || (i.class === fClass.value)) 
@@ -975,7 +1065,7 @@ document.getElementById('admin-sort').onchange = () => renderAdmin();
 document.getElementById('admin-filter-mode').onchange = () => renderAdmin(); 
 document.getElementById('admin-filter-class').onchange = () => renderAdmin(); 
 document.getElementById('admin-filter-school').onchange = () => renderAdmin();
-document.getElementById('admin-filter-topic').onchange = () => renderAdmin(); // Bắt sự kiện lọc bộ môn mới
+document.getElementById('admin-filter-topic').onchange = () => renderAdmin(); 
 document.getElementById('btn-cheat-submit').onclick = () => { document.getElementById('cheat-modal').style.display = 'none'; };
 
 document.getElementById('btn-report-open').onclick = () => { document.getElementById('report-modal').style.display = 'flex'; };
