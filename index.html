@@ -102,8 +102,8 @@
         .badge-practice { background: var(--secondary); }
 
         .short-answer-wrapper { display: flex; gap: 10px; justify-content: center; margin: 25px 0; flex-wrap: wrap; }
-        .char-slot { width: 45px; height: 55px; border: 3px solid #cbd5e0; border-radius: 10px; text-align: center; font-size: 1.5rem; font-weight: 900; color: var(--primary); outline: none; transition: 0.2s; }
-        .char-slot:focus { border-color: var(--accent); background: #fff7ed; transform: scale(1.05); }
+        input.char-slot { width: 45px !important; padding: 0 !important; height: 55px; border: 3px solid #cbd5e0; border-radius: 10px; text-align: center; font-size: 1.5rem; font-weight: 900; color: var(--primary); outline: none; transition: 0.2s; }
+        input.char-slot:focus { border-color: var(--accent); background: #fff7ed; transform: scale(1.05); }
 
         .explanation { margin-top: 15px; padding: 15px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0; font-size: 0.95rem; color: #334155; line-height: 1.6; }
         .score-badge { float: right; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
@@ -124,7 +124,7 @@
             .tf-row > span { margin-bottom: 5px; display: block; }
             .tf-row > div { width: 100%; display: flex; justify-content: space-between; }
             .tf-btn { flex: 1; text-align: center; padding: 12px; } 
-            .char-slot { width: 40px; height: 50px; font-size: 1.3rem; }
+            input.char-slot { width: 40px !important; padding: 0 !important; height: 50px; font-size: 1.3rem; }
             .btn-admin-float, .btn-report-float { font-size: 0.7rem; padding: 8px 15px; bottom: 10px; z-index: 10000; }
             .btn-report-float { left: 10px; }
             .btn-admin-float { right: 10px; }
@@ -191,7 +191,7 @@
     </div>
 </div>
 
-<!-- Modal Cảnh Báo Gian Lận (Cố ý không dùng class modal-overlay để tránh bị đóng) -->
+<!-- Modal Cảnh Báo Gian Lận -->
 <div id="cheat-modal">
     <div style="background: white; padding: 40px 25px; border-radius: 20px; max-width: 500px; width: 90%; border: 8px solid var(--danger);">
         <h1 style="color:var(--danger); font-size: 2.5rem; margin:0">CẢNH BÁO!</h1>
@@ -219,12 +219,12 @@
 </div>
 
 <!-- Modal Xem Ảnh Phóng To -->
-<div id="image-viewer-modal" class="modal-overlay" style="z-index: 40000;" onclick="this.style.display='none'">
+<div id="image-viewer-modal" class="modal-overlay" style="z-index: 40000;">
     <img id="image-viewer-img" src="" style="max-width: 95%; max-height: 90vh; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); object-fit: contain;">
     <p style="color: white; position: absolute; bottom: 20px; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.8); text-align: center; width: 100%;">Chạm bất kỳ đâu để đóng</p>
 </div>
 
-<!-- Các Modal Xác nhận (Đã thêm class modal-overlay để đồng bộ UI và tương tác) -->
+<!-- Các Modal Xác nhận -->
 <div id="admin-auth-modal" class="modal-overlay" style="z-index:20000;">
     <div class="card" style="width:100%; max-width:400px; text-align:center; padding: 30px 20px; margin: auto;">
         <h2 style="color: var(--primary); margin-top:0;">Xác minh Quản trị</h2>
@@ -453,7 +453,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const appId_fixed = 'khtn9-vat-ly-tong-hop'; 
+const appId_fixed = 'kham-pha-vat-ly-9'; 
 const collectionName = 'quiz_results'; 
 const collectionReports = 'error_reports';
 
@@ -477,7 +477,6 @@ const audioFinish = new Audio('https://www.soundjay.com/misc/sounds/bell-ringing
 
 // ==========================================
 // CƠ SỞ DỮ LIỆU ĐƯỢC CHẮT LỌC & TỐI ƯU HÓA 
-// (130 câu hỏi đảm bảo thuật toán 12-4-4 hoạt động mượt mà)
 // ==========================================
 const ALL_BANKS = {
     "bai_11": {
@@ -551,7 +550,7 @@ const ALL_BANKS = {
     "bai_13": {
         mcq: [
             {q:"Đại lượng nào cho biết công suất mà dụng cụ điện tiêu thụ khi hoạt động bình thường?", a:"Công suất định mức.", o:["Công suất tức thời.", "Công suất hao phí.", "Công suất định mức.", "Công suất cực đại."], e:"Định nghĩa công suất định mức."},
-            {q:"Nồi cơm điện ghi 220V - 800W. 800W chỉ", a:"công suất điện định mức của nồi cơm điện.", o:["công suất tiêu thụ ở 110V.", "công suất điện định mức của nồi cơm điện.", "đi năng tiêu thụ 1 ngày.", "cường độ định mức."], e:"Watt là đơn vị công suất."},
+            {q:"Nồi cơm điện ghi 220V - 800W. 800W chỉ", a:"công suất điện định mức của nồi cơm điện.", o:["công suất tiêu thụ ở 110V.", "công suất điện định mức của nồi cơm điện.", "điện năng tiêu thụ 1 ngày.", "cường độ định mức."], e:"Watt là đơn vị công suất."},
             {q:"Khi sử dụng thiết bị điện đúng hiệu điện thế định mức thì", a:"thiết bị hoạt động bình thường và tiêu thụ công suất định mức.", o:["thiết bị tiêu thụ công suất nhỏ hơn định mức.", "thiết bị bị hỏng.", "thiết bị hoạt động bình thường và tiêu thụ công suất định mức.", "thiết bị không tiêu thụ điện năng."], e:"Đúng định mức sẽ hoạt động bình thường."},
             {q:"Số watt ghi trên dụng cụ điện cho biết", a:"công suất điện định mức.", o:["cường độ định mức.", "hiệu điện thế định mức.", "công suất điện định mức.", "điện trở."], e:"Watt = Công suất."},
             {q:"Ví dụ chứng tỏ dòng điện có năng lượng dưới dạng nhiệt năng?", a:"Làm bóng đèn sợi đốt phát sáng và nóng lên.", o:["Làm quay cánh quạt.", "Làm bóng đèn sợi đốt phát sáng và nóng lên.", "Làm chuông kêu.", "Làm nam châm điện hút sắt."], e:"Nóng lên là nhiệt năng."},
@@ -584,7 +583,7 @@ const ALL_BANKS = {
     },
     "bai_14": {
         mcq: [
-            {q:"Điều kiện ĐÚNG để xuất hiện dòng điện cảm ứng trong một cuộn dây kín là", a:"số đường sức từ xuyên qua tiết diện của cuộn dây biến thiên.", o:["đặt nam châm đứng yên gần cuộn dây.", "số đường sức từ xuyên qua tiết diện của cuộn dây biến thiên.", "nối 2 đầu cuộn dây với pin.", "dòng một chiều chạy qua."], e:"Định luật Faraday, phải có biến thiên từ thông."},
+            {q:"Điều kiện ĐÚNG để xuất hiện dòng điện cảm ứng trong một cuộn dây kín là", a:"số đường sức từ xuyên qua tiết diện của cuộn dây biến thiên.", o:["đặt nam châm đứng yên gần cuộn dây.", "số đường sức từ xuyên qua tiết diện của cuộn dây biến thiên.", "nối 2 đầu cuộn dây với pin.", "dòng một chiều chạy qua."], e:"Theo định luật Faraday, phải có biến thiên từ thông."},
             {q:"Thí nghiệm nam châm lại gần cuộn dây, kim điện kế lệch. Chứng tỏ", a:"có dòng điện cảm ứng xuất hiện do số đường sức từ tăng.", o:["nam châm truyền điện.", "có dòng điện cảm ứng xuất hiện do số đường sức từ tăng.", "cuộn dây thành nam châm vĩnh cửu.", "kim bị nam châm hút."], e:"Sự dịch chuyển làm biến thiên từ thông."},
             {q:"Dòng điện xoay chiều là dòng điện", a:"có chiều luân phiên thay đổi theo thời gian.", o:["cường độ đổi, chiều không đổi.", "cường độ không đổi, chiều đổi.", "có chiều luân phiên thay đổi theo thời gian.", "chỉ chạy 1 chiều."], e:"Định nghĩa."},
             {q:"Nguyên tắc tạo dòng xoay chiều là làm số đường sức từ qua cuộn dây", a:"tăng, giảm luân phiên theo thời gian.", o:["giữ giá trị lớn nhất.", "giữ giá trị không.", "tăng, giảm luân phiên theo thời gian.", "chỉ tăng."], e:"Tăng giảm luân phiên sinh dòng luân phiên đổi chiều."},
@@ -640,12 +639,12 @@ const ALL_BANKS = {
             {ctx:"Sạc bình ắc quy dự phòng bằng điện lưới.", sts:[{l:"a)", t:"Cắm trực tiếp 2 cực ắc quy vào ổ điện tường để nạp.", a:false}, {l:"b)", t:"Bộ sạc biến AC thành DC để nạp hóa học.", a:true}, {l:"c)", t:"Sạc toả nhiệt chứng tỏ có tác dụng nhiệt.", a:true}, {l:"d)", t:"Ắc quy hữu ích dự phòng khi mất điện thiên tai.", a:true}], e:"Cắm trực tiếp AC vào ắc quy gây nổ."}
         ],
         short: [
-            {q:"Tác dụng NHIỆT: (1) Đèn nháy, (2) Mỏ hàn đỏ, (3) Chuông kêu, (4) Thanh nhiệt đun nước. (Ghi số)", a:"24", e:"2, 4 là toả nhiệt lượng."},
-            {q:"Tác dụng TỪ: (1) Quạt hút thông gió, (2) Bút thử điện sáng, (3) Nam châm điện cần cẩu, (4) Máy xay sinh tố. (Ghi số)", a:"134", e:"1, 4 (động cơ) và 3 (nam châm) dùng từ."},
-            {q:"Thiết bị chuyển AC thành DC sạc điện thoại ứng dụng tác dụng gì bên trong pin điện thoại?", a:"Hóa học", e:"Pin sạc dựa trên phản ứng hóa học."},
-            {q:"Hiện tượng giật tê tay khi rò rỉ máy giặt là tác dụng gì?", a:"Sinh lí", e:"Tác động cơ thể sống là sinh lí."},
-            {q:"Đèn tuýp LED sáng trên phố ứng dụng tác dụng gì?", a:"Quang", e:"Phát sáng = Quang năng."},
-            {q:"Nhận định: (1) AC mạ vàng được, (2) Bếp từ sinh nhiệt, (3) Loa rung nhờ từ, (4) Quạt chạy nhờ hoá. Chọn ĐÚNG (ghi số)", a:"23", e:"Bếp toả nhiệt, Loa dùng từ. 1, 4 sai."}
+            {q:"Đọc các nhận định về dòng xoay chiều: (1) Qua dây dẫn có điện trở luôn sinh ra nhiệt. (2) Chỉ dòng một chiều mới có tác dụng từ. (3) Tác dụng quang ứng dụng trong biển báo phát sáng. (4) Dùng để mạ điện. (5) Gây co giật cơ bắp. (6) Tác dụng hoá học là đặc trưng nhất. (7) Nam châm điện xoay chiều có từ cực luân phiên thay đổi. (8) Hoàn toàn an toàn dưới 220V. Chọn các nhận định ĐÚNG (ghi dãy số tăng dần).", a:"1357", e:"1, 3, 5, 7 đúng. 2, 4, 6, 8 sai bản chất vật lí."},
+            {q:"So sánh AC và DC: (1) AC không toả nhiệt lượng như DC. (2) Chỉ DC mới dùng trong mạ điện. (3) Sạc điện thoại biến AC 220V thành DC 5V. (4) Nam châm điện DC luân phiên đổi cực. (5) AC 220V nguy hiểm hơn DC 1,5V. (6) AC làm đèn nê-ôn nháy sáng liên tục. (7) AC không thể làm quay động cơ. (8) Máy phát luôn tạo dòng DC. Chọn nhận định ĐÚNG (ghi dãy số tăng dần).", a:"2356", e:"2, 3, 5, 6 đúng. 1, 4, 7, 8 sai."},
+            {q:"Hệ thống cảnh báo sóng thần: (1) Còi hụ dùng tác dụng hoá học. (2) Nguồn điện còi hụ thường là AC lưới điện. (3) Động cơ còi hụ hoạt động nhờ tác dụng từ. (4) Còi tự sinh điện khi mất điện. (5) Còi hụ là thiết yếu trong quản lí rủi ro. (6) Còi chuyển 100% điện thành quang năng. (7) Đèn chớp đi kèm là tác dụng quang. (8) Còi báo động chặn được sóng thần. Chọn nhận định ĐÚNG (ghi dãy số tăng dần).", a:"2357", e:"2, 3, 5, 7 đúng. 1, 4, 6, 8 sai."},
+            {q:"An toàn điện mùa bão lũ: (1) Lắp Aptomat chống giật là an toàn. (2) Bật đèn rọi xuống nước khi hầm ngập. (3) Ròng rọc điện nâng đồ dùng tác dụng nhiệt. (4) Trạm khí tượng dùng thanh sấy (tác dụng nhiệt) làm tan băng. (5) Báo thợ điện khi trạm biến áp đổ. (6) Giăng điện trần bẫy chuột. (7) Dùng đèn pha (tác dụng quang) cứu hộ ban đêm. (8) Máy phát dự phòng vô tác dụng. Chọn GIẢI PHÁP/ỨNG DỤNG ĐÚNG (ghi dãy số tăng dần).", a:"1457", e:"1, 4, 5, 7 đúng, đảm bảo an toàn và ứng dụng chính xác."},
+            {q:"Phân loại thiết bị AC: (1) Tủ sấy - Hóa học. (2) Máy khoan - Từ. (3) Đèn nê-ôn - Quang. (4) Vợt muỗi - Quang. (5) Ấm sắc thuốc - Nhiệt. (6) Bình mạ vàng - Từ. (7) Máy dập rung - Sinh lí. (8) Máy hàn hồ quang - Nhiệt. Chọn cách phân loại ĐÚNG (ghi dãy số tăng dần).", a:"2358", e:"2, 3, 5, 8 phân loại đúng tác dụng. Còn lại sai bản chất."},
+            {q:"Trạm quản lí sạt lở: (1) Màn hình sáng là tác dụng nhiệt. (2) Chuông báo động hoạt động nhờ tác dụng từ. (3) Quạt hút thông gió dùng tác dụng từ. (4) Sạc ắc quy là tác dụng quang. (5) Cọc tiếp địa để hút sét gây giật nhân viên. (6) UPS biến DC dự trữ thành AC cấp nguồn. (7) Tắt bớt thiết bị không cần thiết khi có sự cố. (8) AC không có vai trò gì. Chọn nhận định ĐÚNG (ghi dãy số tăng dần).", a:"2367", e:"2, 3, 6, 7 đúng. Các nhận định khác sai chức năng và nguyên tắc an toàn."}
         ]
     }
 };
@@ -681,7 +680,6 @@ window.addEventListener('resize', autoScaleApp); autoScaleApp();
 
 document.addEventListener('copy', (e) => { e.preventDefault(); return false; });
 
-// Tích hợp phím tắt đóng Modal
 const closeOverlay = (modal) => {
     modal.style.display = 'none';
     if (modal.id === 'delete-auth-modal') { pendingAuthAction = null; currentDeleteId = null; document.getElementById('delete-pw').value = ''; }
@@ -692,7 +690,6 @@ document.addEventListener('keydown', (e) => {
     if ((e.ctrlKey && (e.key === 'c' || e.key === 'v' || e.key === 'x' || e.key === 'u' || e.key === 's'))) {
         e.preventDefault(); return false;
     }
-    // Tính năng Đóng hộp thoại khi bấm Esc
     if (e.key === 'Escape') {
         document.querySelectorAll('.modal-overlay').forEach(modal => {
             if (modal.style.display === 'flex' || modal.style.display === 'block') {
@@ -702,10 +699,8 @@ document.addEventListener('keydown', (e) => {
     }
 }, true);
 
-// Đóng hộp thoại khi Click ra ngoài
 document.querySelectorAll('.modal-overlay').forEach(modal => {
     modal.addEventListener('mousedown', (e) => {
-        // Chỉ đóng khi click trúng vào lớp nền đen (chứ không phải nội dung bên trong)
         if (e.target === modal && modal.id !== 'image-viewer-modal') { 
             closeOverlay(modal);
         }
@@ -973,7 +968,7 @@ async function renderAdmin() {
         
         let s = { xs: 0, g: 0, k: 0, d: 0, cd: 0 };
         data.forEach(i => { if(i.score >= 6.3) s.xs++; else if(i.score >= 5.6) s.g++; else if(i.score >= 4.5) s.k++; else if(i.score >= 3.5) s.d++; else s.cd++; });
-        statsBox.innerHTML = `<div class="stat-box"><b>${s.xs}</b><br><small>X.Sắc</small></div><div class="stat-box"><b>${s.g}</b><br><small>Giỏi</small></div><div class="stat-box"><b>${s.k}</b><br><small>Khá</small></div><div class="stat-box"><b>${s.d}</b><br><small>Đạt</small></div><div class="stat-box" style="border-color:red"><b>${s.cd}</b><br><small>C.Đạt</small></div>`;
+        statsBox.innerHTML = `<div class="stat-box" style="border-bottom-color: #f59e0b"><b>${s.xs}</b><br><small>X.Sắc</small></div><div class="stat-box" style="border-bottom-color: #10b981"><b>${s.g}</b><br><small>Giỏi</small></div><div class="stat-box" style="border-bottom-color: #3b82f6"><b>${s.k}</b><br><small>Khá</small></div><div class="stat-box" style="border-bottom-color: #8b5cf6"><b>${s.d}</b><br><small>Đạt</small></div><div class="stat-box" style="border-bottom-color: #ef4444"><b>${s.cd}</b><br><small>C.Đạt</small></div>`;
         
         listBody.innerHTML = data.map((i, idx) => `<tr><td>${idx+1}</td><td>${i.sbd}</td><td>${i.name}</td><td>${i.class}</td><td>${i.school||'-'}</td><td style="font-size:0.75rem; color:var(--primary); font-weight:bold;">${i.topic || 'Bài 8: Thấu kính'}</td><td><span class="badge-mode ${i.mode === 'practice' ? 'badge-practice' : 'badge-test'}">${i.mode === 'practice' ? 'Luyện tập' : 'Kiểm tra'}</span></td><td><b>${Number((i.score||0).toFixed(2))}</b></td><td>${i.duration}s</td><td>${new Date(i.timestamp).toLocaleDateString()}</td><td style="display:flex; gap:5px;"><button style="background:var(--secondary); color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer" class="btn-view" data-id="${i.id}">👁️</button><button style="background:red; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer" class="btn-del" data-id="${i.id}">X</button></td></tr>`).join('');
         
