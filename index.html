@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Hệ Thống Ôn Tập KHOA HỌC TỰ NHIÊN 9 (PHYSICS)</title>
+    <title>Hệ Thống Ôn Tập Vật Lý 9</title>
     <!-- Hỗ trợ công thức Toán/Lý -->
     <script>
         window.MathJax = {
@@ -177,10 +177,10 @@
         </div>
         <div style="margin-bottom: 15px;">
             <label style="font-size: 0.85rem; font-weight: bold; color: #64748b; display:block; margin-bottom:5px;">Mô tả chi tiết:</label>
-            <textarea id="report-detail" rows="3" placeholder="Ghi rõ lỗi sai đáp án, lỗi chính tả, hoặc lỗi hiển thị..."></textarea>
+            <textarea id="report-detail" rows="3" placeholder="Ghi rõ lỗi sai đáp án, lỗi hiển thị... (Có thể ấn Ctrl+V để dán ảnh lỗi vào đây)"></textarea>
         </div>
         <div style="margin-bottom: 15px;">
-            <label style="font-size: 0.85rem; font-weight: bold; color: #64748b; display:block; margin-bottom:5px;">Đính kèm hình ảnh (Tùy chọn):</label>
+            <label style="font-size: 0.85rem; font-weight: bold; color: #64748b; display:block; margin-bottom:5px;">Đính kèm hình ảnh (Chọn file hoặc ấn Ctrl+V):</label>
             <input type="file" id="report-file" accept="image/*" style="padding: 10px; font-size: 0.85rem;">
             <img id="report-img-preview" src="" style="max-width: 100%; max-height: 150px; margin-top: 10px; display: none; border-radius: 8px; border: 1px solid #ccc; object-fit: contain;">
         </div>
@@ -271,7 +271,7 @@
 
         <section id="screen-start" class="screen active">
             <div class="school-brand">
-                <h1 class="fire-text" style="font-size: 2.2rem;">HỆ THỐNG ÔN TẬP KHOA HỌC TỰ NHIÊN 9 (PHYSICS) </h1>
+                <h1 class="fire-text" style="font-size: 2.2rem;">HỆ THỐNG ÔN TẬP VẬT LÝ 9</h1>
                 <p id="banner-topic" style="color:white; opacity:0.9; margin-top:8px; font-weight: 600; letter-spacing: 0.5px;">Vui lòng chọn chuyên đề bên dưới</p>
             </div>
 
@@ -429,7 +429,7 @@
         </section>
 
         <footer>
-            <div style="font-weight: 800; color: #cbd5e0; margin-bottom: 5px;">HỆ THỐNG LUYỆN TẬP KHOA HỌC TỰ NHIÊN 9 (PHYSICS)</div>
+            <div style="font-weight: 800; color: #cbd5e0; margin-bottom: 5px;">HỆ THỐNG LUYỆN TẬP VẬT LÝ 9</div>
             <div style="font-size: 0.85rem;">Bản quyền thuộc về Trường THCS Thuỷ Phương, Thành phố Huế</div>
         </footer>
     </div>
@@ -510,7 +510,7 @@ const ALL_BANKS = {
             {q:"Cho $R_1 = 15 \\Omega$ và $R_2 = 9 \\Omega$ mắc nối tiếp. U = 12V. Tính hiệu điện thế hai đầu $R_1$ (V).", a:"7,5", e:"$R_{td} = 24$. I = 12/24 = 0,5A. $U_1 = 0,5 * 15 = 7,5V$."},
             {q:"Ba điện trở $15 \\Omega$ mắc song song. Tính điện trở tương đương.", a:"5", e:"$15 / 3 = 5 \\Omega$."},
             {q:"Dây dẫn $12 \\Omega$. Kéo giãn làm chiều dài gấp đôi (thể tích không đổi). Tính điện trở mới.", a:"48", e:"l gấp 2, S giảm 2 -> R tăng 4 lần. 12 * 4 = 48."},
-            {q:"Dây nikêlin $l=20m, R=8\\Omega, \\rho=0,4.10^{-6}\\Omega m$. Tính tiết diện S theo đơn vị $mm^2$.", a:"1", e:"$S = \\rho l/R = 10^{-6} m^2 = 1 mm^2$."}
+            {q:"Dây nikêlin $l=20m, R=8\\Omega, \\rho=0,4.10^{-6}\\Omega m$. Tính tiết diện S theo đơn vị $mm^2$.", a:"1,0", e:"$S = \\rho l/R = 10^{-6} m^2 = 1 mm^2$."}
         ]
     },
     "bai_12": {
@@ -591,7 +591,7 @@ const ALL_BANKS = {
             {q:"Quay khung dây trong từ trường sinh dòng xoay chiều vì", a:"số đường sức từ qua khung biến thiên tăng giảm luân phiên.", o:["số đường sức từ qua khung biến thiên tăng giảm luân phiên.", "khung bằng đồng.", "nam châm vĩnh cửu.", "bôi trơn dầu."], e:"Góc xoay thay đổi diện tích đón đường sức từ."},
             {q:"Quay nam châm càng nhanh thì bóng đèn LED nối cuộn dây càng sáng. Do", a:"tốc độ biến thiên số đường sức từ tăng lên.", o:["nam châm mạnh hơn.", "cuộn dây sinh thêm vòng.", "tốc độ biến thiên số đường sức từ tăng lên.", "lực ma sát làm sáng."], e:"Biến thiên càng nhanh dòng càng mạnh."},
             {q:"Trường hợp KHÔNG xuất hiện dòng cảm ứng:", a:"Đặt cuộn dây đứng yên trong từ trường đều KHÔNG đổi.", o:["Nam châm rơi qua.", "Quay cuộn dây.", "Đặt cuộn dây đứng yên trong từ trường đều KHÔNG đổi.", "Thay đổi dòng điện nam châm điện."], e:"Đứng yên không biến thiên."},
-            {q:"Kí hiệu AC (Alternating Current) chỉ", a:"xoay chiều.", o:["một chiều.", "xoay chiều.", "cực lớn.", "an toàn."], e:"AC là xoay chiều."},
+            {q:"Kí hiệu AC (Alternating Current) chỉ", a:"dòng điện xoay chiều.", o:["một chiều.", "xoay chiều.", "cực lớn.", "an toàn."], e:"AC là xoay chiều."},
             {q:"Cách tạo dòng xoay chiều trong cuộn dây kín:", a:"Cho thanh nam châm quay liên tục trước cuộn dây.", o:["Nam châm chuyển động thẳng 1 phía.", "Cho thanh nam châm quay liên tục trước cuộn dây.", "Nam châm đứng yên.", "Nối pin."], e:"Quay tạo biến thiên luân phiên."},
             {q:"Mắc 2 đèn LED ngược chiều song song, cả 2 cùng sáng. Nguồn điện là:", a:"nguồn điện xoay chiều.", o:["pin.", "acquy.", "nguồn điện xoay chiều.", "hỏng."], e:"Đổi chiều luân phiên mới làm cả 2 LED sáng (nháy)."},
             {q:"Người phát minh hiện tượng cảm ứng điện từ:", a:"Faraday.", o:["Newton.", "Ampere.", "Watt.", "Faraday."], e:"Michael Faraday (1831)."},
@@ -705,6 +705,21 @@ document.querySelectorAll('.modal-overlay').forEach(modal => {
             closeOverlay(modal);
         }
     });
+});
+
+// Xử lý dán ảnh từ Clipboard (Ctrl + V)
+document.addEventListener('paste', function(e) {
+    if (document.getElementById('report-modal').style.display === 'flex' || document.getElementById('report-modal').style.display === 'block') {
+        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (let index in items) {
+            const item = items[index];
+            if (item.kind === 'file' && item.type.indexOf('image/') !== -1) {
+                const blob = item.getAsFile();
+                processImageFile(blob);
+                showCustomAlert("✅ Đã dán ảnh thành công!");
+            }
+        }
+    }
 });
 
 document.getElementById('topic-select').addEventListener('change', (e) => {
@@ -821,11 +836,23 @@ function renderQuestion() {
     const q = currentExam[currentIdx]; const container = document.getElementById('quiz-content'); const labels = ['A', 'B', 'C', 'D'];
     let html = `<div class="section-title">${q.section}</div><div class="card" style="margin-top: -10px;">`;
     
-    let expHtml = q.e; if (q.type === 'mcq') expHtml = `Phương án <b>${q.a}</b> là đúng.<br><br>${q.e}`; else if (q.type === 'short') expHtml = `Đáp án đúng là <b>${q.a}</b>.<br><br>${q.e}`;
-
     if(mode === 'practice') {
         let hintBtnText = unlockedHints.includes(q.id) ? "ĐÃ MỞ GỢI Ý 💡" : `XEM GỢI Ý 💡 (Còn ${maxHintsAllowed - hintsUsed})`;
-        html += `<button class="btn-hint" id="hint-trigger" style="padding: 8px 15px; border-radius: 8px; border: 2px solid var(--accent); background: #fffbeb; color: #b45309; font-weight: bold; cursor: pointer; margin-bottom: 15px;">${hintBtnText}</button><div id="hint-box" class="hint-box" style="display: none; margin-bottom: 15px; padding: 12px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0; font-size: 0.9rem; color: #475569; line-height: 1.5;"><b>Hướng dẫn giải:</b><br>${expHtml}</div>`;
+        
+        // THUẬT TOÁN MỨC 2: Tự động che đáp án trong lời giải
+        let hintHtml = q.e;
+        const mask = `<span style="background:#cbd5e0; color:transparent; border-radius:4px; padding:0 8px; user-select:none; border: 1px solid #94a3b8;" title="Đáp án bị che trong chế độ Luyện tập">?</span>`;
+        
+        if (q.type === 'mcq') {
+            hintHtml = hintHtml.replace(/(Phương án|Đáp án|Chọn)\s+([A-D])/gi, `$1 ${mask}`);
+        } else if (q.type === 'short') {
+            const safeA = q.a.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+            hintHtml = hintHtml.replace(new RegExp(`\\b${safeA}\\b`, 'g'), mask);
+        } else if (q.type === 'tf') {
+            hintHtml = hintHtml.replace(/(Ý\s+[a-d](?:[\s,và]+[a-d])*)\s*(đúng|sai)/gi, `$1 ${mask}`);
+        }
+        
+        html += `<button class="btn-hint" id="hint-trigger" style="padding: 8px 15px; border-radius: 8px; border: 2px solid var(--accent); background: #fffbeb; color: #b45309; font-weight: bold; cursor: pointer; margin-bottom: 15px;">${hintBtnText}</button><div id="hint-box" class="hint-box" style="display: none; margin-bottom: 15px; padding: 12px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0; font-size: 0.9rem; color: #475569; line-height: 1.5;"><b>Hướng dẫn tư duy:</b><br>${hintHtml}</div>`;
     }
     
     if(q.type === 'mcq') {
@@ -1066,19 +1093,28 @@ document.getElementById('btn-cheat-submit').onclick = () => { document.getElemen
 document.getElementById('btn-report-open').onclick = () => { document.getElementById('report-modal').style.display = 'flex'; };
 document.getElementById('btn-report-cancel').onclick = () => { document.getElementById('report-modal').style.display = 'none'; };
 
-document.getElementById('report-file').addEventListener('change', function(e) {
-    const file = e.target.files[0]; if (!file) return; const reader = new FileReader();
+// Hàm xử lý chung file ảnh (Từ nút Chọn File hoặc từ Clipboard)
+function processImageFile(file) {
+    if (!file) return; 
+    const reader = new FileReader();
     reader.onload = function(event) {
         const img = new Image();
         img.onload = function() {
             const canvas = document.createElement('canvas'); const MAX_WIDTH = 800; const MAX_HEIGHT = 800; let width = img.width; let height = img.height;
             if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } } else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } }
             canvas.width = width; canvas.height = height; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
-            reportImageBase64 = canvas.toDataURL('image/jpeg', 0.7); document.getElementById('report-img-preview').src = reportImageBase64; document.getElementById('report-img-preview').style.display = 'block';
+            reportImageBase64 = canvas.toDataURL('image/jpeg', 0.7); 
+            document.getElementById('report-img-preview').src = reportImageBase64; 
+            document.getElementById('report-img-preview').style.display = 'block';
         }
         img.src = event.target.result;
     }
     reader.readAsDataURL(file);
+}
+
+// Bắt sự kiện chọn file từ nút upload
+document.getElementById('report-file').addEventListener('change', function(e) {
+    processImageFile(e.target.files[0]);
 });
 
 document.getElementById('btn-report-submit').onclick = async () => {
