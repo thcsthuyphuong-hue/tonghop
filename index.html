@@ -687,15 +687,58 @@ const closeOverlay = (modal) => {
 };
 
 document.addEventListener('keydown', (e) => {
+    // 1. Chặn các phím tắt sao chép/lưu
     if ((e.ctrlKey && (e.key === 'c' || e.key === 'v' || e.key === 'x' || e.key === 'u' || e.key === 's'))) {
         e.preventDefault(); return false;
     }
+    // 2. Chức năng Đóng bằng phím Escape
     if (e.key === 'Escape') {
         document.querySelectorAll('.modal-overlay').forEach(modal => {
             if (modal.style.display === 'flex' || modal.style.display === 'block') {
                 closeOverlay(modal);
             }
         });
+    }
+    // 3. TÍNH NĂNG MỚI: Kích hoạt nút Xác nhận bằng phím Enter
+    if (e.key === 'Enter') {
+        // Ngoại lệ: Nếu đang gõ mô tả báo lỗi (textarea) thì cho phép Enter xuống dòng bình thường
+        if (e.target.tagName.toLowerCase() === 'textarea') return;
+
+        // Ưu tiên 1: Hộp thoại xác minh Quản trị
+        const adminModal = document.getElementById('admin-auth-modal');
+        if (adminModal.style.display === 'flex' || adminModal.style.display === 'block') {
+            document.getElementById('btn-auth-confirm').click();
+            return; 
+        }
+
+        // Ưu tiên 2: Hộp thoại Hành động cấp cao (Xóa / Đổi cấu hình)
+        const deleteModal = document.getElementById('delete-auth-modal');
+        if (deleteModal.style.display === 'flex' || deleteModal.style.display === 'block') {
+            document.getElementById('btn-delete-confirm').click();
+            return;
+        }
+
+        // Ưu tiên 3: Hộp thoại Nộp bài
+        const finishModal = document.getElementById('confirm-finish-modal');
+        if (finishModal.style.display === 'flex' || finishModal.style.display === 'block') {
+            document.getElementById('btn-modal-confirm').click();
+            return;
+        }
+
+        // Ưu tiên 4: Hộp thoại Báo lỗi
+        const reportModal = document.getElementById('report-modal');
+        if (reportModal.style.display === 'flex' || reportModal.style.display === 'block') {
+            document.getElementById('btn-report-submit').click();
+            return;
+        }
+
+        // Ưu tiên 5: Ở màn hình Đăng nhập (Start Screen) - nhấn Enter khi đang gõ thông tin sẽ tự động vào thi
+        const startScreen = document.getElementById('screen-start');
+        if (startScreen.classList.contains('active')) {
+            if (e.target.tagName.toLowerCase() === 'input') {
+                document.getElementById('btn-init-test').click();
+            }
+        }
     }
 }, true);
 
@@ -772,6 +815,16 @@ function isCurrentQuestionComplete() {
     return false;
 }
 
+function checkShortAns(u, a) {
+    let cleanU = (u||"").toString().replace(/\s+/g, '').replace(/,/g, '.');
+    let cleanA = (a||"").toString().replace(/\s+/g, '').replace(/,/g, '.');
+    if (cleanU === cleanA) return true;
+    if (!isNaN(cleanU) && !isNaN(cleanA) && cleanU !== '' && cleanA !== '') {
+        return Number(cleanU) === Number(cleanA);
+    }
+    return false;
+}
+
 async function loadTimeConfig() {
     try {
         const docRef = await getDoc(doc(db, 'artifacts', appId_fixed, 'public', 'data', 'config', 'timer_settings'));
@@ -836,6 +889,8 @@ function renderQuestion() {
     const q = currentExam[currentIdx]; const container = document.getElementById('quiz-content'); const labels = ['A', 'B', 'C', 'D'];
     let html = `<div class="section-title">${q.section}</div><div class="card" style="margin-top: -10px;">`;
     
+    let expHtml = q.e; if (q.type === 'mcq') expHtml = `Phương án <b>${q.a}</b> là đúng.<br><br>${q.e}`; else if (q.type === 'short') expHtml = `Đáp án đúng là <b>${q.a}</b>.<br><br>${q.e}`;
+
     if(mode === 'practice') {
         let hintBtnText = unlockedHints.includes(q.id) ? "ĐÃ MỞ GỢI Ý 💡" : `XEM GỢI Ý 💡 (Còn ${maxHintsAllowed - hintsUsed})`;
         
@@ -931,7 +986,7 @@ async function calculateResult() {
         const norm = (s) => (s || "").toString().trim().replace(',','.');
         if(q.type === 'mcq' && norm(userAnswers[q.id]||'') === norm(q.a)) score += pMCQ;
         else if(q.type === 'tf') { let cp = 0, u = userAnswers[q.id] || {}; q.sts.forEach((st, si) => { if(u[si] === st.a) cp++; }); score += tfMap[cp] || 0; }
-        else if(q.type === 'short' && norm(userAnswers[q.id]||'') === norm(q.a)) score += pShort;
+        else if(q.type === 'short' && checkShortAns(userAnswers[q.id], q.a)) score += pShort;
     });
     const fs = Number(Math.min(7, score).toFixed(2));
     
@@ -1016,7 +1071,7 @@ function viewAdminReview(docId) {
     arExamData.forEach(q => {
         let qText = q.type === 'tf' ? `Câu ${q.displayNum} (Đúng/Sai)` : `Câu ${q.displayNum}. ${q.q}`; let itemScore = 0, scoreHTML = '';
         if(q.type === 'mcq') { itemScore = norm(arUserAnswers[q.id]||'') === norm(q.a) ? pMCQ : 0; scoreHTML = `<span class="score-badge ${itemScore > 0 ? 'score-plus' : 'score-zero'}">${itemScore > 0 ? '+'+itemScore.toFixed(2) : '0'}đ</span>`; }
-        else if(q.type === 'short') { itemScore = norm(arUserAnswers[q.id]||'') === norm(q.a) ? pShort : 0; scoreHTML = `<span class="score-badge ${itemScore > 0 ? 'score-plus' : 'score-zero'}">${itemScore > 0 ? '+'+itemScore.toFixed(2) : '0'}đ</span>`; }
+        else if(q.type === 'short') { itemScore = checkShortAns(arUserAnswers[q.id], q.a) ? pShort : 0; scoreHTML = `<span class="score-badge ${itemScore > 0 ? 'score-plus' : 'score-zero'}">${itemScore > 0 ? '+'+itemScore.toFixed(2) : '0'}đ</span>`; }
         else if(q.type === 'tf') { let cp = 0; q.sts.forEach((st, si) => { if((arUserAnswers[q.id]||{})[si] === st.a) cp++; }); itemScore = tfMapReview[cp] || 0; scoreHTML = `<span class="score-badge ${itemScore > 0 ? 'score-plus' : 'score-zero'}">Đúng ${cp}/4 ý (${itemScore > 0 ? '+'+itemScore.toFixed(2) : '0'}đ)</span>`; }
         
         h += `<div style="border-left: 5px solid ${itemScore > 0 ? 'var(--success)' : 'var(--danger)'}; padding-left: 15px; margin-bottom: 25px;"><h4>${qText} ${scoreHTML}</h4>`;
@@ -1025,7 +1080,7 @@ function viewAdminReview(docId) {
         } else if(q.type === 'tf') {
             q.sts.forEach((st, si) => { let uV = (arUserAnswers[q.id]||{})[si], isC = (uV === st.a); h += `<div style="padding: 5px; border-bottom:1px solid #e2e8f0;">${st.l} ${st.t} <br><span style="font-size:0.8rem;">Bạn: <b style="color:${isC?'#10b981':'#ef4444'}">${uV===true?'Đúng':(uV===false?'Sai':'Trống')}</b> | Đáp án: <b>${st.a?'Đúng':'Sai'}</b></span></div>`; });
         } else {
-            const isC = norm(arUserAnswers[q.id]||'') === norm(q.a); h += `<div style="padding: 8px; background: #f8fafc; border-radius: 5px;">Bạn nhập: <b style="color:${isC?'#10b981':'#ef4444'}">${arUserAnswers[q.id]||'Trống'}</b> <br> Đáp án: <b style="color:#10b981">${q.a}</b></div>`;
+            const isC = checkShortAns(arUserAnswers[q.id], q.a); h += `<div style="padding: 8px; background: #f8fafc; border-radius: 5px;">Bạn nhập: <b style="color:${isC?'#10b981':'#ef4444'}">${arUserAnswers[q.id]||'Trống'}</b> <br> Đáp án: <b style="color:#10b981">${q.a}</b></div>`;
         }
         h += `</div>`;
     });
@@ -1038,7 +1093,7 @@ document.getElementById('btn-ar-retry').onclick = () => {
     arExamData.forEach(q => {
         let isWrong = false;
         if (q.type === 'mcq' && norm(arUserAnswers[q.id]) !== norm(q.a)) isWrong = true;
-        else if (q.type === 'short' && norm(arUserAnswers[q.id]) !== norm(q.a)) isWrong = true;
+        else if (q.type === 'short' && !checkShortAns(arUserAnswers[q.id], q.a)) isWrong = true;
         else if (q.type === 'tf') { let cp = 0; q.sts.forEach((st, si) => { if((arUserAnswers[q.id]||{})[si] === st.a) cp++; }); if (cp < 4) isWrong = true; }
         if (isWrong) { let clonedQ = JSON.parse(JSON.stringify(q)); clonedQ.displayNum = newQCount++; wrongQuestions.push(clonedQ); }
     });
@@ -1150,7 +1205,7 @@ document.getElementById('btn-view-review').onclick = () => {
     currentExam.forEach(q => {
         let qText = q.type === 'tf' ? `Câu ${q.displayNum} (Đúng/Sai)` : `Câu ${q.displayNum}. ${q.q}`; let itemScore = 0, scoreHTML = '';
         if(q.type === 'mcq') { itemScore = norm(userAnswers[q.id]||'') === norm(q.a) ? pMCQ : 0; scoreHTML = `<span class="score-badge ${itemScore > 0 ? 'score-plus' : 'score-zero'}">${itemScore > 0 ? '+'+itemScore.toFixed(2) : '0'}đ</span>`; } 
-        else if(q.type === 'short') { itemScore = norm(userAnswers[q.id]||'') === norm(q.a) ? pShort : 0; scoreHTML = `<span class="score-badge ${itemScore > 0 ? 'score-plus' : 'score-zero'}">${itemScore > 0 ? '+'+itemScore.toFixed(2) : '0'}đ</span>`; } 
+        else if(q.type === 'short') { itemScore = checkShortAns(userAnswers[q.id], q.a) ? pShort : 0; scoreHTML = `<span class="score-badge ${itemScore > 0 ? 'score-plus' : 'score-zero'}">${itemScore > 0 ? '+'+itemScore.toFixed(2) : '0'}đ</span>`; } 
         else if(q.type === 'tf') { let cp = 0; q.sts.forEach((st, si) => { if((userAnswers[q.id]||{})[si] === st.a) cp++; }); itemScore = tfMapReview[cp] || 0; scoreHTML = `<span class="score-badge ${itemScore > 0 ? 'score-plus' : 'score-zero'}">Đúng ${cp}/4 ý (${itemScore > 0 ? '+'+itemScore.toFixed(2) : '0'}đ)</span>`; }
         
         h += `<div class="card" style="border-left: 8px solid var(--primary)"><h3>${qText} ${scoreHTML}</h3>`;
@@ -1161,7 +1216,7 @@ document.getElementById('btn-view-review').onclick = () => {
             h += `<div style="background:#f1f5f9; padding:15px; border-radius:12px; margin-bottom:15px; font-style:italic;">${q.ctx}</div>`;
             q.sts.forEach((st, si) => { let uV = (userAnswers[q.id]||{})[si], isC = (uV === st.a); h += `<div class="tf-row" style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #f1f5f9;"><span>${st.l} ${st.t}</span><div style="font-size:0.8rem; text-align:right; width: max-content;"><span style="color:${isC?'#10b981':'#ef4444'}">Bạn: <b>${uV===true?'Đúng':(uV===false?'Sai':'?')}</b></span><br><span>Đáp án: <b>${st.a?'Đúng':'Sai'}</b> ${isC?'✓':'✗'}</span></div></div>`; });
         } else {
-            const isC = norm(userAnswers[q.id]||'') === norm(q.a); h += `<p>Bạn nhập: <b style="color:${isC?'#10b981':'#ef4444'}">${userAnswers[q.id]||'Trống'}</b></p><p>Đáp án đúng: <b style="color:#10b981">${q.a}</b> ${isC?'✓':'✗'}</p>`;
+            const isC = checkShortAns(userAnswers[q.id], q.a); h += `<p>Bạn nhập: <b style="color:${isC?'#10b981':'#ef4444'}">${userAnswers[q.id]||'Trống'}</b></p><p>Đáp án đúng: <b style="color:#10b981">${q.a}</b> ${isC?'✓':'✗'}</p>`;
         }
         let expHtml = q.e; if (q.type === 'mcq') expHtml = `Phương án <b>${q.a}</b> là đúng.<br><br>${q.e}`; else if (q.type === 'short') expHtml = `Đáp án đúng là <b>${q.a}</b>.<br><br>${q.e}`; h += `<div class="explanation"><b>Giải thích:</b><br>${expHtml}</div></div>`;
     });
