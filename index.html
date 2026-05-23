@@ -247,7 +247,8 @@
 <div id="admin-auth-modal" class="modal-overlay" style="z-index:20000;">
     <div class="card" style="width:100%; max-width:400px; text-align:center; padding: 30px 20px; margin: auto;">
         <h2 style="color: var(--primary); margin-top:0;">Xác minh Quản trị</h2>
-        <input type="password" id="admin-pw" placeholder="Nhập mật khẩu..." style="margin-bottom:20px; text-align:center;" oncopy="return false" oncut="return false" onpaste="return false">
+        <input type="password" id="admin-pw" placeholder="Nhập mật khẩu..." style="margin-bottom:10px; text-align:center;" oncopy="return false" oncut="return false" onpaste="return false">
+        <div id="caps-warning-admin" style="color: var(--danger); font-size: 0.8rem; font-weight: bold; margin-bottom: 15px; display: none;">⚠️ Đang bật Caps Lock</div>
         <div class="grid-2-col">
             <button class="btn btn-gray" id="btn-auth-cancel">HỦY</button>
             <button class="btn btn-fire" id="btn-auth-confirm">XÁC NHẬN</button>
@@ -260,7 +261,8 @@
         <h2 id="auth-action-title" style="color: var(--danger); margin-top:0;">Xác nhận Hành động</h2>
         <p style="margin-bottom: 15px; color: #475569; font-size:0.9rem;">Vui lòng đăng nhập tài khoản Firebase:</p>
         <input type="email" id="delete-email" placeholder="Email Admin..." style="margin-bottom:10px; text-align:center; border:2px solid #cbd5e0;">
-        <input type="password" id="delete-pw" placeholder="Mật khẩu Admin..." style="margin-bottom:20px; text-align:center; border:2px solid var(--danger);">
+        <input type="password" id="delete-pw" placeholder="Mật khẩu Admin..." style="margin-bottom:10px; text-align:center; border:2px solid var(--danger);">
+        <div id="caps-warning-delete" style="color: var(--danger); font-size: 0.8rem; font-weight: bold; margin-bottom: 15px; display: none;">⚠️ Đang bật Caps Lock</div>
         <div class="grid-2-col">
             <button class="btn btn-gray" id="btn-delete-cancel">HỦY</button>
             <button class="btn btn-fire" style="background: var(--danger);" id="btn-delete-confirm">XÁC NHẬN</button>
@@ -826,6 +828,20 @@ document.querySelectorAll('.modal-overlay').forEach(modal => {
     });
 });
 
+// CẢNH BÁO CAPS LOCK
+function checkCapsLock(e, warningId) {
+    const warningEl = document.getElementById(warningId);
+    if (e.getModifierState && e.getModifierState('CapsLock')) {
+        warningEl.style.display = 'block';
+    } else {
+        warningEl.style.display = 'none';
+    }
+}
+document.getElementById('admin-pw').addEventListener('keyup', function(e) { checkCapsLock(e, 'caps-warning-admin'); });
+document.getElementById('admin-pw').addEventListener('mousedown', function(e) { checkCapsLock(e, 'caps-warning-admin'); });
+document.getElementById('delete-pw').addEventListener('keyup', function(e) { checkCapsLock(e, 'caps-warning-delete'); });
+document.getElementById('delete-pw').addEventListener('mousedown', function(e) { checkCapsLock(e, 'caps-warning-delete'); });
+
 document.addEventListener('paste', function(e) {
     if (document.getElementById('report-modal').style.display === 'flex' || document.getElementById('report-modal').style.display === 'block') {
         const items = (e.clipboardData || e.originalEvent.clipboardData).items;
@@ -1028,6 +1044,13 @@ function checkShortAns(u, a) {
     return false;
 }
 
+// BỘ LỌC TỰ ĐỘNG XUỐNG DÒNG VÀ IN ĐẬM CÁC NHẬN ĐỊNH (1), (2)...
+function formatQuestionText(text) {
+    if (!text) return "";
+    // Tìm các cụm (số) và tự động thay bằng lệnh xuống dòng + in đậm
+    return text.replace(/\s*(\(\d+\))\s+/g, '<br>&nbsp;&nbsp;<b style="color: var(--primary);">$1</b> ');
+}
+
 async function loadTimeConfig() {
     try {
         const docRef = await getDoc(doc(db, 'artifacts', appId_fixed, 'public', 'data', 'config', 'timer_settings'));
@@ -1110,20 +1133,20 @@ function renderQuestion() {
         html += `<button class="btn-hint" id="hint-trigger" style="padding: 8px 15px; border-radius: 8px; border: 2px solid var(--accent); background: #fffbeb; color: #b45309; font-weight: bold; cursor: pointer; margin-bottom: 15px;">${hintBtnText}</button><div id="hint-box" class="hint-box" style="display: none; margin-bottom: 15px; padding: 12px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0; font-size: 0.9rem; color: #475569; line-height: 1.5;"><b>Hướng dẫn tư duy:</b><br>${hintHtml}</div>`;
     }
     if(q.type === 'mcq') {
-        html += `<h3>Câu ${q.displayNum}. ${q.q}</h3>`;
+        html += `<h3>Câu ${q.displayNum}. ${formatQuestionText(q.q)}</h3>`;
         if(!q.shuffledOptions) q.shuffledOptions = shuffle([...q.o]);
         q.shuffledOptions.forEach((o, idx) => {
             const isSelected = userAnswers[q.id] === o;
             html += `<div class="option ${isSelected?'selected':''}" data-ans="${o.replace(/"/g, '&quot;')}"><b>${labels[idx]}.</b> ${o}</div>`;
         });
     } else if(q.type === 'tf') {
-        html += `<h3>Câu ${q.displayNum}</h3><div style="background:#f1f5f9; padding:15px; border-radius:12px; margin-bottom:15px; font-style:italic;">${q.ctx}</div>`;
+        html += `<h3>Câu ${q.displayNum}</h3><div style="background:#f1f5f9; padding:15px; border-radius:12px; margin-bottom:15px; font-style:italic;">${formatQuestionText(q.ctx)}</div>`;
         q.sts.forEach((st, si) => {
             let val = (userAnswers[q.id]||{})[si];
             html += `<div class="tf-row"><span><b>${st.l}</b> ${st.t}</span><div><button class="tf-btn ${val===true?'active-t':''}" data-si="${si}" data-val="true">Đúng</button><button class="tf-btn ${val===false?'active-f':''}" data-si="${si}" data-val="false">Sai</button></div></div>`;
         });
     } else {
-        html += `<h3>Câu ${q.displayNum}. ${q.q}</h3>`;
+        html += `<h3>Câu ${q.displayNum}. ${formatQuestionText(q.q)}</h3>`;
         const currentVal = (userAnswers[q.id] || "").padEnd(4, " ");
         html += `<div class="short-answer-wrapper"><input type="text" class="char-slot" maxlength="1" value="${currentVal[0] !== ' ' ? currentVal[0] : ''}" data-idx="0"><input type="text" class="char-slot" maxlength="1" value="${currentVal[1] !== ' ' ? currentVal[1] : ''}" data-idx="1"><input type="text" class="char-slot" maxlength="1" value="${currentVal[2] !== ' ' ? currentVal[2] : ''}" data-idx="2"><input type="text" class="char-slot" maxlength="1" value="${currentVal[3] !== ' ' ? currentVal[3] : ''}" data-idx="3"></div><p style="color:var(--danger); font-size:0.8rem; font-weight:bold; text-align:center;">Lưu ý: Nhập mỗi ký tự vào một ô</p>`;
     }
@@ -1323,7 +1346,7 @@ function viewAdminReview(docId) {
     const pMCQ = 3.0 / (arExamData.filter(q=>q.type==='mcq').length||1), pTF = 2.0 / (arExamData.filter(q=>q.type==='tf').length||1), pShort = 2.0 / (arExamData.filter(q=>q.type==='short').length||1);
     const tfMapReview = {0:0, 1: pTF*0.1/0.5, 2: pTF*0.25/0.5, 3: pTF*0.35/0.5, 4: pTF};
     arExamData.forEach(q => {
-        let qText = q.type === 'tf' ? `Câu ${q.displayNum} (Đúng/Sai)` : `Câu ${q.displayNum}. ${q.q}`; let itemScore = 0, scoreHTML = '';
+        let qText = q.type === 'tf' ? `Câu ${q.displayNum} (Đúng/Sai)` : `Câu ${q.displayNum}. ${formatQuestionText(q.q)}`; let itemScore = 0, scoreHTML = '';
         if(q.type === 'mcq') { itemScore = norm(arUserAnswers[q.id]||'') === norm(q.a) ? pMCQ : 0; scoreHTML = `<span class="score-badge ${itemScore > 0 ? 'score-plus' : 'score-zero'}">${itemScore > 0 ? '+'+itemScore.toFixed(2) : '0'}đ</span>`; }
         else if(q.type === 'short') { itemScore = checkShortAns(arUserAnswers[q.id], q.a) ? pShort : 0; scoreHTML = `<span class="score-badge ${itemScore > 0 ? 'score-plus' : 'score-zero'}">${itemScore > 0 ? '+'+itemScore.toFixed(2) : '0'}đ</span>`; }
         else if(q.type === 'tf') { let cp = 0; q.sts.forEach((st, si) => { if((arUserAnswers[q.id]||{})[si] === st.a) cp++; }); itemScore = tfMapReview[cp] || 0; scoreHTML = `<span class="score-badge ${itemScore > 0 ? 'score-plus' : 'score-zero'}">Đúng ${cp}/4 ý (${itemScore > 0 ? '+'+itemScore.toFixed(2) : '0'}đ)</span>`; }
@@ -1624,7 +1647,7 @@ document.getElementById('btn-view-review').onclick = () => {
     const pMCQ = 3.0 / (currentExam.filter(q=>q.type==='mcq').length||1), pTF = 2.0 / (currentExam.filter(q=>q.type==='tf').length||1), pShort = 2.0 / (currentExam.filter(q=>q.type==='short').length||1);
     const tfMapReview = {0:0, 1: pTF*0.1/0.5, 2: pTF*0.25/0.5, 3: pTF*0.35/0.5, 4: pTF};
     currentExam.forEach(q => {
-        let qText = q.type === 'tf' ? `Câu ${q.displayNum} (Đúng/Sai)` : `Câu ${q.displayNum}. ${q.q}`; let itemScore = 0, scoreHTML = '';
+        let qText = q.type === 'tf' ? `Câu ${q.displayNum} (Đúng/Sai)` : `Câu ${q.displayNum}. ${formatQuestionText(q.q)}`; let itemScore = 0, scoreHTML = '';
         if(q.type === 'mcq') { itemScore = norm(userAnswers[q.id]||'') === norm(q.a) ? pMCQ : 0; scoreHTML = `<span class="score-badge ${itemScore > 0 ? 'score-plus' : 'score-zero'}">${itemScore > 0 ? '+'+itemScore.toFixed(2) : '0'}đ</span>`; } 
         else if(q.type === 'short') { itemScore = checkShortAns(userAnswers[q.id], q.a) ? pShort : 0; scoreHTML = `<span class="score-badge ${itemScore > 0 ? 'score-plus' : 'score-zero'}">${itemScore > 0 ? '+'+itemScore.toFixed(2) : '0'}đ</span>`; } 
         else if(q.type === 'tf') { let cp = 0; q.sts.forEach((st, si) => { if((userAnswers[q.id]||{})[si] === st.a) cp++; }); itemScore = tfMapReview[cp] || 0; scoreHTML = `<span class="score-badge ${itemScore > 0 ? 'score-plus' : 'score-zero'}">Đúng ${cp}/4 ý (${itemScore > 0 ? '+'+itemScore.toFixed(2) : '0'}đ)</span>`; }
@@ -1633,7 +1656,7 @@ document.getElementById('btn-view-review').onclick = () => {
             (q.shuffledOptions || q.o).forEach((o, idx) => { const isC = norm(o) === norm(q.a), isU = userAnswers[q.id] === o; h += `<div class="option ${isC?'correct':(isU?'wrong':'')}"><b>${labels[idx]}.</b> ${o} ${isC?'✓':(isU?'✗':'')}</div>`; });
             if(norm(userAnswers[q.id]||'') !== norm(q.a)) h += `<div class="review-choice-box review-wrong" style="padding:10px; border-radius:8px; margin-top:10px; background:#fee2e2; border:1px solid #ef4444;">Bạn chọn: <b>${userAnswers[q.id]||'Chưa chọn'}</b>. Đáp án: <b style="color:#10b981">${q.a}</b></div>`;
         } else if(q.type === 'tf') {
-            h += `<div style="background:#f1f5f9; padding:15px; border-radius:12px; margin-bottom:15px; font-style:italic;">${q.ctx}</div>`;
+            h += `<div style="background:#f1f5f9; padding:15px; border-radius:12px; margin-bottom:15px; font-style:italic;">${formatQuestionText(q.ctx)}</div>`;
             q.sts.forEach((st, si) => { let uV = (userAnswers[q.id]||{})[si], isC = (uV === st.a); h += `<div class="tf-row" style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #f1f5f9;"><span>${st.l} ${st.t}</span><div style="font-size:0.8rem; text-align:right; width: max-content;"><span style="color:${isC?'#10b981':'#ef4444'}">Bạn: <b>${uV===true?'Đúng':(uV===false?'Sai':'?')}</b></span><br><span>Đáp án: <b>${st.a?'Đúng':'Sai'}</b> ${isC?'✓':'✗'}</span></div></div>`; });
         } else {
             const isC = checkShortAns(userAnswers[q.id], q.a); h += `<p>Bạn nhập: <b style="color:${isC?'#10b981':'#ef4444'}">${userAnswers[q.id]||'Trống'}</b></p><p>Đáp án đúng: <b style="color:#10b981">${q.a}</b> ${isC?'✓':'✗'}</p>`;
