@@ -407,6 +407,7 @@
                             <input type="number" id="cfg-max-hints" value="3" style="padding: 10px; margin-top:5px;">
                         </div>
                         <button id="btn-save-config" class="btn btn-fire" style="padding: 12px 20px; font-size: 0.8rem; width: 100%;">CẬP NHẬT CẤU HÌNH</button>
+                        <button id="btn-toggle-autoscale" class="btn btn-gray" style="padding: 12px 20px; font-size: 0.8rem; width: 100%; border: 2px solid #cbd5e0; background: white;"><span id="autoscale-status">🟢</span> BẬT/TẮT TỰ ĐỘNG THU PHÓNG (PC)</button>
                     </div>
                 </div>
 
@@ -474,6 +475,7 @@
                     <div class="grid-2-col">
                         <button id="btn-download-template" class="btn btn-gray" style="background: #e2e8f0; color: #1e293b;"><span style="font-size: 1.2rem; margin-right: 5px;">⬇️</span> TẢI FILE MẪU EXCEL</button>
                         <button id="btn-trigger-import" class="btn btn-fire" style="background: var(--success);"><span style="font-size: 1.2rem; margin-right: 5px;">📤</span> IMPORT EXCEL</button>
+                        <button id="btn-delete-all-students" class="btn btn-fire" style="background: var(--danger); grid-column: span 2;"><span style="font-size: 1.2rem; margin-right: 5px;">🗑️</span> XÓA TOÀN BỘ DANH SÁCH HS</button>
                         <input type="file" id="file-import-students" accept=".xlsx, .xls" style="display: none;">
                     </div>
                 </div>
@@ -553,6 +555,8 @@ let testTimeLimit = 2700;
 let maxHintsAllowed = 3; 
 let hintsUsed = 0;       
 let unlockedHints = [];  
+
+let isAutoScaleEnabled = true; // Biến kiểm soát chế độ thu phóng màn hình PC
 
 let canCheckCheat = false; 
 let isProcessingCheat = false;
@@ -751,7 +755,8 @@ function autoScaleApp() {
 
     const isReviewing = reviewArea && reviewArea.style.display === 'block';
     
-    if ((adminScreen && adminScreen.classList.contains('active')) || window.innerWidth <= 768 || isReviewing) {
+    // NẾU TÍNH NĂNG THU PHÓNG BỊ TẮT TỪ ADMIN HOẶC ĐANG Ở MÀN HÌNH REVIEW/ADMIN/MOBILE
+    if (!isAutoScaleEnabled || (adminScreen && adminScreen.classList.contains('active')) || window.innerWidth <= 768 || isReviewing) {
         container.style.transform = `none`; wrapper.style.height = 'auto'; wrapper.style.overflow = 'visible';
         container.style.marginBottom = '50px'; return; 
     }
@@ -1030,6 +1035,14 @@ async function loadTimeConfig() {
             const data = docRef.data();
             practiceTimeLimit = (data.practice || 45) * 60; testTimeLimit = (data.test || 45) * 60; maxHintsAllowed = data.maxHints !== undefined ? data.maxHints : 3;
             document.getElementById('cfg-time-practice').value = data.practice || 45; document.getElementById('cfg-time-test').value = data.test || 45; document.getElementById('cfg-max-hints').value = maxHintsAllowed;
+            
+            // Tải trạng thái Thu phóng từ Database
+            if(data.autoScale !== undefined) {
+                isAutoScaleEnabled = data.autoScale;
+                const statusEl = document.getElementById('autoscale-status');
+                if(statusEl) statusEl.innerText = isAutoScaleEnabled ? '🟢' : '🔴';
+                autoScaleApp();
+            }
         }
     } catch(e) {}
 }
@@ -1246,11 +1259,30 @@ async function renderAdminStudents() {
                 && ((fSchool.value === 'all') || (i.school === fSchool.value));
         });
         
-        // Sort by School -> Class -> Name
+        // HÀM TÁCH TÊN VÀ HỌ ĐỆM ĐỂ SẮP XẾP CHUẨN VIỆT NAM
+        const getVnNameParts = (fullName) => {
+            const parts = (fullName || '').trim().split(/\s+/);
+            if (parts.length === 0) return { first: '', rest: '' };
+            if (parts.length === 1) return { first: parts[0], rest: '' };
+            const first = parts.pop(); // Từ cuối cùng là Tên
+            const rest = parts.join(' '); // Phần còn lại là Họ và đệm
+            return { first, rest };
+        };
+
+        // Sắp xếp: Trường -> Lớp (số tự nhiên) -> Tên (Bảng chữ cái VN) -> Họ đệm
         data.sort((a,b) => {
-            if (a.school !== b.school) return (a.school || '').localeCompare(b.school || '');
-            if (a.class !== b.class) return (a.class || '').localeCompare(b.class || '');
-            return (a.name || '').localeCompare(b.name || '');
+            if (a.school !== b.school) return (a.school || '').localeCompare(b.school || '', 'vi', { numeric: true });
+            if (a.class !== b.class) return (a.class || '').localeCompare(b.class || '', 'vi', { numeric: true });
+            
+            const nameA = getVnNameParts(a.name);
+            const nameB = getVnNameParts(b.name);
+            
+            // So sánh Tên trước
+            const firstCompare = nameA.first.localeCompare(nameB.first, 'vi', { sensitivity: 'base' });
+            if (firstCompare !== 0) return firstCompare;
+            
+            // Nếu trùng Tên, so sánh Họ và đệm
+            return nameA.rest.localeCompare(nameB.rest, 'vi', { sensitivity: 'base' });
         });
 
         if(data.length === 0) {
@@ -1339,6 +1371,14 @@ document.getElementById('btn-trigger-import').onclick = () => {
     document.getElementById('file-import-students').click();
 };
 
+document.getElementById('btn-delete-all-students').onclick = () => { 
+    pendingAuthAction = 'delete_all_students'; 
+    if (auth.currentUser && !auth.currentUser.isAnonymous) { executePendingAdminAction(); return; }
+    document.getElementById('auth-action-title').innerText = "Xác nhận Xóa TOÀN BỘ HS"; 
+    document.getElementById('delete-pw').value = ''; document.getElementById('delete-email').value = '';
+    document.getElementById('delete-auth-modal').style.display = 'flex'; 
+};
+
 document.getElementById('file-import-students').onchange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -1352,24 +1392,40 @@ document.getElementById('file-import-students').onchange = (e) => {
             const json = XLSX.utils.sheet_to_json(worksheet);
             
             importedStudentsCache = [];
+            let duplicateCount = 0;
+            
             json.forEach(row => {
-                let name = row["Họ và Tên"] || row["Họ tên"] || row["Name"];
-                let cls = row["Lớp"] || row["Class"];
-                let sbd = row["SBD"] || row["Số báo danh"];
-                let sch = row["Trường"] || row["School"] || "THCS Thuỷ Phương"; // Default
+                let name = (row["Họ và Tên"] || row["Họ tên"] || row["Name"] || "").toString().trim();
+                let cls = (row["Lớp"] || row["Class"] || "").toString().trim();
+                let sbd = (row["SBD"] || row["Số báo danh"] || "").toString().trim();
+                let sch = (row["Trường"] || row["School"] || "THCS Thuỷ Phương").toString().trim();
                 if(name) {
-                    importedStudentsCache.push({ name: name.toString().trim(), class: (cls||"").toString().trim(), sbd: (sbd||"").toString().trim(), school: sch.toString().trim(), timestamp: new Date().toISOString() });
+                    // Lọc trùng lặp dựa trên Tên, Lớp và Trường
+                    let isDupDB = globalStudentList.some(s => s.name === name && s.class === cls && s.school === sch);
+                    let isDupCache = importedStudentsCache.some(s => s.name === name && s.class === cls && s.school === sch);
+                    
+                    if(!isDupDB && !isDupCache) {
+                        importedStudentsCache.push({ name: name, class: cls, sbd: sbd, school: sch, timestamp: new Date().toISOString() });
+                    } else {
+                        duplicateCount++;
+                    }
                 }
             });
             
             if (importedStudentsCache.length > 0) {
                 pendingAuthAction = 'import_students'; 
                 if (auth.currentUser && !auth.currentUser.isAnonymous) { executePendingAdminAction(); return; }
-                document.getElementById('auth-action-title').innerText = "Xác nhận Import " + importedStudentsCache.length + " HS"; 
+                let msg = "Xác nhận Import " + importedStudentsCache.length + " HS";
+                if(duplicateCount > 0) msg += " (Bỏ qua " + duplicateCount + " trùng)";
+                document.getElementById('auth-action-title').innerText = msg; 
                 document.getElementById('delete-pw').value = ''; document.getElementById('delete-email').value = '';
                 document.getElementById('delete-auth-modal').style.display = 'flex'; 
             } else {
-                showCustomAlert("File không có dữ liệu hợp lệ!");
+                if(duplicateCount > 0) {
+                    showCustomAlert(`Đã bỏ qua ${duplicateCount} học sinh do trùng lặp! Không có dữ liệu mới.`);
+                } else {
+                    showCustomAlert("File không có dữ liệu hợp lệ!");
+                }
             }
         } catch(error) {
             showCustomAlert("Lỗi đọc file Excel. Vui lòng dùng file mẫu!");
@@ -1399,6 +1455,19 @@ async function executePendingAdminAction() {
         await deleteDoc(doc(db, 'artifacts', appId_fixed, 'public', 'data', collectionStudents, currentDeleteId)); 
         renderAdminStudents(); currentDeleteId = null; 
     } 
+    else if (pendingAuthAction === 'delete_all_students') {
+        showCustomAlert("Đang xóa toàn bộ học sinh, vui lòng đợi...");
+        try {
+            const snap = await getDocs(collection(db, 'artifacts', appId_fixed, 'public', 'data', collectionStudents));
+            const deletePromises = [];
+            snap.forEach(docSnap => {
+                deletePromises.push(deleteDoc(doc(db, 'artifacts', appId_fixed, 'public', 'data', collectionStudents, docSnap.id)));
+            });
+            await Promise.all(deletePromises);
+            showCustomAlert("✅ Đã làm sạch toàn bộ danh sách học sinh!");
+            renderAdminStudents();
+        } catch(e) { showCustomAlert("Lỗi khi xóa dữ liệu!"); }
+    }
     else if (pendingAuthAction === 'import_students' && importedStudentsCache.length > 0) {
         showCustomAlert("Đang tiến hành nhập dữ liệu, vui lòng đợi...");
         try {
@@ -1411,13 +1480,32 @@ async function executePendingAdminAction() {
             renderAdminStudents();
         } catch(e) { showCustomAlert("Lỗi khi tải dữ liệu lên Server!"); }
     }
+    else if (pendingAuthAction === 'toggle_autoscale') {
+        const newState = !isAutoScaleEnabled;
+        try {
+            // Dùng { merge: true } để không ghi đè mất các setting khác
+            await setDoc(doc(db, 'artifacts', appId_fixed, 'public', 'data', 'config', 'timer_settings'), { autoScale: newState, lastUpdated: new Date().toISOString() }, { merge: true }); 
+            isAutoScaleEnabled = newState;
+            document.getElementById('autoscale-status').innerText = isAutoScaleEnabled ? '🟢' : '🔴';
+            showCustomAlert(`Đã ${isAutoScaleEnabled ? 'BẬT' : 'TẮT'} tính năng thu phóng (PC) thành công!`);
+            autoScaleApp();
+        } catch(e) { showCustomAlert("Lỗi khi lưu cấu hình!"); }
+    }
     else if (pendingAuthAction === 'config') {
         const pTime = parseInt(document.getElementById('cfg-time-practice').value), tTime = parseInt(document.getElementById('cfg-time-test').value), mHints = parseInt(document.getElementById('cfg-max-hints').value);
         if(isNaN(pTime) || isNaN(tTime) || isNaN(mHints) || pTime <= 0 || tTime <= 0 || mHints < 0) { showCustomAlert("⚠️ Vui lòng nhập số hợp lệ!"); return; }
-        try { await setDoc(doc(db, 'artifacts', appId_fixed, 'public', 'data', 'config', 'timer_settings'), { practice: pTime, test: tTime, maxHints: mHints, lastUpdated: new Date().toISOString() }); practiceTimeLimit = pTime * 60; testTimeLimit = tTime * 60; maxHintsAllowed = mHints; showCustomAlert("Đã cập nhật cấu hình thành công!"); } catch(e) { showCustomAlert("Lỗi khi lưu cấu hình!"); }
+        try { await setDoc(doc(db, 'artifacts', appId_fixed, 'public', 'data', 'config', 'timer_settings'), { practice: pTime, test: tTime, maxHints: mHints, autoScale: isAutoScaleEnabled, lastUpdated: new Date().toISOString() }, { merge: true }); practiceTimeLimit = pTime * 60; testTimeLimit = tTime * 60; maxHintsAllowed = mHints; showCustomAlert("Đã cập nhật cấu hình thành công!"); } catch(e) { showCustomAlert("Lỗi khi lưu cấu hình!"); }
     } else if (pendingAuthAction === 'inbox') { renderAdminInbox(); }
     pendingAuthAction = null;
 }
+
+document.getElementById('btn-toggle-autoscale').onclick = () => { 
+    pendingAuthAction = 'toggle_autoscale'; 
+    if (auth.currentUser && !auth.currentUser.isAnonymous) { executePendingAdminAction(); return; }
+    document.getElementById('auth-action-title').innerText = "Xác nhận Đổi Thu Phóng"; 
+    document.getElementById('delete-pw').value = ''; document.getElementById('delete-email').value = '';
+    document.getElementById('delete-auth-modal').style.display = 'flex'; 
+};
 
 document.getElementById('btn-save-config').onclick = () => { 
     pendingAuthAction = 'config'; 
