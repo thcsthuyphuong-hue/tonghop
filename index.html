@@ -1,5 +1,5 @@
 <!-- MÃ NGUỒN ỔN ĐỊNH NHẤT - CHUẨN THANG 7, KHÓA LƯU KÉP, TỐI ƯU MOBILE/DESKTOP, NGÂN HÀNG ĐỀ TỔNG HỢP -->
-<!-- CẬP NHẬT: QUẢN LÝ DANH SÁCH HỌC SINH TỪ EXCEL, AUTOCOMPLETE TÌM KIẾM, TỰ ĐỘNG ĐIỀN VÀ KHÓA THÔNG TIN -->
+<!-- CẬP NHẬT: IMPORT ĐỀ THI TỪ EXCEL LÊN FIREBASE, THUẬT TOÁN BỐC ĐỀ NGẪU NHIÊN 12-4-4 -->
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -85,7 +85,7 @@
         input:focus, textarea:focus, select:focus { border-color: #ff4e00; background: #fffbeb; }
         input[readonly] { background-color: #f1f5f9; cursor: not-allowed; color: #64748b; border-color: #cbd5e0;}
 
-        /* CSS MỚI CHO AUTOCOMPLETE */
+        /* CSS AUTOCOMPLETE */
         .autocomplete { position: relative; display: block; }
         .autocomplete-items { position: absolute; border: 1px solid #d4d4d4; border-bottom: none; border-top: none; z-index: 99; top: 100%; left: 0; right: 0; border-radius: 0 0 10px 10px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-height: 200px; overflow-y: auto; background: white;}
         .autocomplete-items div { padding: 12px; cursor: pointer; background-color: #fff; border-bottom: 1px solid #e2e8f0; font-size: 0.95rem; }
@@ -110,6 +110,126 @@
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 20000; display: none; justify-content: center; align-items: center; padding: 15px; overflow-y: auto;}
         .modal-box { background: white; padding: 30px; border-radius: 20px; width: 100%; max-width: 500px; text-align: center; position: relative; margin: auto; box-shadow: 0 15px 40px rgba(0,0,0,0.3); }
         
+        #cheat-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); z-index: 30000; display: none; justify-content: center; align-items: center; text-align: center; padding: 20px;}
+        footer { padding: 30px 20px; text-align: center; color: #94a3b8; background: #0f172a; font-size: 0.85rem; border-top: 2px solid #1e293b; margin-top: auto; }
+
+        .badge-mode { padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; color: white; text-transform: uppercase; }
+        .badge-test { background: var(--danger); }
+        .badge-practice { background: var(--secondary); }
+
+        .short-answer-wrapper { display: flex; gap: 10px; justify-content: center; margin: 25px 0; flex-wrap: wrap; }
+        input.char-slot { width: 45px !important; padding: 0 !important; height: 55px; border: 3px solid #cbd5e0; border-radius: 10px; text-align: center; font-size: 1.5rem; font-weight: 900; color: var(--primary); outline: none; transition: 0.2s; }
+        input.char-slot:focus { border-color: var(--accent); background: #fff7ed; transform: scale(1.05); }
+
+        .explanation { margin-top: 15px; padding: 15px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0; font-size: 0.95rem; color: #334155; line-height: 1.6; }
+        .score-badge { float: right; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
+        .score-plus { background: #dcfce7; color: #166534; }
+        .score-zero { background: #fee2e2; color: #991b1b; }
+
+        @media (max-width: 768px) {
+            .container { min-height: 100%; height: auto; }
+            .screen { padding: 15px 10px; }
+            .school-brand { padding: 25px 15px; border-radius: 0 0 30px 30px; margin-bottom: 15px; width: 100%; border-bottom: 3px solid #ff4e00; }
+            .fire-text { font-size: 1.6rem !important; }
+            .card-start { margin-top: -15px; padding: 20px 15px; }
+            .grid-2-col { grid-template-columns: 1fr; gap: 10px; } 
+            .card { padding: 20px 15px; }
+            h3 { font-size: 1.1rem; line-height: 1.5; }
+            .option { padding: 12px 15px; font-size: 0.95rem; }
+            .tf-row { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .tf-row > span { margin-bottom: 5px; display: block; }
+            .tf-row > div { width: 100%; display: flex; justify-content: space-between; }
+            .tf-btn { flex: 1; text-align: center; padding: 12px; } 
+            input.char-slot { width: 40px !important; padding: 0 !important; height: 50px; font-size: 1.3rem; }
+            .btn-admin-float, .btn-report-float { font-size: 0.7rem; padding: 8px 15px; bottom: 10px; z-index: 10000; }
+            .btn-report-float { left: 10px; }
+            .btn-admin-float { right: 10px; }
+            .timer { padding: 6px 15px; font-size: 1rem; }
+            #final-score { font-size: 4rem !important; }
+            .wish-title { font-size: 3rem; }
+            .wish-sub { font-size: 1.2rem; }
+            .cheat-warning-box { font-size: 1rem; padding: 15px; width: 90%; }
+            .modal-box { padding: 20px 15px; width: 95%; }
+            .admin-controls { flex-direction: column; align-items: stretch; }
+            .admin-controls > div, .admin-controls > button { width: 100%; margin-bottom: 5px; }
+            .admin-tabs { flex-direction: column; }
+            .admin-tab { text-align: center; border-left: 3px solid transparent; border-bottom: none; }
+            .admin-tab.active { border-bottom: none; border-left-color: var(--primary); background: #f1f5f9;}
+        }
+    </style>
+</head>
+
+<body oncontextmenu="return false" oncopy="return false" oncut="return false" onpaste="return false">
+
+<div id="custom-alert">⚠️ Vui lòng hoàn thành câu hỏi này!</div>
+
+<div id="wish-overlay">
+    <canvas id="fire-canvas"></canvas>
+    <div class="wish-content">
+        <h1 class="wish-title">🔥 CỐ LÊN! 🔥</h1>
+        <p class="wish-sub">Chúc bạn hoàn thành tốt bài làm!</p>
+        <div id="wish-cheat-info" class="cheat-warning-box">HỆ THỐNG SẼ TỰ ĐỘNG NỘP BÀI<br>NẾU CHUYỂN TAB, CHIA ĐÔI MÀN HÌNH<br>HOẶC MỞ ỨNG DỤNG KHÁC</div>
+    </div>
+</div>
+
+<button id="btn-admin-open" class="btn-admin-float">QUẢN TRỊ 🔐</button>
+<button id="btn-report-open" class="btn-report-float">BÁO LỖI ⚠️</button>
+
+<div id="confirm-finish-modal" class="modal-overlay">
+    <div class="modal-box">
+        <h2 style="color: var(--primary); margin-top:0;">Xác nhận nộp bài?</h2>
+        <p style="color:#475569; line-height: 1.5;">Bạn có chắc chắn muốn kết thúc bài làm và xem kết quả ngay không?</p>
+        <div class="grid-2-col" style="margin-top:20px;">
+            <button id="btn-modal-cancel" class="btn btn-gray">LÀM TIẾP</button>
+            <button id="btn-modal-confirm" class="btn btn-fire">NỘP BÀI</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Báo Lỗi Học Sinh -->
+<div id="report-modal" class="modal-overlay">
+    <div class="modal-box" style="text-align: left;">
+        <h2 style="color: var(--danger); text-align: center; margin-top: 0; margin-bottom: 20px; font-size: 1.4rem;">GỬI BÁO LỖI</h2>
+        <div style="margin-bottom: 15px;">
+            <label style="font-size: 0.85rem; font-weight: bold; color: #64748b; display:block; margin-bottom:5px;">Vị trí câu lỗi / Lỗi gặp phải:</label>
+            <input type="text" id="report-question" placeholder="Ví dụ: Câu 5 phần Đ/S, Hình ảnh câu 2...">
+        </div>
+        <div style="margin-bottom: 15px;">
+            <label style="font-size: 0.85rem; font-weight: bold; color: #64748b; display:block; margin-bottom:5px;">Mô tả chi tiết:</label>
+            <textarea id="report-detail" rows="3" placeholder="Ghi rõ lỗi sai đáp án, lỗi hiển thị... (Có thể ấn Ctrl+V để dán ảnh lỗi vào đây)"></textarea>
+        </div>
+        <div style="margin-bottom: 15px;">
+            <label style="font-size: 0.85rem; font-weight: bold; color: #64748b; display:block; margin-bottom:5px;">Đính kèm hình ảnh (Chọn file hoặc ấn Ctrl+V):</label>
+            <input type="file" id="report-file" accept="image/*" style="padding: 10px; font-size: 0.85rem;">
+            <img id="report-img-preview" src="" style="max-width: 100%; max-height: 150px; margin-top: 10px; display: none; border-radius: 8px; border: 1px solid #ccc; object-fit: contain;">
+        </div>
+        <div class="grid-2-col" style="margin-top:25px;">
+            <button id="btn-report-cancel" class="btn btn-gray">HỦY</button>
+            <button id="btn-report-submit" class="btn btn-fire" style="background: var(--danger);">GỬI PHẢN HỒI</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Cảnh Báo Gian Lận -->
+<div id="cheat-modal">
+    <div style="background: white; padding: 40px 25px; border-radius: 20px; max-width: 500px; width: 90%; border: 8px solid var(--danger);">
+        <h1 style="color:var(--danger); font-size: 2.5rem; margin:0">CẢNH BÁO!</h1>
+        <p style="font-size: 1.1rem; margin: 20px 0; color: #1e293b; font-weight: bold; line-height: 1.5;">
+            Hệ thống phát hiện bạn đã rời khỏi trình duyệt, chia đôi màn hình hoặc mở cửa sổ nổi. Bài làm đã tự động thu lại vì lý do bảo mật.
+        </p>
+        <button id="btn-cheat-submit" class="btn btn-fire" style="width:100%;">XEM KẾT QUẢ</button>
+    </div>
+</div>
+
+<!-- Modal Hộp thư báo lỗi (Admin) -->
+<div id="admin-inbox-modal" class="modal-overlay">
+    <div class="card" style="width:100%; max-width:900px; text-align:left; max-height: 90vh; overflow-y: auto; margin: auto;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px;">
+            <h2 style="color: var(--danger); margin:0; font-size: 1.2rem;">HỘP THƯ BÁO LỖI 📩</h2>
+            <button id="btn-inbox-close" class="btn btn-gray" style="padding: 8px 15px; font-size:0.8rem;">ĐÓNG ✖</button>
+        </div>
+        <div class="admin-table-container">
+            <table class="admin-table" st        
         #cheat-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); z-index: 30000; display: none; justify-content: center; align-items: center; text-align: center; padding: 20px;}
         footer { padding: 30px 20px; text-align: center; color: #94a3b8; background: #0f172a; font-size: 0.85rem; border-top: 2px solid #1e293b; margin-top: auto; }
 
