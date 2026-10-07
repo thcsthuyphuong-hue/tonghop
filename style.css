@@ -693,3 +693,23 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
     gap: 8px;
   }
 }
+
+
+/* Bộ lọc Admin dạng Excel, hỗ trợ chọn nhiều giá trị */
+#screen-admin .admin-excel-filters { display:grid; grid-template-columns:repeat(4,minmax(135px,1fr)); gap:10px; flex:2 1 620px; min-width:min(100%,620px); }
+#screen-admin .admin-filter-group { position:relative; min-width:0; }
+#screen-admin .admin-filter-trigger { width:100%; min-height:44px; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 13px; border:1px solid rgba(255,255,255,.55); border-radius:12px; background:rgba(255,255,255,.72); color:var(--ink); font:inherit; font-weight:700; text-align:left; cursor:pointer; box-shadow:0 5px 16px rgba(33,25,90,.08); }
+#screen-admin .admin-filter-trigger:hover, #screen-admin .admin-filter-trigger[aria-expanded="true"] { border-color:var(--primary); box-shadow:0 0 0 3px rgba(91,92,226,.16); }
+#screen-admin .admin-filter-menu { position:absolute; z-index:30; top:calc(100% + 7px); left:0; width:max(100%,250px); max-width:min(330px,90vw); padding:12px; border:1px solid rgba(255,255,255,.7); border-radius:14px; background:rgba(255,255,255,.96); box-shadow:0 16px 38px rgba(22,18,65,.22); color:var(--ink); }
+#screen-admin .admin-filter-menu[hidden] { display:none; }
+#screen-admin .admin-filter-search { width:100%; padding:9px 11px; border:1px solid rgba(91,92,226,.22); border-radius:9px; background:#fff; color:var(--ink); font:inherit; }
+#screen-admin .admin-filter-options { max-height:220px; overflow:auto; margin:8px 0; }
+#screen-admin .admin-filter-option { display:flex; align-items:center; gap:9px; padding:7px 5px; border-radius:7px; cursor:pointer; }
+#screen-admin .admin-filter-option:hover { background:rgba(91,92,226,.08); }
+#screen-admin .admin-filter-option[hidden] { display:none; }
+#screen-admin .admin-filter-option input { accent-color:var(--primary); }
+#screen-admin .admin-filter-menu-actions { display:flex; justify-content:space-between; gap:8px; margin:6px 0 10px; }
+#screen-admin .admin-filter-menu-actions button { border:0; background:none; color:var(--primary); font:inherit; font-size:.85rem; cursor:pointer; }
+#screen-admin .admin-filter-apply { width:100%; padding:9px 12px; border:0; border-radius:9px; background:var(--primary); color:#fff; font:inherit; font-weight:700; cursor:pointer; }
+@media (max-width:760px) { #screen-admin .admin-excel-filters { grid-template-columns:repeat(2,minmax(0,1fr)); min-width:100%; } }
+@media (max-width:380px) { #screen-admin .admin-excel-filters { grid-template-columns:1fr; } }
