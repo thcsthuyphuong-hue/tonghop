@@ -45,3 +45,8 @@ Giáo viên có thể tải ngân hàng câu hỏi lên Firebase theo từng chu
 - Kết nối Firebase của dự án cần hoạt động để tải danh sách học sinh, ngân hàng đề, lưu kết quả và sử dụng công cụ quản trị.
 - Đề cần được tải lên đúng chuyên đề trước khi học sinh có thể làm bài theo chuyên đề đó.
 
+---
+
+## Author
+
+**Văn Hùng Nguyễn**
