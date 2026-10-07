@@ -739,3 +739,27 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
 #screen-admin .admin-filter-apply:hover { filter:brightness(1.08); }
 @media (max-width:760px) { #screen-admin #admin-results-section .admin-excel-filters { grid-template-columns:repeat(2,minmax(0,1fr)); } #screen-admin #admin-results-section .grid-2-col { flex-wrap:wrap; } #screen-admin #admin-results-section .grid-2-col > button { flex:1 1 145px; } }
 @media (max-width:420px) { #screen-admin #admin-results-section .admin-excel-filters { grid-template-columns:1fr; } #screen-admin #admin-results-section .grid-2-col { display:grid; grid-template-columns:1fr 1fr; } #screen-admin #admin-results-section .grid-2-col #btn-export-excel { grid-column:1 / -1; } }
+
+
+/* Student and question-bank filters reuse the admin Liquid Glass popover. */
+#screen-admin #admin-students-section .admin-student-excel-filters {
+  display: grid;
+  flex: 1 1 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+#screen-admin .admin-single-filter { position: relative; width: 100%; min-width: 0; }
+#screen-admin .admin-single-filter > .admin-filter-trigger { width: 100%; }
+#screen-admin .admin-single-filter > .admin-filter-menu { left: 0; right: 0; width: 100%; max-width: min(420px, 92vw); }
+#screen-admin .admin-single-filter-option {
+  width: 100%; justify-content: flex-start; padding: 9px 10px;
+  border: 1px solid transparent; color: rgba(255,255,255,.90);
+  background: transparent; font: inherit; text-align: left; cursor: pointer;
+}
+#screen-admin .admin-single-filter-option:hover { color: #fff; background: rgba(255,255,255,.13); border-color: rgba(255,255,255,.12); }
+#screen-admin .admin-single-filter-option[hidden] { display: none; }
+@media (max-width: 420px) {
+  #screen-admin #admin-students-section .admin-student-excel-filters { grid-template-columns: 1fr; }
+}
