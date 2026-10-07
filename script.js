@@ -528,7 +528,7 @@ async function renderAdminStudents() {
         const classes = [...new Set(globalStudentList.map(i => i.class))].filter(c => c).sort(); 
         const schools = [...new Set(globalStudentList.map(i => i.school))].filter(s => s).sort();
         
-        const fClass = document.getElementById('stu-filter-class'); const oldC = fClass.value; 
+        setupAdminStudentsFilters({ class: classes, school: schools }); const fClass = document.getElementById('stu-filter-class'); const oldC = fClass.value; 
         fClass.innerHTML = '<option value="all">Tất cả lớp</option>' + classes.map(c => `<option value="${c}" ${c===oldC?'selected':''}>Lớp ${c}</option>`).join('');
         const fSchool = document.getElementById('stu-filter-school'); const oldS = fSchool.value; 
         fSchool.innerHTML = '<option value="all">Tất cả trường</option>' + schools.map(s => `<option value="${s}" ${s===oldS?'selected':''}>${s}</option>`).join('');
@@ -538,7 +538,7 @@ async function renderAdminStudents() {
                 && ((fSchool.value === 'all') || (i.school === fSchool.value));
         });
         
-        const getVnNameParts = (fullName) => {
+        data = globalStudentList.filter(i => { const filters = window.adminStudentFilterState; return (!filters.class.length || filters.class.includes(String(i.class || ''))) && (!filters.school.length || filters.school.includes(String(i.school || ''))); }); const getVnNameParts = (fullName) => {
             const parts = (fullName || '').trim().split(/\s+/);
             if (parts.length === 0) return { first: '', rest: '' };
             if (parts.length === 1) return { first: parts[0], rest: '' };
@@ -567,7 +567,7 @@ async function renderAdminStudents() {
 }
 
 async function renderAdminQuestions() {
-    const listBody = document.getElementById('question-bank-body');
+    setupAdminQuestionTopicMenu(); const listBody = document.getElementById('question-bank-body');
     listBody.innerHTML = "<tr><td colspan='5' style='text-align: center;'>Đang tải dữ liệu...</td></tr>";
     try {
         const snap = await getDocs(collection(db, 'artifacts', appId_fixed, 'public', 'data', collectionBanks));
@@ -1330,3 +1330,113 @@ window.addEventListener('resize', () => { if (canCheckCheat && isQuizRunning && 
 window.onload = () => { 
     document.getElementById('main-header').style.display = 'none'; 
 };
+
+
+function setupAdminStudentsFilters(options) {
+    const controls = document.querySelector('#admin-students-section .admin-controls');
+    if (!controls) return;
+    const state = window.adminStudentFilterState || (window.adminStudentFilterState = { school: [], class: [] });
+    const defs = [
+        { key: 'school', label: 'Trường', values: options.school.map(String) },
+        { key: 'class', label: 'Lớp', values: options.class.map(String) }
+    ];
+    const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    defs.forEach(d => {
+        state[d.key] = (state[d.key] || []).map(String).filter(v => d.values.includes(v));
+        const oldFilter = document.getElementById('stu-filter-' + d.key);
+        if (oldFilter) oldFilter.parentElement.hidden = true;
+    });
+    let root = controls.querySelector('.admin-student-excel-filters');
+    if (!root) {
+        root = document.createElement('div');
+        root.className = 'admin-student-excel-filters';
+        controls.insertBefore(root, document.getElementById('btn-refresh-students'));
+    }
+    root.innerHTML = defs.map(d => {
+        const selected = state[d.key];
+        const title = selected.length ? d.label + ' (' + selected.length + ')' : d.label + ': Tất cả';
+        const items = d.values.map(v => '<label class="admin-filter-option"><input type="checkbox" data-student-filter="' + d.key + '" value="' + esc(v) + '"' + (selected.includes(v) ? ' checked' : '') + '><span>' + esc(v) + '</span></label>').join('');
+        return '<div class="admin-filter-group" data-student-group="' + d.key + '"><button type="button" class="admin-filter-trigger" aria-expanded="false">' + esc(title) + ' ▾</button><div class="admin-filter-menu" hidden><input class="admin-filter-search" type="search" placeholder="Tìm ' + esc(d.label.toLowerCase()) + '..."><div class="admin-filter-options">' + (items || '<small>Chưa có dữ liệu</small>') + '</div><div class="admin-filter-menu-actions"><button type="button" data-student-action="all">Chọn tất cả</button><button type="button" data-student-action="clear">Bỏ lọc</button></div><button type="button" class="admin-filter-apply">Áp dụng</button></div></div>';
+    }).join('');
+    root.querySelectorAll('.admin-filter-trigger').forEach(button => button.onclick = () => {
+        const group = button.closest('.admin-filter-group'), menu = group.querySelector('.admin-filter-menu'), open = menu.hidden;
+        root.querySelectorAll('.admin-filter-menu').forEach(item => item.hidden = true);
+        root.querySelectorAll('.admin-filter-trigger').forEach(item => item.setAttribute('aria-expanded', 'false'));
+        menu.hidden = !open;
+        button.setAttribute('aria-expanded', String(open));
+    });
+    root.querySelectorAll('.admin-filter-search').forEach(input => input.oninput = () => {
+        const query = input.value.trim().toLocaleLowerCase('vi');
+        input.closest('.admin-filter-menu').querySelectorAll('.admin-filter-option').forEach(item => item.hidden = !item.innerText.toLocaleLowerCase('vi').includes(query));
+    });
+    root.querySelectorAll('.admin-filter-group').forEach(group => {
+        const key = group.dataset.studentGroup, def = defs.find(item => item.key === key), button = group.querySelector('.admin-filter-trigger');
+        const update = () => {
+            state[key] = [...group.querySelectorAll('[data-student-filter]:checked')].map(input => input.value);
+            button.firstChild.textContent = (state[key].length ? def.label + ' (' + state[key].length + ')' : def.label + ': Tất cả') + ' ▾';
+        };
+        group.querySelectorAll('[data-student-filter]').forEach(input => input.onchange = update);
+        group.querySelector('[data-student-action="all"]').onclick = () => { group.querySelectorAll('[data-student-filter]').forEach(input => input.checked = true); update(); };
+        group.querySelector('[data-student-action="clear"]').onclick = () => { group.querySelectorAll('[data-student-filter]').forEach(input => input.checked = false); update(); };
+        group.querySelector('.admin-filter-apply').onclick = () => renderAdminStudents();
+    });
+}
+
+function setupAdminQuestionTopicMenu() {
+    const select = document.getElementById('import-q-topic');
+    if (!select || select.dataset.glassMenuReady) return;
+    select.dataset.glassMenuReady = 'true';
+    const wrapper = document.createElement('div');
+    wrapper.className = 'admin-single-filter';
+    const trigger = document.createElement('button');
+    trigger.type = 'button';
+    trigger.className = 'admin-filter-trigger';
+    trigger.setAttribute('aria-haspopup', 'listbox');
+    trigger.setAttribute('aria-expanded', 'false');
+    trigger.setAttribute('aria-label', 'Chọn chuyên đề để import');
+    const menu = document.createElement('div');
+    menu.className = 'admin-filter-menu';
+    menu.hidden = true;
+    const search = document.createElement('input');
+    search.type = 'search';
+    search.className = 'admin-filter-search';
+    search.placeholder = 'Tìm chuyên đề...';
+    const optionsBox = document.createElement('div');
+    optionsBox.className = 'admin-filter-options';
+    [...select.options].forEach(option => {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'admin-filter-option admin-single-filter-option';
+        item.textContent = option.textContent;
+        item.dataset.value = option.value;
+        item.dataset.search = option.textContent.toLocaleLowerCase('vi');
+        item.setAttribute('role', 'option');
+        item.onclick = () => {
+            select.value = option.value;
+            trigger.textContent = (option.value ? option.textContent : 'Chọn chuyên đề để import') + ' ▾';
+            menu.hidden = true;
+            trigger.setAttribute('aria-expanded', 'false');
+        };
+        optionsBox.appendChild(item);
+    });
+    menu.append(search, optionsBox);
+    wrapper.append(trigger, menu);
+    select.parentNode.insertBefore(wrapper, select);
+    select.hidden = true;
+    trigger.textContent = (select.value ? select.options[select.selectedIndex].textContent : 'Chọn chuyên đề để import') + ' ▾';
+    trigger.onclick = () => {
+        menu.hidden = !menu.hidden;
+        trigger.setAttribute('aria-expanded', String(!menu.hidden));
+        if (!menu.hidden) search.focus();
+    };
+    search.oninput = () => {
+        const query = search.value.trim().toLocaleLowerCase('vi');
+        optionsBox.querySelectorAll('.admin-single-filter-option').forEach(item => item.hidden = !item.dataset.search.includes(query));
+    };
+    document.addEventListener('click', event => {
+        if (!wrapper.contains(event.target)) {
+            menu.hidden = true;
+            trigger.setAttribute('aria-expanded', 'false');
+        }
+    });
+}
