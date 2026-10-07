@@ -485,7 +485,7 @@ function setupAdminExcelFilters(options) {
  defs.forEach(d=>{state[d.key]=(state[d.key]||[]).filter(v=>d.values.includes(String(v)));const e=document.getElementById('admin-filter-'+d.key);if(e)e.parentElement.hidden=true;});
  let root=controls.querySelector('.admin-excel-filters');if(!root){root=document.createElement('div');root.className='admin-excel-filters';controls.insertBefore(root,controls.querySelector('.grid-2-col'));}
  root.innerHTML=defs.map(d=>{const sel=state[d.key],title=sel.length?d.label+' ('+sel.length+')':d.label+': Tất cả',items=d.values.map(v=>'<label class="admin-filter-option"><input type="checkbox" data-filter-check="'+d.key+'" value="'+esc(v)+'"'+(sel.includes(String(v))?' checked':'')+'><span>'+esc(v==='test'?'Kiểm tra':v==='practice'?'Luyện tập':v)+'</span></label>').join('');return '<div class="admin-filter-group" data-filter-group="'+d.key+'"><button type="button" class="admin-filter-trigger" aria-expanded="false">'+esc(title)+' ▾</button><div class="admin-filter-menu" hidden><input class="admin-filter-search" type="search" placeholder="Tìm '+esc(d.label.toLowerCase())+'..."><div class="admin-filter-options">'+(items||'<small>Chưa có dữ liệu</small>')+'</div><div class="admin-filter-menu-actions"><button type="button" data-filter-action="all">Chọn tất cả</button><button type="button" data-filter-action="clear">Bỏ lọc</button></div><button type="button" class="admin-filter-apply">Áp dụng</button></div></div>';}).join('');
- root.querySelectorAll('.admin-filter-trigger').forEach(b=>b.onclick=()=>{const g=b.closest('.admin-filter-group'),m=g.querySelector('.admin-filter-menu'),open=m.hidden;root.querySelectorAll('.admin-filter-menu').forEach(x=>x.hidden=true);m.hidden=!open;b.setAttribute('aria-expanded',String(open));});
+ root.querySelectorAll('.admin-filter-trigger').forEach(b=>b.onclick=()=>{const g=b.closest('.admin-filter-group'),m=g.querySelector('.admin-filter-menu'),open=m.hidden||m.dataset.rollState==='closing';root.querySelectorAll('.admin-filter-menu').forEach(x=>setLiquidGlassMenu(x,false,'down'));root.querySelectorAll('.admin-filter-trigger').forEach(x=>x.setAttribute('aria-expanded','false'));if(open)setLiquidGlassMenu(m,true,'down');b.setAttribute('aria-expanded',String(open));});
  root.querySelectorAll('.admin-filter-search').forEach(i=>i.oninput=()=>{const q=i.value.trim().toLocaleLowerCase('vi');i.closest('.admin-filter-menu').querySelectorAll('.admin-filter-option').forEach(x=>x.hidden=!x.innerText.toLocaleLowerCase('vi').includes(q));});
  root.querySelectorAll('.admin-filter-group').forEach(g=>{const k=g.dataset.filterGroup,d=defs.find(x=>x.key===k),b=g.querySelector('.admin-filter-trigger'),update=()=>{state[k]=[...g.querySelectorAll('[data-filter-check]:checked')].map(x=>x.value);b.firstChild.textContent=state[k].length?d.label+' ('+state[k].length+') ▾':d.label+': Tất cả ▾';};g.querySelectorAll('[data-filter-check]').forEach(x=>x.onchange=update);g.querySelector('[data-filter-action="all"]').onclick=()=>{g.querySelectorAll('[data-filter-check]').forEach(x=>x.checked=true);update();};g.querySelector('[data-filter-action="clear"]').onclick=()=>{g.querySelectorAll('[data-filter-check]').forEach(x=>x.checked=false);update();};g.querySelector('.admin-filter-apply').onclick=()=>renderAdmin();});
 }
@@ -1332,6 +1332,35 @@ window.onload = () => {
 };
 
 
+function setLiquidGlassMenu(menu, open, direction) {
+    if (direction) menu.dataset.openDirection = direction;
+    if (open) {
+        clearTimeout(menu._liquidGlassRollTimer);
+        menu.hidden = false;
+        menu.dataset.rollState = 'opening';
+        menu.onanimationend = event => {
+            if (event.target === menu && menu.dataset.rollState === 'opening') {
+                delete menu.dataset.rollState;
+                menu.onanimationend = null;
+            }
+        };
+        return;
+    }
+    if (menu.hidden || menu.dataset.rollState === 'closing') return;
+    menu.dataset.rollState = 'closing';
+    const finishClose = () => {
+        if (menu.dataset.rollState !== 'closing') return;
+        menu.hidden = true;
+        delete menu.dataset.rollState;
+        menu.onanimationend = null;
+        clearTimeout(menu._liquidGlassRollTimer);
+    };
+    menu.onanimationend = event => {
+        if (event.target === menu && menu.dataset.rollState === 'closing') finishClose();
+    };
+    menu._liquidGlassRollTimer = setTimeout(finishClose, 450);
+}
+
 function setupAdminStudentsFilters(options) {
     const controls = document.querySelector('#admin-students-section .admin-controls');
     if (!controls) return;
@@ -1414,7 +1443,7 @@ function setupAdminQuestionTopicMenu() {
         item.onclick = () => {
             select.value = option.value;
             trigger.textContent = (option.value ? option.textContent : 'Chọn chuyên đề để import') + ' ▾';
-            menu.hidden = true;
+            setLiquidGlassMenu(menu, false, 'down');
             trigger.setAttribute('aria-expanded', 'false');
         };
         optionsBox.appendChild(item);
@@ -1425,9 +1454,10 @@ function setupAdminQuestionTopicMenu() {
     select.hidden = true;
     trigger.textContent = (select.value ? select.options[select.selectedIndex].textContent : 'Chọn chuyên đề để import') + ' ▾';
     trigger.onclick = () => {
-        menu.hidden = !menu.hidden;
-        trigger.setAttribute('aria-expanded', String(!menu.hidden));
-        if (!menu.hidden) search.focus();
+        const open = menu.hidden || menu.dataset.rollState === 'closing';
+        setLiquidGlassMenu(menu, open, 'down');
+        trigger.setAttribute('aria-expanded', String(open));
+        if (open) search.focus();
     };
     search.oninput = () => {
         const query = search.value.trim().toLocaleLowerCase('vi');
@@ -1435,7 +1465,7 @@ function setupAdminQuestionTopicMenu() {
     };
     document.addEventListener('click', event => {
         if (!wrapper.contains(event.target)) {
-            menu.hidden = true;
+            setLiquidGlassMenu(menu, false, 'down');
             trigger.setAttribute('aria-expanded', 'false');
         }
     });
@@ -1506,7 +1536,7 @@ function setupLoginTopicGlassMenu() {
     };
 
     const closeMenu = () => {
-        menu.hidden = true;
+        setLiquidGlassMenu(menu, false, menu.dataset.openDirection);
         trigger.setAttribute('aria-expanded', 'false');
         window.removeEventListener('resize', positionMenu);
         window.removeEventListener('scroll', positionMenu, true);
@@ -1517,12 +1547,13 @@ function setupLoginTopicGlassMenu() {
         menu.hidden = false;
         trigger.setAttribute('aria-expanded', 'true');
         positionMenu();
+        setLiquidGlassMenu(menu, true, menu.dataset.openDirection);
         window.addEventListener('resize', positionMenu);
         window.addEventListener('scroll', positionMenu, true);
     };
 
     trigger.onclick = () => {
-        if (menu.hidden) openMenu();
+        if (menu.hidden || menu.dataset.rollState === 'closing') openMenu();
         else closeMenu();
     };
     document.addEventListener('click', event => {
