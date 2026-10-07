@@ -1441,7 +1441,6 @@ function setupAdminQuestionTopicMenu() {
     });
 }
 
-
 function setupLoginTopicGlassMenu() {
     const select = document.getElementById('topic-select');
     if (!select || select.dataset.glassMenuReady) return;
@@ -1471,25 +1470,63 @@ function setupLoginTopicGlassMenu() {
             optionsBox.querySelectorAll('[role=option]').forEach(entry => entry.setAttribute('aria-selected', String(entry === item)));
             trigger.textContent = option.textContent + '  ▾';
             select.dispatchEvent(new Event('change', { bubbles: true }));
-            menu.hidden = true;
-            trigger.setAttribute('aria-expanded', 'false');
+            closeMenu();
         };
         optionsBox.appendChild(item);
     });
     menu.appendChild(optionsBox);
-    wrapper.append(trigger, menu);
+    wrapper.append(trigger);
     select.parentNode.insertBefore(wrapper, select);
     select.hidden = true;
     trigger.textContent = select.options[select.selectedIndex].textContent + '  ▾';
+
+    const positionMenu = () => {
+        if (menu.hidden) return;
+        const rect = trigger.getBoundingClientRect();
+        const edge = 10;
+        const gap = 7;
+        const viewportWidth = document.documentElement.clientWidth;
+        const viewportHeight = window.innerHeight;
+        const width = Math.min(rect.width, viewportWidth - edge * 2);
+        const left = Math.max(edge, Math.min(rect.left, viewportWidth - width - edge));
+        const preferredHeight = Math.min(320, viewportHeight * 0.55);
+        const spaceBelow = Math.max(0, viewportHeight - rect.bottom - gap - edge);
+        const spaceAbove = Math.max(0, rect.top - gap - edge);
+        const naturalHeight = Math.min(menu.scrollHeight, preferredHeight);
+        const openBelow = spaceBelow >= naturalHeight || spaceBelow >= spaceAbove;
+        const availableSpace = openBelow ? spaceBelow : spaceAbove;
+
+        menu.style.width = width + 'px';
+        menu.style.left = left + 'px';
+        menu.style.maxHeight = Math.max(80, Math.min(preferredHeight, availableSpace)) + 'px';
+        const height = menu.offsetHeight;
+        const desiredTop = openBelow ? rect.bottom + gap : rect.top - height - gap;
+        menu.style.top = Math.max(edge, Math.min(desiredTop, viewportHeight - height - edge)) + 'px';
+        menu.dataset.openDirection = openBelow ? 'down' : 'up';
+    };
+
+    const closeMenu = () => {
+        menu.hidden = true;
+        trigger.setAttribute('aria-expanded', 'false');
+        window.removeEventListener('resize', positionMenu);
+        window.removeEventListener('scroll', positionMenu, true);
+    };
+
+    const openMenu = () => {
+        document.body.appendChild(menu);
+        menu.hidden = false;
+        trigger.setAttribute('aria-expanded', 'true');
+        positionMenu();
+        window.addEventListener('resize', positionMenu);
+        window.addEventListener('scroll', positionMenu, true);
+    };
+
     trigger.onclick = () => {
-        menu.hidden = !menu.hidden;
-        trigger.setAttribute('aria-expanded', String(!menu.hidden));
+        if (menu.hidden) openMenu();
+        else closeMenu();
     };
     document.addEventListener('click', event => {
-        if (!wrapper.contains(event.target)) {
-            menu.hidden = true;
-            trigger.setAttribute('aria-expanded', 'false');
-        }
+        if (!wrapper.contains(event.target) && !menu.contains(event.target)) closeMenu();
     });
 }
 setupLoginTopicGlassMenu();
