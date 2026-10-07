@@ -1440,3 +1440,56 @@ function setupAdminQuestionTopicMenu() {
         }
     });
 }
+
+
+function setupLoginTopicGlassMenu() {
+    const select = document.getElementById('topic-select');
+    if (!select || select.dataset.glassMenuReady) return;
+    select.dataset.glassMenuReady = 'true';
+    const wrapper = document.createElement('div');
+    wrapper.className = 'topic-select-glass';
+    const trigger = document.createElement('button');
+    trigger.type = 'button';
+    trigger.className = 'topic-select-glass-trigger';
+    trigger.setAttribute('aria-haspopup', 'listbox');
+    trigger.setAttribute('aria-expanded', 'false');
+    trigger.setAttribute('aria-label', 'Chọn chuyên đề ôn tập');
+    const menu = document.createElement('div');
+    menu.className = 'topic-select-glass-menu';
+    menu.hidden = true;
+    const optionsBox = document.createElement('div');
+    optionsBox.setAttribute('role', 'listbox');
+    [...select.options].forEach(option => {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'topic-select-glass-option';
+        item.textContent = option.textContent;
+        item.setAttribute('role', 'option');
+        item.setAttribute('aria-selected', String(option.value === select.value));
+        item.onclick = () => {
+            select.value = option.value;
+            optionsBox.querySelectorAll('[role=option]').forEach(entry => entry.setAttribute('aria-selected', String(entry === item)));
+            trigger.textContent = option.textContent + '  ▾';
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+            menu.hidden = true;
+            trigger.setAttribute('aria-expanded', 'false');
+        };
+        optionsBox.appendChild(item);
+    });
+    menu.appendChild(optionsBox);
+    wrapper.append(trigger, menu);
+    select.parentNode.insertBefore(wrapper, select);
+    select.hidden = true;
+    trigger.textContent = select.options[select.selectedIndex].textContent + '  ▾';
+    trigger.onclick = () => {
+        menu.hidden = !menu.hidden;
+        trigger.setAttribute('aria-expanded', String(!menu.hidden));
+    };
+    document.addEventListener('click', event => {
+        if (!wrapper.contains(event.target)) {
+            menu.hidden = true;
+            trigger.setAttribute('aria-expanded', 'false');
+        }
+    });
+}
+setupLoginTopicGlassMenu();
