@@ -821,3 +821,41 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
   left: 0;
   right: auto !important;
 }
+
+
+/* Liquid Glass roll-open/close motion for custom dropdown menus. */
+@keyframes liquidGlassRollOpenDown {
+  from { opacity: 0; transform: perspective(720px) rotateX(-13deg) scaleY(.84) translateY(-7px); filter: blur(2px); }
+  to { opacity: 1; transform: perspective(720px) rotateX(0) scaleY(1) translateY(0); filter: blur(0); }
+}
+@keyframes liquidGlassRollOpenUp {
+  from { opacity: 0; transform: perspective(720px) rotateX(13deg) scaleY(.84) translateY(7px); filter: blur(2px); }
+  to { opacity: 1; transform: perspective(720px) rotateX(0) scaleY(1) translateY(0); filter: blur(0); }
+}
+@keyframes liquidGlassRollCloseDown {
+  from { opacity: 1; transform: perspective(720px) rotateX(0) scaleY(1) translateY(0); filter: blur(0); }
+  to { opacity: 0; transform: perspective(720px) rotateX(-10deg) scaleY(.88) translateY(-5px); filter: blur(1.5px); }
+}
+@keyframes liquidGlassRollCloseUp {
+  from { opacity: 1; transform: perspective(720px) rotateX(0) scaleY(1) translateY(0); filter: blur(0); }
+  to { opacity: 0; transform: perspective(720px) rotateX(10deg) scaleY(.88) translateY(5px); filter: blur(1.5px); }
+}
+#screen-admin .admin-filter-menu[data-roll-state="opening"],
+.topic-select-glass-menu[data-roll-state="opening"] {
+  transform-origin: top center;
+  animation: liquidGlassRollOpenDown 360ms cubic-bezier(.2,.82,.24,1) both;
+}
+#screen-admin .admin-filter-menu[data-roll-state="closing"],
+.topic-select-glass-menu[data-roll-state="closing"] {
+  transform-origin: top center;
+  animation: liquidGlassRollCloseDown 210ms cubic-bezier(.4,0,.8,.25) both;
+  pointer-events: none;
+}
+.topic-select-glass-menu[data-open-direction="up"][data-roll-state="opening"] {
+  transform-origin: bottom center;
+  animation-name: liquidGlassRollOpenUp;
+}
+.topic-select-glass-menu[data-open-direction="up"][data-roll-state="closing"] {
+  transform-origin: bottom center;
+  animation-name: liquidGlassRollCloseUp;
+}
