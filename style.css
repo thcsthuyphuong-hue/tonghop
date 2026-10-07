@@ -650,3 +650,46 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
     gap: 10px;
   }
 }
+
+
+/* Responsive admin grade summary cards */
+#screen-admin .stats-summary {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: stretch;
+  width: 100%;
+  gap: 10px;
+}
+#screen-admin .stats-summary .stat-box {
+  display: flex;
+  min-width: 0;
+  min-height: 66px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 8px;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+#screen-admin .stats-summary .stat-box b {
+  font-size: clamp(1rem, 2vw, 1.45rem);
+  line-height: 1.15;
+}
+#screen-admin .stats-summary .stat-box small {
+  display: block;
+  margin-top: 4px;
+  font-size: clamp(.72rem, 1vw, .86rem);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+@media (max-width: 768px) {
+  #screen-admin .stats-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 420px) {
+  #screen-admin .stats-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+}
