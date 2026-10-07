@@ -1,0 +1,505 @@
+<!-- UI BUILD: GLASSMORPHISM OPTION 1 - VERIFIED 2026-10-07 -->
+<!-- CẬP NHẬT: IMPORT ĐỀ THI TỪ EXCEL LÊN FIREBASE, THUẬT TOÁN BỐC ĐỀ NGẪU NHIÊN 12-4-4 -->
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, ">
+    <title>Hệ Thống Ôn Tập Vật Lý 9</title>
+    <!-- Hỗ trợ công thức Toán/Lý -->
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <!-- Thư viện hiệu ứng và tiện ích -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Đọc file Word (.docx) cho ngân hàng đề. Chức năng tạo file mẫu không phụ thuộc CDN. -->
+    <script id="mammoth-lib" src="https://cdn.jsdelivr.net/npm/mammoth@1.10.0/mammoth.browser.min.js"></script>
+    <script>
+        (() => {
+            const mark = (id, loaded) => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.dataset.loaded = loaded ? '1' : '0';
+                    if (!loaded) el.dataset.error = '1';
+                }
+            };
+            const mammothScript = document.getElementById('mammoth-lib');
+            if (mammothScript) {
+                mammothScript.addEventListener('load', () => mark('mammoth-lib', true));
+                mammothScript.addEventListener('error', () => mark('mammoth-lib', false));
+            }
+        })();
+    </script>
+    
+    <link rel="stylesheet" href="style.css?v=20261007-menu-layer">
+</head>
+
+<body>
+
+<div id="custom-alert">⚠️ Vui lòng hoàn thành câu hỏi này!</div>
+
+<div id="wish-overlay">
+    <canvas id="fire-canvas"></canvas>
+    <div class="wish-content">
+        <h1 class="wish-title">🔥 CỐ LÊN! 🔥</h1>
+        <p class="wish-sub">Chúc bạn hoàn thành tốt bài làm!</p>
+        <div id="wish-cheat-info" class="cheat-warning-box">HỆ THỐNG SẼ TỰ ĐỘNG NỘP BÀI<br>NẾU CHUYỂN TAB, CHIA ĐÔI MÀN HÌNH<br>HOẶC MỞ ỨNG DỤNG KHÁC</div>
+    </div>
+</div>
+
+<button id="btn-admin-open" class="btn-admin-float">QUẢN TRỊ 🔐</button>
+<button id="btn-report-open" class="btn-report-float">BÁO LỖI ⚠️</button>
+
+<div id="confirm-finish-modal" class="modal-overlay">
+    <div class="modal-box">
+        <h2 style="color: var(--primary); margin-top:0;">Xác nhận nộp bài?</h2>
+        <p style="color:#475569; line-height: 1.5;">Bạn có chắc chắn muốn kết thúc bài làm và xem kết quả ngay không?</p>
+        <div class="grid-2-col" style="margin-top:20px;">
+            <button id="btn-modal-cancel" class="btn btn-gray">LÀM TIẾP</button>
+            <button id="btn-modal-confirm" class="btn btn-fire">NỘP BÀI</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Báo Lỗi Học Sinh -->
+<div id="report-modal" class="modal-overlay">
+    <div class="modal-box" style="text-align: left;">
+        <h2 style="color: var(--danger); text-align: center; margin-top: 0; margin-bottom: 20px; font-size: 1.4rem;">GỬI BÁO LỖI</h2>
+        <div style="margin-bottom: 15px;">
+            <label style="font-size: 0.85rem; font-weight: bold; color: #64748b; display:block; margin-bottom:5px;">Vị trí câu lỗi / Lỗi gặp phải:</label>
+            <input type="text" id="report-question" placeholder="Ví dụ: Câu 5 phần Đ/S, Hình ảnh câu 2...">
+        </div>
+        <div style="margin-bottom: 15px;">
+            <label style="font-size: 0.85rem; font-weight: bold; color: #64748b; display:block; margin-bottom:5px;">Mô tả chi tiết:</label>
+            <textarea id="report-detail" rows="3" placeholder="Ghi rõ lỗi sai đáp án, lỗi hiển thị... (Có thể ấn Ctrl+V để dán ảnh lỗi vào đây)"></textarea>
+        </div>
+        <div style="margin-bottom: 15px;">
+            <label style="font-size: 0.85rem; font-weight: bold; color: #64748b; display:block; margin-bottom:5px;">Đính kèm hình ảnh (Chọn file hoặc ấn Ctrl+V):</label>
+            <input type="file" id="report-file" accept="image/*" style="padding: 10px; font-size: 0.85rem;">
+            <img id="report-img-preview" src="" style="max-width: 100%; max-height: 150px; margin-top: 10px; display: none; border-radius: 8px; border: 1px solid #ccc; object-fit: contain;">
+        </div>
+        <div class="grid-2-col" style="margin-top:25px;">
+            <button id="btn-report-cancel" class="btn btn-gray">HỦY</button>
+            <button id="btn-report-submit" class="btn btn-fire" style="background: var(--danger);">GỬI PHẢN HỒI</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Cảnh Báo Gian Lận -->
+<div id="cheat-modal">
+    <div style="background: white; padding: 40px 25px; border-radius: 20px; max-width: 500px; width: 90%; border: 8px solid var(--danger);">
+        <h1 style="color:var(--danger); font-size: 2.5rem; margin:0">CẢNH BÁO!</h1>
+        <p style="font-size: 1.1rem; margin: 20px 0; color: #1e293b; font-weight: bold; line-height: 1.5;">
+            Hệ thống phát hiện bạn đã rời khỏi trình duyệt, chia đôi màn hình hoặc mở cửa sổ nổi. Bài làm đã tự động thu lại vì lý do bảo mật.
+        </p>
+        <button id="btn-cheat-submit" class="btn btn-fire" style="width:100%;">XEM KẾT QUẢ</button>
+    </div>
+</div>
+
+<!-- Modal Hộp thư báo lỗi (Admin) -->
+<div id="admin-inbox-modal" class="modal-overlay">
+    <div class="card" style="width:100%; max-width:900px; text-align:left; max-height: 90vh; overflow-y: auto; margin: auto;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px;">
+            <h2 style="color: var(--danger); margin:0; font-size: 1.2rem;">HỘP THƯ BÁO LỖI 📩</h2>
+            <button id="btn-inbox-close" class="btn btn-gray" style="padding: 8px 15px; font-size:0.8rem;">ĐÓNG ✖</button>
+        </div>
+        <div class="admin-table-container">
+            <table class="admin-table" style="min-width: 700px;">
+                <thead><tr><th>Thời gian</th><th>Người báo</th><th>Vị trí lỗi</th><th>Chi tiết</th><th>Đính kèm</th><th>Thao tác</th></tr></thead>
+                <tbody id="inbox-list-body"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Xem Ảnh Phóng To -->
+<div id="image-viewer-modal" class="modal-overlay" style="z-index: 40000;" onclick="this.style.display='none'">
+    <img id="image-viewer-img" src="" style="max-width: 95%; max-height: 90vh; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); object-fit: contain;">
+    <p style="color: white; position: absolute; bottom: 20px; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.8); text-align: center; width: 100%;">Chạm bất kỳ đâu để đóng</p>
+</div>
+
+<!-- Các Modal Xác nhận -->
+<div id="admin-auth-modal" class="modal-overlay" style="z-index:20000;">
+    <div class="card" style="width:100%; max-width:400px; text-align:center; padding: 30px 20px; margin: auto;">
+        <h2 style="color: var(--primary); margin-top:0;">Xác minh Quản trị</h2>
+        <input type="password" id="admin-pw" placeholder="Nhập mật khẩu..." style="margin-bottom:20px; text-align:center;">
+        <div class="grid-2-col">
+            <button class="btn btn-gray" id="btn-auth-cancel">HỦY</button>
+            <button class="btn btn-fire" id="btn-auth-confirm">XÁC NHẬN</button>
+        </div>
+    </div>
+</div>
+
+<div id="delete-auth-modal" class="modal-overlay" style="z-index:20001;">
+    <div class="card" style="width:100%; max-width:400px; text-align:center; border: 4px solid var(--danger); padding: 30px 20px; margin: auto;">
+        <h2 id="auth-action-title" style="color: var(--danger); margin-top:0;">Xác nhận Hành động</h2>
+        <p style="margin-bottom: 15px; color: #475569; font-size:0.9rem;">Vui lòng đăng nhập tài khoản Firebase:</p>
+        <input type="email" id="delete-email" placeholder="Email Admin..." style="margin-bottom:10px; text-align:center; border:2px solid #cbd5e0;">
+        <input type="password" id="delete-pw" placeholder="Mật khẩu Admin..." style="margin-bottom:20px; text-align:center; border:2px solid var(--danger);">
+        <div class="grid-2-col">
+            <button class="btn btn-gray" id="btn-delete-cancel">HỦY</button>
+            <button class="btn btn-fire" style="background: var(--danger);" id="btn-delete-confirm">XÁC NHẬN</button>
+        </div>
+    </div>
+</div>
+
+<div id="admin-review-modal" class="modal-overlay" style="z-index:20002; align-items:flex-start;">
+    <div class="card" style="width:100%; max-width:800px; text-align:left; margin-top: 20px; padding: 20px 15px; margin-left: auto; margin-right: auto;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px;">
+            <h2 style="color: var(--primary); margin:0; font-size: 1.2rem;">CHI TIẾT: <span id="ar-name" style="color: #ff4e00"></span></h2>
+            <button id="btn-ar-close" class="btn btn-gray" style="padding: 8px 15px; font-size:0.8rem;">ĐÓNG ✖</button>
+        </div>
+        <div id="ar-content" style="margin-bottom: 20px;"></div>
+        <button id="btn-ar-retry" class="btn btn-fire" style="width:100%; font-size: 1.1rem; padding: 15px;">LÀM LẠI CÁC CÂU SAI ♻️</button>
+    </div>
+</div>
+
+<div id="app-wrapper" style="width: 100%; overflow-x: hidden;">
+    <div class="container">
+        <header id="main-header">
+            <div style="display: flex; flex-direction: column; overflow: hidden; flex: 1; padding-right: 10px;">
+                <div style="font-weight: 900; letter-spacing: 1px; color: #facc15; font-size: 1.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">HUE SMART TEST 7991</div>
+                <div id="header-user-info" style="font-size: 0.75rem; color: #e2e8f0; margin-top: 3px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+            </div>
+            <div class="timer" id="timer" style="flex-shrink: 0;">--:--</div>
+        </header>
+
+        <section id="screen-start" class="screen active">
+    <div class="home-shell">
+        <div class="home-hero">
+            <div class="hero-glow hero-glow-one"></div>
+            <div class="hero-glow hero-glow-two"></div>
+            <div class="hero-atom" aria-hidden="true">⚛</div>
+            <div class="hero-content">
+                <span class="hero-kicker">HUE SMART TEST 7991</span>
+                <h1>KHÁM PHÁ VẬT LÝ 9</h1>
+                <p id="banner-topic">Ôn tập • Luyện đề • Khám phá tri thức</p>
+            </div>
+            <div class="hero-status">
+                <span>✨ Luyện tập</span>
+                <span>🔥 Kiểm tra</span>
+                <span>📊 Theo dõi kết quả</span>
+            </div>
+        </div>
+
+        <div class="setup-layout">
+            <div class="welcome-card glass-card">
+                <div class="welcome-art" aria-hidden="true">
+                    <div class="art-orbit orbit-a"></div>
+                    <div class="art-orbit orbit-b"></div>
+                    <div class="art-atom">⚛</div>
+                </div>
+                <div class="welcome-copy">
+                    <span class="eyebrow">BẮT ĐẦU HÀNH TRÌNH</span>
+                    <h2>Chào mừng đến với<br><strong>Khám Phá Vật Lý 9</strong></h2>
+                    <p>Ôn tập • Luyện đề • Khám phá tri thức</p>
+                    <div class="welcome-points">
+                        <span>📚 Nhiều dạng đề</span>
+                        <span>💻 Làm bài linh hoạt</span>
+                        <span>📈 Theo dõi tiến độ</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="student-card glass-card">
+                <div class="card-title-row">
+                    <div>
+                        <span class="eyebrow">THÔNG TIN THÍ SINH</span>
+                        <h2>👤 Thí sinh</h2>
+                    </div>
+                    <span class="title-icon">📖</span>
+                </div>
+
+                <div class="guest-switch-row">
+                    <label class="switch-label" for="guest-mode-toggle">
+                        <input type="checkbox" id="guest-mode-toggle">
+                        <span class="switch-ui"></span>
+                        <span>Thí sinh tự do <small>(Tự nhập)</small></span>
+                    </label>
+                </div>
+
+                <div class="field-group name-field">
+                    <label for="username">Họ và tên</label>
+                    <div class="autocomplete">
+                        <input type="text" id="username" placeholder="Nhập tên để tìm kiếm trong danh sách..." autocomplete="off">
+                    </div>
+                    <small id="username-hint">*Gõ vài chữ cái tên bạn để hiện danh sách chọn.</small>
+                </div>
+
+                <div class="field-group">
+                    <label for="user_school">Trường</label>
+                    <input type="text" id="user_school" placeholder="Tự động điền" readonly>
+                </div>
+
+                <div class="student-meta-grid">
+                    <div class="field-group">
+                        <label for="user_class">Lớp</label>
+                        <input type="text" id="user_class" placeholder="Tự động điền" readonly>
+                    </div>
+                    <div class="field-group">
+                        <label for="user_sbd">Số báo danh</label>
+                        <input type="text" id="user_sbd" placeholder="Tự động điền" readonly>
+                    </div>
+                </div>
+
+                <div class="topic-card">
+                    <label for="topic-select">🎯 Chọn chuyên đề ôn tập</label>
+                    <select id="topic-select">
+                        <option value="mix">🔥 ĐỀ TỔNG HỢP (Tất cả các bài)</option>
+                        <option value="bai_11">Bài 11: Điện trở. Định luật Ohm</option>
+                        <option value="bai_12">Bài 12: Đoạn mạch nối tiếp, song song</option>
+                        <option value="bai_13">Bài 13: Năng lượng điện và công suất</option>
+                        <option value="bai_14">Bài 14: Cảm ứng điện từ. Dòng điện XC</option>
+                        <option value="bai_15">Bài 15: Tác dụng của dòng điện XC</option>
+                    </select>
+                </div>
+
+                <p id="start-error">⚠️ Vui lòng điền đầy đủ các thông tin!</p>
+
+                <div id="loading-text" class="loading-panel">
+                    ⏳ ĐANG TẢI ĐỀ THI TỪ HỆ THỐNG...<br><span>Vui lòng chờ giây lát</span>
+                </div>
+
+                <div class="start-actions-label"><span class="eyebrow">CHỌN CÁCH LÀM BÀI</span></div>
+                <div class="start-actions" id="start-buttons">
+                    <button id="btn-init-practice" class="btn btn-gray">📝 LUYỆN TẬP</button>
+                    <button id="btn-init-test" class="btn btn-fire">🔥 KIỂM TRA</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="feature-strip">
+            <div class="feature-card glass-card"><span>📄</span><div><strong>Nhiều dạng đề</strong><small>Từ cơ bản đến nâng cao</small></div></div>
+            <div class="feature-card glass-card"><span>🖥️</span><div><strong>Làm bài linh hoạt</strong><small>Trên mọi thiết bị</small></div></div>
+            <div class="feature-card glass-card"><span>📊</span><div><strong>Theo dõi tiến độ</strong><small>Xem lại lịch sử làm bài</small></div></div>
+        </div>
+    </div>
+</section>
+
+<section id="screen-quiz" class="screen">
+            <div id="quiz-content"></div>
+            <div style="display:flex; justify-content: space-between; margin-top: 30px; gap: 10px;">
+                <button id="btn-prev" class="btn btn-gray">QUAY LẠI</button>
+                <button class="btn btn-fire" id="btn-next" style="flex:1">TIẾP THEO</button>
+                <button id="btn-finish" class="btn" style="background:var(--success); color:white; display:none; flex:1;">HOÀN THÀNH 🏁</button>
+            </div>
+        </section>
+
+        <section id="screen-result" class="screen">
+            <div class="card" style="background: linear-gradient(135deg, #1e40af, #1e1b4b); color: white; text-align: center; padding: 40px 20px;">
+                <h2 id="res-name" class="fire-text" style="font-size: 1.8rem; margin-bottom: 10px;">HỌC SINH</h2>
+                <div id="res-meta" style="opacity: 0.9;">Thông vị trí</div>
+                <div style="margin: 25px 0;">
+                    <div id="final-score" style="font-size: 6rem; font-weight: 900; color: #fff; text-shadow: 0 0 20px rgba(255,255,255,0.5);">0.0</div>
+                    <div id="my-rank-text" style="margin-top: 10px; font-weight: bold; color: #ffae00; font-size: 1.5rem;">HẠNG ...</div>
+                </div>
+                <div id="rank-container"><div id="rank-badge" class="rank-badge">XẾP LOẠI</div></div>
+            </div>
+            <div class="grid-2-col" style="margin-top: 20px;">
+                <button id="btn-view-review" class="btn btn-fire">XEM GIẢI THÍCH 📖</button>
+                <button class="btn btn-gray" onclick="location.reload()">LÀM ĐỀ KHÁC</button>
+            </div>
+            <div id="review-area" style="display:none; margin-top: 30px;">
+                <h2 id="review-heading" style="text-align:center; color: var(--primary); margin: 30px 0;">CHI TIẾT BÀI LÀM</h2>
+                <div id="review-content"></div>
+            </div>
+        </section>
+
+        <!-- Màn hình Admin -->
+        <section id="screen-admin" class="screen">
+            <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                <h2 class="fire-text" style="margin:0; font-size: 1.5rem;">BẢNG QUẢN TRỊ CAO CẤP</h2>
+                <button id="btn-admin-close" class="btn btn-gray" style="padding: 8px 15px; font-size: 0.8rem;">ĐÓNG ✖</button>
+            </div>
+
+            <div class="admin-tabs">
+                <div class="admin-tab active" id="tab-results">📊 QUẢN LÍ KẾT QUẢ</div>
+                <div class="admin-tab" id="tab-students">👥 QUẢN LÍ HỌC SINH</div>
+                <div class="admin-tab" id="tab-questions">📚 QUẢN LÍ ĐỀ THI</div>
+            </div>
+
+            <!-- TAB 1: KẾT QUẢ THI -->
+            <div id="admin-results-section">
+                <div class="card" style="padding: 20px; margin-bottom: 20px; background: #fffbeb; border: 2px solid #fcd34d;">
+                    <h4 style="margin: 0 0 15px 0; color: #92400e; text-transform: uppercase;">⚙️ Cài đặt Thời gian & Gợi ý</h4>
+                    <div class="admin-controls" style="background: transparent; padding: 0; margin: 0;">
+                        <div style="flex: 1; min-width: 100px;">
+                            <label style="font-size: 0.75rem; font-weight: bold;">LUYỆN TẬP (PHÚT):</label>
+                            <input type="number" id="cfg-time-practice" value="45" style="padding: 10px; margin-top:5px;">
+                        </div>
+                        <div style="flex: 1; min-width: 100px;">
+                            <label style="font-size: 0.75rem; font-weight: bold;">KIỂM TRA (PHÚT):</label>
+                            <input type="number" id="cfg-time-test" value="45" style="padding: 10px; margin-top:5px;">
+                        </div>
+                        <div style="flex: 1; min-width: 100px;">
+                            <label style="font-size: 0.75rem; font-weight: bold;">SỐ GỢI Ý (LƯỢT):</label>
+                            <input type="number" id="cfg-max-hints" value="3" style="padding: 10px; margin-top:5px;">
+                        </div>
+                        <button id="btn-save-config" class="btn btn-fire" style="padding: 12px 20px; font-size: 0.8rem; width: 100%;">CẬP NHẬT CẤU HÌNH</button>
+                    </div>
+                </div>
+
+                <div class="stats-summary" id="admin-stats" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;"></div>
+                
+                <div class="admin-controls">
+                    <div style="flex:1; min-width: 120px;">
+                        <label style="font-size: 0.75rem; font-weight: bold;">SẮP XẾP:</label>
+                        <select id="admin-sort" style="width:100%; padding:10px; margin-top:5px;">
+                            <option value="score_desc">Điểm cao nhất</option>
+                            <option value="date_new">Mới nhất</option>
+                            <option value="duration_fast">Làm nhanh nhất</option>
+                        </select>
+                    </div>
+                    <div style="flex:1; min-width: 120px;">
+                        <label style="font-size: 0.75rem; font-weight: bold;">TRƯỜNG:</label>
+                        <select id="admin-filter-school" style="width:100%; padding:10px; margin-top:5px;">
+                            <option value="all">Tất cả trường</option>
+                        </select>
+                    </div>
+                    <div style="flex:1; min-width: 120px;">
+                        <label style="font-size: 0.75rem; font-weight: bold;">LỚP:</label>
+                        <select id="admin-filter-class" style="width:100%; padding:10px; margin-top:5px;">
+                            <option value="all">Tất cả lớp</option>
+                        </select>
+                    </div>
+                    <div style="flex:1; min-width: 120px;">
+                        <label style="font-size: 0.75rem; font-weight: bold;">CHUYÊN ĐỀ:</label>
+                        <select id="admin-filter-topic" style="width:100%; padding:10px; margin-top:5px;">
+                            <option value="all">Tất cả chuyên đề</option>
+                        </select>
+                    </div>
+                    <div style="flex:1; min-width: 120px;">
+                        <label style="font-size: 0.75rem; font-weight: bold;">CHẾ ĐỘ:</label>
+                        <select id="admin-filter-mode" style="width:100%; padding:10px; margin-top:5px;">
+                            <option value="all">Tất cả</option>
+                            <option value="test">Kiểm tra</option>
+                            <option value="practice">Luyện tập</option>
+                        </select>
+                    </div>
+                    
+                    <div class="grid-2-col" style="width: 100%;">
+                        <button id="btn-admin-refresh" class="btn" style="background:var(--secondary); color:white; font-size:0.8rem; padding: 12px;">LÀM MỚI 🔄</button>
+                        <button id="btn-admin-inbox" class="btn" style="background:var(--danger); color:white; font-size:0.8rem; padding: 12px;">HỘP THƯ LỖI 📩</button>
+                        <button id="btn-export-excel" class="btn" style="background:var(--success); color:white; font-size:0.8rem; padding: 12px; grid-column: span 2;">XUẤT EXCEL 📗</button>
+                    </div>
+                </div>
+                <div class="admin-table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Hạng</th><th>SBD</th><th>Họ tên</th><th>Lớp</th><th>Trường</th><th>Chuyên đề</th><th>Chế độ</th><th>Điểm</th><th>TG Làm</th><th>Ngày</th><th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-list-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB 2: QUẢN LÝ DANH SÁCH HỌC SINH -->
+            <div id="admin-students-section" style="display: none;">
+                <div class="card" style="padding: 20px; margin-bottom: 20px; background: #f0fdf4; border: 2px solid #86efac;">
+                    <h4 style="margin: 0 0 15px 0; color: #166534; text-transform: uppercase;">📥 Import Dữ Liệu Học Sinh</h4>
+                    <p style="font-size: 0.85rem; color: #15803d; margin-bottom: 15px;">*Chức năng này giúp tự động tạo danh sách học sinh để dùng cho thanh tìm kiếm. Vui lòng sử dụng file mẫu để đảm bảo đúng định dạng cột.</p>
+                    <div class="grid-2-col">
+                        <button id="btn-download-template" class="btn btn-gray" style="background: #e2e8f0; color: #1e293b;"><span style="font-size: 1.2rem; margin-right: 5px;">⬇️</span> TẢI FILE MẪU EXCEL</button>
+                        <button id="btn-trigger-import" class="btn btn-fire" style="background: var(--success);"><span style="font-size: 1.2rem; margin-right: 5px;">📤</span> IMPORT EXCEL</button>
+                        <button id="btn-delete-all-students" class="btn btn-fire" style="background: var(--danger); grid-column: span 2;"><span style="font-size: 1.2rem; margin-right: 5px;">🗑️</span> XÓA TOÀN BỘ DANH SÁCH HS</button>
+                        <input type="file" id="file-import-students" accept=".xlsx, .xls" style="display: none;">
+                    </div>
+                </div>
+
+                <div class="admin-controls">
+                    <div style="flex:1; min-width: 120px;">
+                        <label style="font-size: 0.75rem; font-weight: bold;">LỌC THEO TRƯỜNG:</label>
+                        <select id="stu-filter-school" style="width:100%; padding:10px; margin-top:5px;">
+                            <option value="all">Tất cả trường</option>
+                        </select>
+                    </div>
+                    <div style="flex:1; min-width: 120px;">
+                        <label style="font-size: 0.75rem; font-weight: bold;">LỌC THEO LỚP:</label>
+                        <select id="stu-filter-class" style="width:100%; padding:10px; margin-top:5px;">
+                            <option value="all">Tất cả lớp</option>
+                        </select>
+                    </div>
+                    <button id="btn-refresh-students" class="btn" style="background:var(--secondary); color:white; font-size:0.8rem; padding: 12px; height: max-content; align-self: flex-end;">LÀM MỚI 🔄</button>
+                </div>
+
+                <div class="admin-table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;">STT</th>
+                                <th>Họ Tên</th>
+                                <th>Lớp</th>
+                                <th>SBD</th>
+                                <th>Trường</th>
+                                <th style="width: 80px; text-align: center;">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="student-list-body">
+                            <tr><td colspan="6" style="text-align: center;">Đang tải danh sách...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB 3: QUẢN LÝ ĐỀ THI -->
+            <div id="admin-questions-section" style="display: none;">
+                <div class="card" style="padding: 20px; margin-bottom: 20px; background: #eff6ff; border: 2px solid #bfdbfe;">
+                    <h4 style="margin: 0 0 15px 0; color: #1e40af; text-transform: uppercase;">📥 Import Ngân Hàng Đề Theo Từng Bài</h4>
+                    <p style="font-size: 0.85rem; color: #1d4ed8; margin-bottom: 15px;">*Tải file mẫu, soạn câu hỏi cho <b>1 bài cụ thể</b>. Chọn bài tương ứng ở menu bên dưới rồi tải file lên. Lưu ý: Dữ liệu mới sẽ <b>GHI ĐÈ</b> lên dữ liệu cũ của bài đó trên hệ thống.</p>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <label style="font-size: 0.85rem; font-weight: bold; color: #1e40af; display:block; margin-bottom:5px;">1. CHỌN CHUYÊN ĐỀ ĐỂ IMPORT:</label>
+                        <select id="import-q-topic" style="width: 100%; border-color: #bfdbfe; color: #1e40af; font-weight: bold; padding: 12px;">
+                            <option value="">-- Vui lòng chọn chuyên đề trước khi thao tác --</option>
+                            <option value="bai_11">Bài 11: Điện trở. Định luật Ohm</option>
+                            <option value="bai_12">Bài 12: Đoạn mạch nối tiếp, song song</option>
+                            <option value="bai_13">Bài 13: Năng lượng điện và công suất</option>
+                            <option value="bai_14">Bài 14: Cảm ứng điện từ. Dòng điện XC</option>
+                            <option value="bai_15">Bài 15: Tác dụng của dòng điện XC</option>
+                        </select>
+                    </div>
+
+                    <div class="grid-2-col">
+                        <button id="btn-download-q-template" class="btn btn-gray" style="background: #e2e8f0; color: #1e293b;"><span style="font-size: 1.2rem; margin-right: 5px;">⬇️</span> 2. TẢI FILE WORD MẪU</button>
+                        <button id="btn-trigger-import-q" class="btn btn-fire" style="background: var(--primary);"><span style="font-size: 1.2rem; margin-right: 5px;">📤</span> 3. IMPORT ĐỀ LÊN ĐÁM MÂY</button>
+                        <button id="btn-delete-all-q" class="btn btn-fire" style="background: var(--danger); grid-column: span 2;"><span style="font-size: 1.2rem; margin-right: 5px;">🗑️</span> XÓA TOÀN BỘ NGÂN HÀNG ĐỀ (TẤT CẢ CÁC BÀI)</button>
+                        <input type="file" id="file-import-questions" accept=".docx" style="display: none;">
+                    </div>
+                </div>
+                <div class="admin-table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Chuyên Đề (Mã)</th>
+                                <th>Số lượng Trắc nghiệm</th>
+                                <th>Số lượng Đúng/Sai</th>
+                                <th>Số lượng TL Ngắn</th>
+                                <th>Tổng số câu</th>
+                            </tr>
+                        </thead>
+                        <tbody id="question-bank-body">
+                            <tr><td colspan="5" style="text-align: center;">Đang tải dữ liệu kho đề...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+
+        <footer>
+            <div style="font-weight: 800; color: #cbd5e0; margin-bottom: 5px;">HỆ THỐNG LUYỆN TẬP VẬT LÝ 9</div>
+            <div style="font-size: 0.85rem;">Bản quyền thuộc về Trường THCS Thuỷ Phương, Thành phố Huế</div>
+        </footer>
+    </div>
+</div>
+
+<script type="module" src="script.js?v=20261007-menu-layer"></script>
+</body>
+</html>
