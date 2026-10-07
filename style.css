@@ -713,3 +713,29 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
 #screen-admin .admin-filter-apply { width:100%; padding:9px 12px; border:0; border-radius:9px; background:var(--primary); color:#fff; font:inherit; font-weight:700; cursor:pointer; }
 @media (max-width:760px) { #screen-admin .admin-excel-filters { grid-template-columns:repeat(2,minmax(0,1fr)); min-width:100%; } }
 @media (max-width:380px) { #screen-admin .admin-excel-filters { grid-template-columns:1fr; } }
+
+
+/* Admin results toolbar: full-width filters above a compact action row. */
+#screen-admin #admin-results-section > .admin-controls { display:grid; grid-template-columns:minmax(0,1fr); align-items:stretch; gap:12px; }
+#screen-admin #admin-results-section .admin-excel-filters { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); width:100%; min-width:0; flex:none; gap:12px; }
+#screen-admin #admin-results-section .grid-2-col { display:flex; width:100%; grid-template-columns:none; align-items:center; justify-content:flex-end; gap:10px; }
+#screen-admin #admin-results-section .grid-2-col > button { width:auto !important; min-width:150px; min-height:44px; margin:0; }
+#screen-admin #admin-results-section .grid-2-col #btn-export-excel { flex:0 0 auto; grid-column:auto; }
+
+/* Frosted Liquid Glass multi-select popovers. */
+#screen-admin .admin-filter-menu { width:max(100%,270px); max-width:min(360px,92vw); padding:14px; overflow:hidden; color:#fff; border:1px solid rgba(255,255,255,.42); border-radius:18px; background:radial-gradient(circle at 8% 0%,rgba(255,255,255,.22),transparent 38%),linear-gradient(145deg,rgba(68,54,132,.78),rgba(35,28,83,.82)); box-shadow:0 22px 55px rgba(12,8,42,.40),inset 0 1px 0 rgba(255,255,255,.30),inset 0 -1px 0 rgba(255,255,255,.08); backdrop-filter:blur(26px) saturate(165%); -webkit-backdrop-filter:blur(26px) saturate(165%); }
+#screen-admin .admin-filter-trigger { border-color:rgba(255,255,255,.44); color:#fff; background:linear-gradient(135deg,rgba(255,255,255,.20),rgba(255,255,255,.10)); box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 8px 22px rgba(22,12,66,.12); }
+#screen-admin .admin-filter-trigger:hover, #screen-admin .admin-filter-trigger[aria-expanded="true"] { border-color:rgba(255,255,255,.72); background:linear-gradient(135deg,rgba(255,255,255,.28),rgba(255,255,255,.14)); box-shadow:0 0 0 3px rgba(184,153,255,.16),0 10px 26px rgba(24,14,70,.18); }
+#screen-admin .admin-filter-search { border-color:rgba(255,255,255,.25); border-radius:11px; color:#fff; background:rgba(15,12,48,.32); box-shadow:inset 0 1px 0 rgba(255,255,255,.12); }
+#screen-admin .admin-filter-search::placeholder { color:rgba(255,255,255,.58); }
+#screen-admin .admin-filter-search:focus { border-color:rgba(255,255,255,.60); background:rgba(15,12,48,.45); box-shadow:0 0 0 3px rgba(178,149,255,.18); }
+#screen-admin .admin-filter-options { padding:4px; scrollbar-color:rgba(255,255,255,.38) transparent; }
+#screen-admin .admin-filter-option { color:rgba(255,255,255,.90); border:1px solid transparent; border-radius:9px; }
+#screen-admin .admin-filter-option:hover { color:#fff; background:rgba(255,255,255,.13); border-color:rgba(255,255,255,.12); }
+#screen-admin .admin-filter-option input { accent-color:#e89aff; }
+#screen-admin .admin-filter-menu-actions button { padding:7px 9px; border:1px solid rgba(255,255,255,.20); border-radius:9px; color:rgba(255,255,255,.88); background:rgba(255,255,255,.09); transition:background .18s ease,border-color .18s ease; }
+#screen-admin .admin-filter-menu-actions button:hover { border-color:rgba(255,255,255,.42); background:rgba(255,255,255,.17); }
+#screen-admin .admin-filter-apply { border:1px solid rgba(255,255,255,.30); border-radius:11px; background:linear-gradient(105deg,#8b62ff,#d567d3); box-shadow:0 8px 20px rgba(37,20,100,.28),inset 0 1px 0 rgba(255,255,255,.26); }
+#screen-admin .admin-filter-apply:hover { filter:brightness(1.08); }
+@media (max-width:760px) { #screen-admin #admin-results-section .admin-excel-filters { grid-template-columns:repeat(2,minmax(0,1fr)); } #screen-admin #admin-results-section .grid-2-col { flex-wrap:wrap; } #screen-admin #admin-results-section .grid-2-col > button { flex:1 1 145px; } }
+@media (max-width:420px) { #screen-admin #admin-results-section .admin-excel-filters { grid-template-columns:1fr; } #screen-admin #admin-results-section .grid-2-col { display:grid; grid-template-columns:1fr 1fr; } #screen-admin #admin-results-section .grid-2-col #btn-export-excel { grid-column:1 / -1; } }
