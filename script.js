@@ -478,7 +478,7 @@ async function fetchRankAndLeaderboard(myScore, myTopic) {
 }
 
 function setupAdminExcelFilters(options) {
- const controls=document.querySelector('#admin-results-section .admin-controls'); if(!controls)return;
+ const controls=document.querySelector('#admin-results-section > .admin-controls'); if(!controls)return;
  const state=window.adminExcelFilterState||(window.adminExcelFilterState={school:[],class:[],topic:[],mode:[]});
  const defs=[{key:'school',label:'Trường',values:options.school.map(String)},{key:'class',label:'Lớp',values:options.class.map(String)},{key:'topic',label:'Chuyên đề',values:options.topic.map(String)},{key:'mode',label:'Chế độ',values:['test','practice']}];
  const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
