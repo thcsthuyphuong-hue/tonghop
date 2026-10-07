@@ -34,7 +34,6 @@ let maxHintsAllowed = 3;
 let hintsUsed = 0;       
 let unlockedHints = [];  
 
-let isAutoScaleEnabled = true;
 
 let canCheckCheat = false; 
 let isProcessingCheat = false;
@@ -46,32 +45,6 @@ let currentDeleteId = null;
 
 const audioPing = new Audio('https://www.soundjay.com/buttons/sounds/button-16.mp3');
 const audioFinish = new Audio('https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3');
-
-function autoScaleApp() {
-    const container = document.querySelector('.container');
-    const wrapper = document.getElementById('app-wrapper');
-    const adminScreen = document.getElementById('screen-admin');
-    const reviewArea = document.getElementById('review-area');
-    if (!container || !wrapper) return;
-
-    const isReviewing = reviewArea && reviewArea.style.display === 'block';
-    if (!isAutoScaleEnabled || (adminScreen && adminScreen.classList.contains('active')) || window.innerWidth <= 768 || isReviewing) {
-        container.style.transform = `none`; wrapper.style.height = 'auto'; wrapper.style.overflow = 'visible';
-        container.style.marginBottom = '50px'; return; 
-    }
-
-    container.style.transform = `none`; wrapper.style.height = 'auto'; wrapper.style.overflow = 'visible'; container.style.marginBottom = '0px';
-    void container.offsetHeight; 
-    const naturalHeight = container.offsetHeight + 20, windowHeight = window.innerHeight;
-
-    if (naturalHeight > windowHeight) {
-        const ratio = windowHeight / naturalHeight; container.style.transform = `scale(${ratio})`;
-        wrapper.style.height = `${windowHeight}px`; wrapper.style.overflow = 'hidden'; 
-    } else {
-        container.style.transform = `scale(1)`; wrapper.style.height = `${windowHeight}px`; wrapper.style.overflow = 'hidden'; 
-    }
-}
-window.addEventListener('resize', autoScaleApp); autoScaleApp();
 
 const closeOverlay = (modal) => {
     modal.style.display = 'none';
@@ -292,13 +265,6 @@ async function loadTimeConfig() {
             const data = docRef.data();
             practiceTimeLimit = (data.practice || 45) * 60; testTimeLimit = (data.test || 45) * 60; maxHintsAllowed = data.maxHints !== undefined ? data.maxHints : 3;
             document.getElementById('cfg-time-practice').value = data.practice || 45; document.getElementById('cfg-time-test').value = data.test || 45; document.getElementById('cfg-max-hints').value = maxHintsAllowed;
-            
-            if(data.autoScale !== undefined) {
-                isAutoScaleEnabled = data.autoScale;
-                const statusEl = document.getElementById('autoscale-status');
-                if(statusEl) statusEl.innerText = isAutoScaleEnabled ? '🟢' : '🔴';
-                autoScaleApp();
-            }
         }
     } catch(e) {}
 }
@@ -453,13 +419,13 @@ function renderQuestion() {
                 if (hintsUsed >= maxHintsAllowed) { showCustomAlert("⚠️ Bạn đã hết lượt xem gợi ý!"); return; }
                 hintsUsed++; unlockedHints.push(q.id); hb.innerText = "ĐÃ MỞ GỢI Ý 💡";
             }
-            b.style.display = isH ? 'block' : 'none'; if(isH && window.MathJax) await MathJax.typesetPromise([b]); autoScaleApp(); 
+            b.style.display = isH ? 'block' : 'none'; if(isH && window.MathJax) await MathJax.typesetPromise([b]); 
         };
     }
     document.getElementById('btn-prev').style.visibility = currentIdx === 0 ? 'hidden' : 'visible';
     document.getElementById('btn-next').style.display = currentIdx === currentExam.length - 1 ? 'none' : 'block';
     document.getElementById('btn-finish').style.display = currentIdx === currentExam.length - 1 ? 'block' : 'none';
-    if(window.MathJax) MathJax.typesetPromise().then(autoScaleApp); else setTimeout(autoScaleApp, 50);
+    if(window.MathJax) MathJax.typesetPromise();
 }
 
 async function calculateResult() {
@@ -536,7 +502,7 @@ async function renderAdmin() {
         statsBox.innerHTML = `<div class="stat-box" style="border-bottom-color: #f59e0b"><b>${s.xs}</b><br><small>X.Sắc</small></div><div class="stat-box" style="border-bottom-color: #10b981"><b>${s.g}</b><br><small>Giỏi</small></div><div class="stat-box" style="border-bottom-color: #3b82f6"><b>${s.k}</b><br><small>Khá</small></div><div class="stat-box" style="border-bottom-color: #8b5cf6"><b>${s.d}</b><br><small>Đạt</small></div><div class="stat-box" style="border-bottom-color: #ef4444"><b>${s.cd}</b><br><small>C.Đạt</small></div>`;
         listBody.innerHTML = data.map((i, idx) => `<tr><td>${idx+1}</td><td>${i.sbd}</td><td>${i.name}</td><td>${i.class}</td><td>${i.school||'-'}</td><td style="font-size:0.75rem; color:var(--primary); font-weight:bold;">${i.topic || 'Đề tổng hợp'}</td><td><span class="badge-mode ${i.mode === 'practice' ? 'badge-practice' : 'badge-test'}">${i.mode === 'practice' ? 'Luyện tập' : 'Kiểm tra'}</span></td><td><b>${Number((i.score||0).toFixed(2))}</b></td><td>${i.duration}s</td><td>${new Date(i.timestamp).toLocaleDateString()}</td><td style="display:flex; gap:5px;"><button style="background:var(--secondary); color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer" class="btn-view" data-id="${i.id}">👁️</button><button style="background:red; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer" class="btn-del" data-id="${i.id}">X</button></td></tr>`).join('');
         listBody.querySelectorAll('.btn-del').forEach(b => b.onclick = () => deleteEntry(b.dataset.id, 'result'));
-        listBody.querySelectorAll('.btn-view').forEach(b => b.onclick = () => viewAdminReview(b.dataset.id)); window.currentFilteredData = data; setTimeout(autoScaleApp, 50);
+        listBody.querySelectorAll('.btn-view').forEach(b => b.onclick = () => viewAdminReview(b.dataset.id)); window.currentFilteredData = data;
     } catch(e) { listBody.innerHTML = "<tr><td colspan='11'>Lỗi kết nối Firebase.</td></tr>"; }
 }
 
@@ -583,7 +549,7 @@ async function renderAdminStudents() {
             listBody.innerHTML = data.map((i, idx) => `<tr><td style="text-align:center;">${idx+1}</td><td><b>${i.name}</b></td><td>${i.class}</td><td>${i.sbd}</td><td>${i.school}</td><td style="text-align:center;"><button style="background:var(--danger); color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer" class="btn-del-stu" data-id="${i.id}">Xóa</button></td></tr>`).join('');
             listBody.querySelectorAll('.btn-del-stu').forEach(b => b.onclick = () => deleteEntry(b.dataset.id, 'student'));
         }
-        setTimeout(autoScaleApp, 50);
+
     } catch(e) { listBody.innerHTML = "<tr><td colspan='6' style='text-align: center; color: red;'>Lỗi kết nối CSDL.</td></tr>"; }
 }
 
@@ -1188,29 +1154,13 @@ async function executePendingAdminAction() {
             showCustomAlert("✅ Đã xóa sạch kho đề trên hệ thống!"); renderAdminQuestions();
         } catch(e) { showCustomAlert("Lỗi khi xóa dữ liệu đề!"); }
     }
-    else if (pendingAuthAction === 'toggle_autoscale') {
-        const newState = !isAutoScaleEnabled;
-        try {
-            await setDoc(doc(db, 'artifacts', appId_fixed, 'public', 'data', 'config', 'timer_settings'), { autoScale: newState, lastUpdated: new Date().toISOString() }, { merge: true }); 
-            isAutoScaleEnabled = newState; document.getElementById('autoscale-status').innerText = isAutoScaleEnabled ? '🟢' : '🔴';
-            showCustomAlert(`Đã ${isAutoScaleEnabled ? 'BẬT' : 'TẮT'} tính năng thu phóng (PC) thành công!`); autoScaleApp();
-        } catch(e) { showCustomAlert("Lỗi khi lưu cấu hình!"); }
-    }
     else if (pendingAuthAction === 'config') {
         const pTime = parseInt(document.getElementById('cfg-time-practice').value), tTime = parseInt(document.getElementById('cfg-time-test').value), mHints = parseInt(document.getElementById('cfg-max-hints').value);
         if(isNaN(pTime) || isNaN(tTime) || isNaN(mHints) || pTime <= 0 || tTime <= 0 || mHints < 0) { showCustomAlert("⚠️ Vui lòng nhập số hợp lệ!"); return; }
-        try { await setDoc(doc(db, 'artifacts', appId_fixed, 'public', 'data', 'config', 'timer_settings'), { practice: pTime, test: tTime, maxHints: mHints, autoScale: isAutoScaleEnabled, lastUpdated: new Date().toISOString() }, { merge: true }); practiceTimeLimit = pTime * 60; testTimeLimit = tTime * 60; maxHintsAllowed = mHints; showCustomAlert("Đã cập nhật cấu hình thành công!"); } catch(e) { showCustomAlert("Lỗi khi lưu cấu hình!"); }
+        try { await setDoc(doc(db, 'artifacts', appId_fixed, 'public', 'data', 'config', 'timer_settings'), { practice: pTime, test: tTime, maxHints: mHints, lastUpdated: new Date().toISOString() }, { merge: true }); practiceTimeLimit = pTime * 60; testTimeLimit = tTime * 60; maxHintsAllowed = mHints; showCustomAlert("Đã cập nhật cấu hình thành công!"); } catch(e) { showCustomAlert("Lỗi khi lưu cấu hình!"); }
     } else if (pendingAuthAction === 'inbox') { renderAdminInbox(); }
     pendingAuthAction = null;
 }
-
-document.getElementById('btn-toggle-autoscale').onclick = () => { 
-    pendingAuthAction = 'toggle_autoscale'; 
-    if (auth.currentUser && !auth.currentUser.isAnonymous) { executePendingAdminAction(); return; }
-    document.getElementById('auth-action-title').innerText = "Xác nhận Đổi Thu Phóng"; 
-    document.getElementById('delete-pw').value = ''; document.getElementById('delete-email').value = '';
-    document.getElementById('delete-auth-modal').style.display = 'flex'; 
-};
 
 document.getElementById('btn-save-config').onclick = () => { 
     pendingAuthAction = 'config'; 
@@ -1345,7 +1295,7 @@ document.getElementById('btn-view-review').onclick = () => {
         }
         h += `<div class="explanation"><b>Giải thích:</b><br>${q.e}</div></div>`;
     });
-    content.innerHTML = h; const target = document.getElementById('review-heading'); if (target) { setTimeout(async () => { const y = target.getBoundingClientRect().top + window.pageYOffset - 20; window.scrollTo({ top: y, behavior: 'smooth' }); if(window.MathJax) await MathJax.typesetPromise([content]); autoScaleApp(); }, 150); }
+    content.innerHTML = h; const target = document.getElementById('review-heading'); if (target) { setTimeout(async () => { const y = target.getBoundingClientRect().top + window.pageYOffset - 20; window.scrollTo({ top: y, behavior: 'smooth' }); if(window.MathJax) await MathJax.typesetPromise([content]); }, 150); }
 };
 
 document.getElementById('btn-export-excel').onclick = () => {
@@ -1355,7 +1305,7 @@ document.getElementById('btn-export-excel').onclick = () => {
     const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Báo cáo học tập"); XLSX.writeFile(wb, `KetQua_TongHop_${new Date().getTime()}.xlsx`);
 };
 
-function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); setTimeout(autoScaleApp, 50); }
+function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 function startTimer() { clearInterval(timerInt); timerInt = setInterval(() => { timeLeft--; const el = document.getElementById('timer'); if(el) el.innerText = `${Math.floor(timeLeft/60)}:${(timeLeft%60).toString().padStart(2,'0')}`; if(timeLeft <= 0) calculateResult(); }, 1000); }
 
