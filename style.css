@@ -1070,3 +1070,40 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior:auto !important; animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
 }
+
+
+/* Dropdown motion refinement: reveal the glass surface from its anchor edge. */
+@keyframes liquidGlassRollOpenDown {
+  0% { opacity:0; clip-path:inset(0 0 84% 0 round 18px); transform:perspective(900px) rotateX(-11deg) scaleY(.90) translateY(-6px); filter:blur(3px); }
+  62% { opacity:1; clip-path:inset(0 0 0 0 round 18px); transform:perspective(900px) rotateX(1deg) scaleY(1.01) translateY(1px); filter:blur(0); }
+  100% { opacity:1; clip-path:inset(0 0 0 0 round 18px); transform:perspective(900px) rotateX(0) scaleY(1) translateY(0); filter:blur(0); }
+}
+@keyframes liquidGlassRollOpenUp {
+  0% { opacity:0; clip-path:inset(84% 0 0 0 round 18px); transform:perspective(900px) rotateX(11deg) scaleY(.90) translateY(6px); filter:blur(3px); }
+  62% { opacity:1; clip-path:inset(0 0 0 0 round 18px); transform:perspective(900px) rotateX(-1deg) scaleY(1.01) translateY(-1px); filter:blur(0); }
+  100% { opacity:1; clip-path:inset(0 0 0 0 round 18px); transform:perspective(900px) rotateX(0) scaleY(1) translateY(0); filter:blur(0); }
+}
+@keyframes liquidGlassRollCloseDown {
+  0% { opacity:1; clip-path:inset(0 0 0 0 round 18px); transform:perspective(900px) rotateX(0) scaleY(1) translateY(0); filter:blur(0); }
+  100% { opacity:0; clip-path:inset(0 0 84% 0 round 18px); transform:perspective(900px) rotateX(-9deg) scaleY(.91) translateY(-5px); filter:blur(2px); }
+}
+@keyframes liquidGlassRollCloseUp {
+  0% { opacity:1; clip-path:inset(0 0 0 0 round 18px); transform:perspective(900px) rotateX(0) scaleY(1) translateY(0); filter:blur(0); }
+  100% { opacity:0; clip-path:inset(84% 0 0 0 round 18px); transform:perspective(900px) rotateX(9deg) scaleY(.91) translateY(5px); filter:blur(2px); }
+}
+#screen-admin .admin-filter-menu[data-roll-state],
+.topic-select-glass-menu[data-roll-state] {
+  backface-visibility:hidden;
+  transform-style:preserve-3d;
+  will-change:transform,opacity,filter,clip-path;
+}
+#screen-admin .admin-filter-menu[data-roll-state="opening"],
+.topic-select-glass-menu[data-roll-state="opening"] {
+  animation-duration:420ms;
+  animation-timing-function:cubic-bezier(.16,1,.3,1);
+}
+#screen-admin .admin-filter-menu[data-roll-state="closing"],
+.topic-select-glass-menu[data-roll-state="closing"] {
+  animation-duration:230ms;
+  animation-timing-function:cubic-bezier(.4,0,.7,.2);
+}
