@@ -1390,8 +1390,7 @@ function setupAdminStudentsFilters(options) {
         const items = d.values.map(v => '<label class="admin-filter-option"><input type="checkbox" data-student-filter="' + d.key + '" value="' + esc(v) + '"' + (selected.includes(v) ? ' checked' : '') + '><span>' + esc(v) + '</span></label>').join('');
         return '<div class="admin-filter-group" data-student-group="' + d.key + '"><button type="button" class="admin-filter-trigger" aria-expanded="false">' + esc(title) + ' ▾</button><div class="admin-filter-menu" hidden><input class="admin-filter-search" type="search" placeholder="Tìm ' + esc(d.label.toLowerCase()) + '..."><div class="admin-filter-options">' + (items || '<small>Chưa có dữ liệu</small>') + '</div><div class="admin-filter-menu-actions"><button type="button" data-student-action="all">Chọn tất cả</button><button type="button" data-student-action="clear">Bỏ lọc</button></div><button type="button" class="admin-filter-apply">Áp dụng</button></div></div>';
     }).join('');
-    if(sortControl){sortControl.classList.add('admin-sort-control');root.appendChild(sortControl);}
-  root.querySelectorAll('.admin-filter-trigger').forEach(button => button.onclick = () => {
+    root.querySelectorAll('.admin-filter-trigger').forEach(button => button.onclick = () => {
         const group = button.closest('.admin-filter-group'), menu = group.querySelector('.admin-filter-menu'), open = menu.hidden;
         root.querySelectorAll('.admin-filter-menu').forEach(item => item.hidden = true);
         root.querySelectorAll('.admin-filter-trigger').forEach(item => item.setAttribute('aria-expanded', 'false'));
