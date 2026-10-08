@@ -1085,6 +1085,10 @@ const parseWordQuestionBank = async (arrayBuffer) => {
 
     const finish = () => {
         if (!current) return;
+        if (current.type === 'mcq' && /^[A-D]$/i.test(current.a)) {
+            const answerIndex = current.a.toUpperCase().charCodeAt(0) - 65;
+            if (current.o[answerIndex]) current.a = current.o[answerIndex];
+        }
         const q = current.type === 'tf' ? current.ctx : current.q;
         let reason = '';
         if (!q) reason = 'Thiếu nội dung câu hỏi/ngữ cảnh.';
@@ -1192,6 +1196,20 @@ const parseWordQuestionBank = async (arrayBuffer) => {
             return;
         }
         if (current.type === 'tf') {
+            const labelled = [...value.matchAll(/(?:^|[\\s,;|])([a-d])\\s*[.)\\-:]\\s*(Đúng|Sai|Đ|S|D|T|True|False)/gi)];
+            if (labelled.length) {
+                const assigned = new Set();
+                labelled.forEach(match => {
+                    const index = match[1].toLowerCase().charCodeAt(0) - 97;
+                    const parsed = parseTruthValue(match[2]);
+                    if (assigned.has(index)) addIssue('Ý ' + match[1].toLowerCase() + ' có nhiều đáp án.');
+                    assigned.add(index);
+                    if (parsed === null) addIssue('Không hiểu đáp án Đúng/Sai "' + match[2] + '".');
+                    if (current.sts[index]) current.sts[index].a = parsed;
+                });
+                if (assigned.size !== 4) addIssue('Dòng đáp án gắn nhãn chưa có đủ các ý a–d.');
+                return;
+            }
             const values = value.split(/[\s,;|/]+/).filter(Boolean);
             if (values.length !== 4) {
                 addIssue('Dòng đáp án Đúng/Sai có ' + values.length + ' giá trị; cần đúng 4 giá trị.');
