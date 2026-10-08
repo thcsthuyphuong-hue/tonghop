@@ -1277,3 +1277,37 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
 #screen-admin .admin-table tbody tr:hover { background:rgba(255,255,255,.12); }
 #screen-admin .admin-table td { color:rgba(255,255,255,.96); }
 #screen-admin .admin-table td[style*="color:var(--primary)"] { color:#e3dcff !important; }
+
+
+/* Improve text contrast on the login screen and Admin tabs 2/3. */
+#screen-start .field-group label,
+#screen-start .topic-card label,
+#screen-start .card-title-row .eyebrow,
+#screen-start .start-actions-label .eyebrow {
+  color:rgba(255,255,255,.94) !important;
+  text-shadow:0 1px 3px rgba(18,12,49,.58);
+}
+#screen-start .card-title-row h2 {
+  color:#fff !important;
+  text-shadow:0 1px 4px rgba(18,12,49,.52);
+}
+#screen-start .field-group small,
+#screen-start #username-hint {
+  color:rgba(255,255,255,.78) !important;
+  text-shadow:0 1px 3px rgba(18,12,49,.58);
+}
+#screen-start .topic-card {
+  background:rgba(24,18,66,.34) !important;
+  border-color:rgba(255,255,255,.34);
+}
+#screen-admin #admin-students-section > .card h4,
+#screen-admin #admin-students-section > .card p {
+  color:rgba(244,255,249,.96) !important;
+  text-shadow:0 1px 3px rgba(13,28,34,.52);
+}
+#screen-admin #admin-questions-section > .card h4,
+#screen-admin #admin-questions-section > .card p,
+#screen-admin #admin-questions-section > .card label {
+  color:rgba(245,247,255,.96) !important;
+  text-shadow:0 1px 3px rgba(15,11,48,.56);
+}
