@@ -467,11 +467,15 @@ body::before {
 }
 #screen-quiz .section-title, #screen-admin .admin-controls { background:rgba(255,255,255,.10) !important; color:#fff !important; border-color:rgba(255,255,255,.25); }
 #screen-quiz h3, #screen-result h2, #screen-result #review-heading, #screen-admin h2, #screen-admin h4 { color:#fff !important; }
-#screen-quiz .option, #screen-quiz .tf-btn, #screen-quiz .explanation { background:rgba(255,255,255,.10) !important; color:#fff; border-color:rgba(255,255,255,.22); }
+#screen-quiz .option, #screen-quiz .tf-btn:not(.active-t):not(.active-f), #screen-quiz .explanation { background:rgba(255,255,255,.10) !important; color:#fff; border-color:rgba(255,255,255,.22); }
 #screen-quiz .option.selected { background:rgba(255,112,214,.18) !important; border-color:#ff8be1; }
 #screen-quiz .option.correct { background:rgba(16,185,129,.24) !important; color:#d1fae5; }
 #screen-quiz .option.wrong { background:rgba(239,68,68,.24) !important; color:#ffe1e1; }
 #screen-quiz .tf-row { border-color:rgba(255,255,255,.14); }
+#screen-quiz .tf-btn.active-t { background:#159b70 !important; color:#fff !important; border-color:rgba(110,255,204,.88) !important; box-shadow:0 0 0 3px rgba(52,211,153,.25),0 8px 22px rgba(16,185,129,.28); transform:translateY(-1px); }
+#screen-quiz .tf-btn.active-f { background:#d83e60 !important; color:#fff !important; border-color:rgba(255,172,192,.92) !important; box-shadow:0 0 0 3px rgba(251,113,133,.26),0 8px 22px rgba(239,68,68,.28); transform:translateY(-1px); }
+#screen-quiz .tf-btn:not(.active-t):not(.active-f) { background:rgba(255,255,255,.10) !important; color:rgba(255,255,255,.88) !important; border-color:rgba(255,255,255,.34) !important; }
+#screen-quiz .tf-btn:focus-visible { outline:3px solid rgba(255,255,255,.9); outline-offset:2px; }
 #screen-result .explanation, #screen-result .review-choice-box { background:rgba(255,255,255,.10) !important; color:#fff !important; border-color:rgba(255,255,255,.18) !important; }
 .admin-tabs { border-color:rgba(255,255,255,.18); }
 .admin-tab { color:rgba(255,255,255,.65); } .admin-tab.active { color:#fff; border-color:#ff83df; }
@@ -969,4 +973,21 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
   .question-import-counts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .question-import-preview-actions { flex-direction: column-reverse; }
   .question-import-preview-actions button { width: 100%; }
+}
+
+/* High-contrast feedback for true/false answers in both review screens. */
+.tf-review-row { display:grid; grid-template-columns:minmax(0,1fr) minmax(190px,auto); align-items:center; gap:12px; padding:12px 14px; margin:8px 0; border:1px solid rgba(255,255,255,.24); border-left:5px solid rgba(255,255,255,.42); border-radius:13px; background:rgba(255,255,255,.08); color:#fff; }
+.tf-review-row.tf-review-correct { border-color:rgba(52,211,153,.78); border-left-color:#34d399; background:rgba(16,185,129,.25); }
+.tf-review-row.tf-review-wrong { border-color:rgba(251,113,133,.82); border-left-color:#fb7185; background:rgba(239,68,68,.25); }
+.tf-review-row.tf-review-unanswered { border-color:rgba(251,191,36,.72); border-left-color:#fbbf24; background:rgba(245,158,11,.18); }
+.tf-review-statement { line-height:1.5; }
+.tf-review-feedback { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:7px; }
+.tf-review-selected, .tf-review-correct-answer { display:inline-flex; align-items:center; gap:4px; padding:6px 10px; border:1px solid rgba(255,255,255,.24); border-radius:999px; color:#fff !important; font-size:.82rem; font-weight:700; white-space:nowrap; background:rgba(15,14,48,.22); }
+.tf-review-correct-answer { border-color:rgba(52,211,153,.58); background:rgba(16,185,129,.24); }
+.tf-review-correct .tf-review-selected { border-color:rgba(52,211,153,.58); background:rgba(16,185,129,.34); }
+.tf-review-wrong .tf-review-selected { border-color:rgba(251,113,133,.65); background:rgba(239,68,68,.34); }
+.tf-review-unanswered .tf-review-selected { border-color:rgba(251,191,36,.6); background:rgba(245,158,11,.25); }
+@media (max-width: 600px) {
+    .tf-review-row { grid-template-columns:1fr; }
+    .tf-review-feedback { justify-content:flex-start; }
 }
