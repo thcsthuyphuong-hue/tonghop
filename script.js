@@ -1252,7 +1252,7 @@ const parseWordQuestionBank = async (arrayBuffer) => {
                 finish();
                 section = parsedHeading.type;
                 const tail = cleanLine(heading[2]);
-                const questionOffset = tail.search(/(?:^|\\s)(?:câu(?:\\s*(?:hỏi|số))?\\s*#?\\s*\\d+|question\\s*#?\\s*\\d+|\\d+\\s*[.)])/i);
+                const questionOffset = tail.search(/(?:^|\s)(?:câu(?:\s*(?:hỏi|số))?\s*#?\s*\d+|question\s*#?\s*\d+|\d+\s*[.)])/i);
                 const questionText = questionOffset >= 0 ? tail.slice(questionOffset).trim() : '';
                 const qMark = matchWordQuestion(questionText);
                 if (qMark) {
