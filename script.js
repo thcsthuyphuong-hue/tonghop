@@ -1028,7 +1028,7 @@ const getWordParagraphs = (html) => {
 };
 
 const parseWordSection = (text) => {
-    const match = cleanLine(text).match(/^(?:phần\s*)?(iii|ii|i|3|2|1)\s*[\).:–—-]?\s*(.*)$/i);
+    const match = cleanLine(text).match(/^(?:phần\s*)?(iii|ii|i|3|2|1)(?=$|\s|[).:–—-])\s*[).:–—-]?\s*(.*)$/i);
     if (!match) return null;
     const number = match[1].toLowerCase();
     const label = cleanLine(match[2]).toLocaleLowerCase('vi');
@@ -1041,10 +1041,12 @@ const parseWordSection = (text) => {
 };
 
 const matchWordQuestion = (text) => {
-    const match = cleanLine(text).match(/^(?:câu(?:\s*(?:hỏi|số))?\s*#?\s*\d+|question\s*#?\s*\d+|\d+\s*[.)])\s*[:.)\-–—]?\s*/i);
-    if (!match) return null;
-    const number = match[0].match(/\d+/);
-    return { length: match[0].length, number: number ? number[0] : '' };
+    const normalized = cleanLine(text);
+    const prefixed = normalized.match(/^(?:câu(?:\s*(?:hỏi|số))?\s*#?|question\s*#?)\s*(\d+(?:\.\d+)*)\s*[.)]?\s*[:.)\-–—]?\s*/i);
+    if (prefixed) return { length: prefixed[0].length, number: prefixed[1] };
+    const numbered = normalized.match(/^(\d+\.\d+(?:\.\d+)*)\s*[.)]\s*/);
+    if (!numbered) return null;
+    return { length: numbered[0].length, number: numbered[1] };
 };
 
 const parseTruthValue = (value) => {
@@ -1067,10 +1069,15 @@ const parseWordQuestionBank = async (arrayBuffer) => {
     const rejected = [];
     const warnings = [];
     const questionNumbers = { mcq: [], tf: [], short: [] };
+    const keyedAnswers = { mcq: {}, tf: {}, short: {} };
     let section = '';
+    let answerKeyMode = '';
+    let answerKeyNumber = '';
     let current = null;
+    let pendingQuestionNumber = '';
     let candidateCount = 0;
     let imageCount = 0;
+    let unsupportedCount = 0;
 
     const append = (oldValue, text, images, html = false) => {
         const value = cleanLine(text);
@@ -1078,16 +1085,36 @@ const parseWordQuestionBank = async (arrayBuffer) => {
         if (!part) return oldValue || '';
         return oldValue ? oldValue + ' ' + part : part;
     };
-
     const addIssue = (message) => {
         if (current && !current.issues.includes(message)) current.issues.push(message);
     };
-
+    const keyFor = (number) => String(number || '').trim();
+    const inferMcqAnswer = (text) => {
+        const match = cleanLine(text).match(/(?:đáp\s*án\s*(?:là)?\s*|phương\s*án\s+)([A-D])\s*(?:là\s*)?(?:đúng|là\s+đáp\s*án|được\s*chọn)/i);
+        return match ? match[1].toUpperCase() : '';
+    };
+    const readTfAnswers = (text, target) => {
+        const matcher = /(?:^|[\s;])([a-d])\s*[.)\-:]\s*(Đúng|Sai|Đ|S|D|T|True|False)\b/gi;
+        let match;
+        while ((match = matcher.exec(text))) {
+            const idx = match[1].toLowerCase().charCodeAt(0) - 97;
+            const value = parseTruthValue(match[2]);
+            if (value !== null) target[idx] = value;
+        }
+    };
     const finish = () => {
         if (!current) return;
+        if (current.type === 'mcq' && !current.a) current.a = inferMcqAnswer(current.e);
         if (current.type === 'mcq' && /^[A-D]$/i.test(current.a)) {
             const answerIndex = current.a.toUpperCase().charCodeAt(0) - 65;
             if (current.o[answerIndex]) current.a = current.o[answerIndex];
+        }
+        if (current.type === 'tf') {
+            const inferred = {};
+            readTfAnswers(current.e, inferred);
+            current.sts.forEach((item, index) => {
+                if (typeof item.a !== 'boolean' && typeof inferred[index] === 'boolean') item.a = inferred[index];
+            });
         }
         const q = current.type === 'tf' ? current.ctx : current.q;
         let reason = '';
@@ -1098,29 +1125,19 @@ const parseWordQuestionBank = async (arrayBuffer) => {
         else if (current.type === 'tf' && !current.sts.every(item => typeof item.a === 'boolean')) reason = 'Thiếu hoặc chưa hiểu đủ đáp án Đúng/Sai.';
         else if (current.type === 'short' && !current.a) reason = 'Chưa nhận diện được đáp án ngắn.';
         if (!reason && current.issues.length) reason = current.issues.join(' ');
-        if (reason) {
-            rejected.push({ number: current.number, type: current.type, reason });
-        } else if (current.type === 'mcq') {
-            sections.mcq.push({ q: current.q, a: current.a, o: current.o, e: current.e });
-        } else if (current.type === 'tf') {
-            sections.tf.push({ ctx: current.ctx, sts: current.sts, e: current.e });
-        } else {
-            sections.short.push({ q: current.q, a: current.a, e: current.e });
-        }
+        if (reason) rejected.push({ number: current.number, type: current.type, reason });
+        else if (current.type === 'mcq') sections.mcq.push({ q: current.q, a: current.a, o: current.o, e: current.e, _importNumber: keyFor(current.number) });
+        else if (current.type === 'tf') sections.tf.push({ ctx: current.ctx, sts: current.sts, e: current.e, _importNumber: keyFor(current.number) });
+        else sections.short.push({ q: current.q, a: current.a, e: current.e, _importNumber: keyFor(current.number) });
         current = null;
     };
 
     const startQuestion = (number) => {
         finish();
         candidateCount++;
-        if (number) questionNumbers[section].push(Number(number));
-        current = section === 'mcq'
-            ? { type: section, number, q: '', a: '', o: [], e: '', sts: [], issues: [], region: 'content' }
-            : section === 'tf'
-                ? { type: section, number, ctx: '', a: '', o: [], e: '', sts: [], issues: [], region: 'content' }
-                : { type: section, number, q: '', a: '', o: [], e: '', sts: [], issues: [], region: 'content' };
+        if (number) questionNumbers[section].push(String(number));
+        current = { type: section, number: String(number || ''), q: '', ctx: '', a: '', o: [], e: '', sts: [], issues: [], region: 'content' };
     };
-
     const addTfItem = (label, rawText, images) => {
         let text = cleanLine(rawText);
         let answer = null;
@@ -1131,7 +1148,6 @@ const parseWordQuestionBank = async (arrayBuffer) => {
         }
         current.sts.push({ l: label.toLowerCase() + ')', t: append('', text, images, true), a: answer });
     };
-
     const addContent = (rawText, images) => {
         const text = cleanLine(rawText);
         if (!text && !images) return;
@@ -1145,7 +1161,7 @@ const parseWordQuestionBank = async (arrayBuffer) => {
                     const start = m.index + m[0].length;
                     const end = i + 1 < labels.length ? labels[i + 1].index : text.length;
                     const option = cleanLine(text.slice(start, end));
-                    if (option) current.o.push(option);
+                    if (option || (images && i === labels.length - 1)) current.o.push(option);
                 });
                 if (images && current.o.length) current.o[current.o.length - 1] = append(current.o[current.o.length - 1], '', images, false);
                 return;
@@ -1170,17 +1186,21 @@ const parseWordQuestionBank = async (arrayBuffer) => {
             if (current.sts.length) {
                 const item = current.sts[current.sts.length - 1];
                 item.t = append(item.t, text, images, true);
-            } else {
-                current.ctx = append(current.ctx, text, images, true);
-            }
+            } else current.ctx = append(current.ctx, text, images, true);
             return;
         }
-        current.q = append(current.q, text, images, true);
+        const shortAnswer = text.match(/(?:^|\s)A\s*[.)]\s*([+-]?\d+(?:[.,]\d+)?(?:\s*,\s*\d+)*)\s*$/i);
+        if (shortAnswer && !current.a) {
+            const beforeAnswer = cleanLine(text.slice(0, shortAnswer.index));
+            if (beforeAnswer) current.q = append(current.q, beforeAnswer, '', true);
+            current.a = cleanLine(shortAnswer[1]).replace(/\s+/g, '');
+        } else current.q = append(current.q, text, images, true);
     };
 
     const setAnswer = (raw) => {
-        const value = cleanLine(raw).replace(/[;,.]+$/g, '');
+        let value = cleanLine(raw).replace(/[;,.]+$/g, '');
         if (!value) { addIssue('Dòng đáp án không có giá trị.'); return; }
+        if (current.type === 'short') value = value.replace(/^A\s*[.)]\s*/i, '');
         if (current.type === 'mcq') {
             if (/^[A-D]\s*[,/&]\s*[A-D]$/i.test(value)) {
                 addIssue('Phát hiện nhiều đáp án trắc nghiệm (' + value + '), nhưng hệ thống hiện chỉ chấm một lựa chọn mỗi câu.');
@@ -1190,9 +1210,7 @@ const parseWordQuestionBank = async (arrayBuffer) => {
             if (letter) {
                 const index = letter[1].toUpperCase().charCodeAt(0) - 65;
                 current.a = current.o[index] || letter[1].toUpperCase();
-            } else {
-                current.a = value;
-            }
+            } else current.a = value;
             return;
         }
         if (current.type === 'tf') {
@@ -1230,24 +1248,29 @@ const parseWordQuestionBank = async (arrayBuffer) => {
         if (!text && !images) return;
         if (current.region === 'explanation') {
             current.e = append(current.e, text, images, true);
+            if (current.type === 'tf') {
+                const inferred = {};
+                readTfAnswers(text, inferred);
+                Object.entries(inferred).forEach(([index, value]) => {
+                    if (current.sts[Number(index)]) current.sts[Number(index)].a = value;
+                });
+            } else if (current.type === 'mcq' && !current.a) current.a = inferMcqAnswer(text);
             return;
         }
-        const explanation = text.match(/(?:^|\s)(?:giải\s*thích|lời\s*giải)\s*[:.)\-–—]\s*/i);
+        const explanation = text.match(/(?:^|\s)(?:giải\s*thích(?:\s+chi\s+tiết)?|lời\s*giải)\s*[:.)\-–—]\s*/i);
         const answer = text.match(/(?:^|\s)(?:đáp\s*án|đáp\s*số|answer)\s*[:.)\-–—]?\s*/i);
         if (answer && (!explanation || answer.index < explanation.index)) {
             const before = cleanLine(text.slice(0, answer.index));
             if (before) addContent(before, '');
             const answerStart = answer.index + answer[0].length;
-            const explanationAfter = text.slice(answerStart).match(/(?:^|\s)(?:giải\s*thích|lời\s*giải)\s*[:.)\-–—]\s*/i);
+            const explanationAfter = text.slice(answerStart).match(/(?:^|\s)(?:giải\s*thích(?:\s+chi\s+tiết)?|lời\s*giải)\s*[:.)\-–—]\s*/i);
             const answerEnd = explanationAfter ? answerStart + explanationAfter.index : text.length;
             setAnswer(text.slice(answerStart, answerEnd));
             current.region = 'answer';
             if (explanationAfter) {
                 current.region = 'explanation';
                 current.e = append(current.e, text.slice(answerEnd + explanationAfter[0].length), images, true);
-            } else if (images) {
-                addIssue('Hình nằm cùng dòng với nhãn đáp án; hãy đặt hình ở câu hỏi hoặc giải thích.');
-            }
+            } else if (images) addIssue('Hình nằm cùng dòng với nhãn đáp án; hãy đặt hình ở câu hỏi hoặc giải thích.');
             return;
         }
         if (explanation) {
@@ -1261,50 +1284,198 @@ const parseWordQuestionBank = async (arrayBuffer) => {
         addContent(text, images);
     };
 
+    const saveKeyBlock = (text) => {
+        if (!answerKeyNumber || !answerKeyMode) return;
+        const key = keyFor(answerKeyNumber);
+        if (answerKeyMode === 'mcq') {
+            const letter = inferMcqAnswer(text) || (cleanLine(text).match(/đáp\s*án\s*[:.]?\s*([A-D])\b/i) || [])[1];
+            if (letter) keyedAnswers.mcq[key] = { ...(keyedAnswers.mcq[key] || {}), answer: letter.toUpperCase() };
+        } else if (answerKeyMode === 'tf') {
+            const target = (keyedAnswers.tf[key] = keyedAnswers.tf[key] || { truth: {} }).truth;
+            readTfAnswers(text, target);
+            const sequence = cleanLine(text).split(/[;,\s|/]+/).filter(Boolean);
+            if (sequence.length === 4 && sequence.every(token => parseTruthValue(token) !== null)) {
+                sequence.forEach((token, index) => { target[index] = parseTruthValue(token); });
+            }
+        } else {
+            const ans = cleanLine(text).match(/(?:đáp\s*án\s*[:.]?\s*)?(?:A\s*[.)]\s*)?(-?\d+(?:[.,]\d+)?)/i);
+            if (ans) keyedAnswers.short[key] = { answer: ans[1] };
+        }
+    };
+
+    let answerTableMode = false;
+    let answerTableType = '';
+    let answerTableNumber = '';
+    const parseAnswerTableBlock = (text) => {
+        const part = cleanLine(text).match(/^phần\s*(iii|ii|i|3|2|1)\b/i);
+        if (part) {
+            answerTableType = parseWordSection('PHẦN ' + part[1])?.type || '';
+            answerTableNumber = '';
+            return true;
+        }
+        if (/^(?:câu|đáp\s*án|answer)$/i.test(cleanLine(text))) return true;
+        const number = cleanLine(text).match(/^(\d+\.\d+(?:\.\d+)*)\.?$/);
+        if (number) {
+            answerTableNumber = number[1];
+            return true;
+        }
+        if (!answerTableType || !answerTableNumber) return true;
+        const key = keyFor(answerTableNumber);
+        if (answerTableType === 'mcq') {
+            const letter = cleanLine(text).match(/^([A-D])\s*[.)]?$/i);
+            if (letter) keyedAnswers.mcq[key] = { ...(keyedAnswers.mcq[key] || {}), answer: letter[1].toUpperCase() };
+        } else if (answerTableType === 'tf') {
+            const target = (keyedAnswers.tf[key] = keyedAnswers.tf[key] || { truth: {} }).truth;
+            readTfAnswers(text, target);
+            const sequence = cleanLine(text).split(/[;,\s|/]+/).filter(Boolean);
+            if (sequence.length === 4 && sequence.every(token => parseTruthValue(token) !== null)) sequence.forEach((token, index) => { target[index] = parseTruthValue(token); });
+        } else {
+            const value = cleanLine(text).replace(/^A\s*[.)]\s*/i, '');
+            if (value) keyedAnswers.short[key] = { answer: value };
+        }
+        answerTableNumber = '';
+        return true;
+    };
+
     blocks.forEach(block => {
         imageCount += block.imageCount || 0;
-        const heading = cleanLine(block.text).match(/^(?:phần\s*)?(iii|ii|i|3|2|1)\s*[\).:–—-]?\s*(.*)$/i);
+        const text = cleanLine(block.text);
+        if (/^(?:thạc\s*sĩ|nếu\s+phát\s+hiện|cảm\s*ơn\s+trợ\s+l[ií]|vui\s+lòng\s+nhận)/i.test(text)) {
+            finish();
+            answerTableMode = false;
+            answerKeyMode = '';
+            section = '';
+            pendingQuestionNumber = '';
+            return;
+        }
+        if (/^bảng\s+đáp\s*án\b/i.test(text)) {
+            finish();
+            answerKeyMode = '';
+            answerTableMode = true;
+            answerTableType = '';
+            answerTableNumber = '';
+            return;
+        }
+        if (answerTableMode) {
+            parseAnswerTableBlock(text);
+            return;
+        }
+        const keyHeading = text.match(/^giải\s*thích\s+chi\s+tiết\s+phần\s+(iii|ii|i|3|2|1)\b/i);
+        if (keyHeading) {
+            finish();
+            answerKeyMode = parseWordSection('PHẦN ' + keyHeading[1])?.type || '';
+            answerKeyNumber = '';
+            pendingQuestionNumber = '';
+            return;
+        }
+        const heading = text.match(/^(?:phần\s*)?(iii|ii|i|3|2|1)(?=$|\s|[).:–—-])\s*[).:–—-]?\s*(.*)$/i);
         if (heading) {
-            const parsedHeading = parseWordSection(block.text);
+            const parsedHeading = parseWordSection(text);
             if (parsedHeading) {
                 finish();
                 section = parsedHeading.type;
+                answerKeyMode = '';
+                answerKeyNumber = '';
+                pendingQuestionNumber = '';
                 const tail = cleanLine(heading[2]);
-                const questionOffset = tail.search(/(?:^|\s)(?:câu(?:\s*(?:hỏi|số))?\s*#?\s*\d+|question\s*#?\s*\d+|\d+\s*[.)])/i);
-                const questionText = questionOffset >= 0 ? tail.slice(questionOffset).trim() : '';
-                const qMark = matchWordQuestion(questionText);
-                if (qMark) {
-                    startQuestion(qMark.number);
-                    processText(questionText.slice(qMark.length), block.images);
+                const tailMark = matchWordQuestion(tail);
+                if (tailMark) {
+                    const rest = cleanLine(tail.slice(tailMark.length));
+                    if (/^(?:YCCĐ(?=$|\s|:)|yêu\s*cầu\s*cần\s*đạt(?=$|\s|:))/i.test(rest)) pendingQuestionNumber = tailMark.number;
+                    else {
+                        startQuestion(tailMark.number);
+                        processText(rest, block.images);
+                    }
                 }
                 return;
             }
         }
-        if (!section) return;
-        const qMark = matchWordQuestion(block.text);
-        if (qMark) {
-            startQuestion(qMark.number);
-            processText(block.text.slice(qMark.length), block.images);
+
+        const marker = matchWordQuestion(text);
+        if (answerKeyMode) {
+            if (marker) {
+                answerKeyNumber = marker.number;
+                saveKeyBlock(text.slice(marker.length));
+            } else saveKeyBlock(text);
             return;
         }
-        if (current) processText(block.text, block.images);
+        if (!section) return;
+        if (marker) {
+            const rest = cleanLine(text.slice(marker.length));
+            if (/^(?:YCCĐ(?=$|\s|:)|yêu\s*cầu\s*cần\s*đạt(?=$|\s|:))/i.test(rest)) {
+                finish();
+                pendingQuestionNumber = marker.number;
+                return;
+            }
+            pendingQuestionNumber = '';
+            startQuestion(marker.number);
+            processText(rest, block.images);
+            return;
+        }
+        if (/^(?:YCCĐ(?=$|\s|:)|yêu\s*cầu\s*cần\s*đạt(?=$|\s|:)|\[(?:biết|hiểu|vận dụng|vận dụng cao)\])/i.test(text)) return;
+        if (!current && pendingQuestionNumber && text) {
+            startQuestion(pendingQuestionNumber);
+            pendingQuestionNumber = '';
+        }
+        if (current) processText(text, block.images);
     });
     finish();
 
+    Object.keys(keyedAnswers.mcq).forEach(key => {
+        const entry = keyedAnswers.mcq[key];
+        const question = sections.mcq.find(item => item._importNumber === key);
+        if (question && !question.a) {
+            const index = entry.answer.charCodeAt(0) - 65;
+            question.a = question.o[index] || entry.answer;
+        }
+    });
+    Object.keys(keyedAnswers.tf).forEach(key => {
+        const question = sections.tf.find(item => item._importNumber === key);
+        if (question) question.sts.forEach((item, index) => {
+            if (typeof item.a !== 'boolean' && typeof keyedAnswers.tf[key].truth[index] === 'boolean') item.a = keyedAnswers.tf[key].truth[index];
+        });
+    });
+    Object.keys(keyedAnswers.short).forEach(key => {
+        const question = sections.short.find(item => item._importNumber === key);
+        if (question && !question.a) question.a = keyedAnswers.short[key].answer;
+    });
+
+    for (const type of ['mcq', 'tf', 'short']) {
+        sections[type].forEach(question => { delete question._importNumber; });
+    }
     const total = sections.mcq.length + sections.tf.length + sections.short.length;
+    const expectedMatch = blocks.slice(0, 8).map(block => block.text).join(' ').match(/\b(\d+)\s+câu(?:\s+hỏi)?\b/i);
+    const expectedCount = expectedMatch ? Number(expectedMatch[1]) : 0;
+    if (expectedCount && candidateCount !== expectedCount) warnings.push('Tài liệu ghi ' + expectedCount + ' câu nhưng parser mới nhận dạng ' + candidateCount + ' dấu câu hỏi. Không tải khi số này chưa khớp.');
     if (!section) warnings.push('Không nhận diện được tiêu đề phần; hãy dùng PHẦN I, PHẦN II hoặc PHẦN III.');
     if (!candidateCount) warnings.push('Không nhận diện được câu hỏi. Hãy kiểm tra cách ghi số câu và tiêu đề PHẦN.');
     if (rejected.length) warnings.push('Có ' + rejected.length + ' câu bị loại vì thiếu trường bắt buộc hoặc dữ liệu mơ hồ.');
     Object.entries(questionNumbers).forEach(([type, numbers]) => {
-        const unique = [...new Set(numbers)].sort((a, b) => a - b);
+        const groups = new Map();
+        numbers.forEach(number => {
+            const parts = String(number).split('.');
+            const prefix = parts.slice(0, -1).join('.');
+            const value = Number(parts[parts.length - 1]);
+            if (!groups.has(prefix)) groups.set(prefix, new Set());
+            groups.get(prefix).add(value);
+        });
         const missing = [];
-        for (let n = 1; n < unique.length; n++) if (unique[n] - unique[n - 1] > 1) missing.push(...Array.from({ length: Math.min(unique[n] - unique[n - 1] - 1, 20) }, (_, i) => unique[n - 1] + i + 1));
+        groups.forEach((values, prefix) => {
+            const ordered = [...values].sort((a, b) => a - b);
+            for (let n = 1; n < ordered.length; n++) {
+                if (ordered[n] - ordered[n - 1] > 1) missing.push((prefix ? prefix + '.' : '') + (ordered[n - 1] + 1));
+            }
+        });
         if (missing.length) warnings.push('Có thể thiếu số câu ở phần ' + type.toUpperCase() + ': ' + missing.slice(0, 12).join(', ') + (missing.length > 12 ? '…' : '') + '.');
     });
-    if (imageCount) warnings.push('DOCX có hình ảnh; các hình được giữ dưới dạng ảnh nhúng trong nội dung câu hỏi. Kiểm tra kỹ preview và dung lượng trước khi tải.');
+    if (imageCount) warnings.push('DOCX có ' + imageCount + ' hình/công thức; các hình được nhúng vào nội dung. Kiểm tra kỹ preview và dung lượng trước khi tải.');
+    const unsupportedMessages = (result.messages || []).filter(message => /unsupported|unrecognized|ignored/i.test((message.message || '') + ' ' + (message.type || '')));
+    unsupportedCount = unsupportedMessages.length;
+    if (unsupportedCount) warnings.push('Bộ đọc Word báo ' + unsupportedCount + ' thành phần không hỗ trợ; hãy dùng bản DOCX đã chuyển công thức sang ảnh chuẩn trước khi tải.');
     const estimatedBytes = new Blob([JSON.stringify(sections)]).size;
-    if (estimatedBytes > 850 * 1024) warnings.push('Dữ liệu có hình/công thức nhúng khá lớn (' + Math.ceil(estimatedBytes / 1024) + ' KB); Firestore có giới hạn kích thước mỗi tài liệu.');
-    return { sections, total, candidateCount, rejected, warnings, estimatedBytes, imageCount };
+    if (estimatedBytes > 850 * 1024) warnings.push('Dữ liệu có hình/công thức nhúng khá lớn (' + Math.ceil(estimatedBytes / 1024) + ' KB); Firestore có giới hạn kích thước tài liệu.');
+    const hasBlockingErrors = rejected.length > 0 || unsupportedCount > 0 || (!!expectedCount && candidateCount !== expectedCount);
+    return { sections, total, candidateCount, expectedCount, rejected, warnings, estimatedBytes, imageCount, unsupportedCount, hasBlockingErrors };
 };
 
 const renderQuestionImportPreview = (topic, result) => {
@@ -1343,6 +1514,7 @@ const renderQuestionImportPreview = (topic, result) => {
         modal.querySelector('#question-import-preview-ack').onchange = () => {
             modal.querySelector('#question-import-preview-confirm').disabled =
                 !pendingQuestionImport || pendingQuestionImport.result.total === 0 ||
+                pendingQuestionImport.result.hasBlockingErrors ||
                 pendingQuestionImport.result.estimatedBytes > 900 * 1024 ||
                 (pendingQuestionImport.needsAcknowledgement && !modal.querySelector('#question-import-preview-ack').checked);
         };
@@ -1350,6 +1522,10 @@ const renderQuestionImportPreview = (topic, result) => {
             const staged = pendingQuestionImport;
             if (!staged || staged.result.total === 0) {
                 showCustomAlert('Không có câu hợp lệ để tải lên.');
+                return;
+            }
+            if (staged.result.hasBlockingErrors) {
+                showCustomAlert('Có câu bị loại, thiếu đáp án/công thức hoặc số câu chưa khớp. Hãy sửa file và đọc lại; hệ thống không cho ghi một phần ngân hàng đề.');
                 return;
             }
             if (staged.result.estimatedBytes > 900 * 1024) {
@@ -1391,8 +1567,8 @@ const renderQuestionImportPreview = (topic, result) => {
     modal.querySelector('#question-import-count-errors').textContent = result.rejected.length;
     modal.querySelector('#question-import-count-total').textContent = result.total;
     const status = modal.querySelector('#question-import-preview-status');
-    status.textContent = 'Tìm thấy ' + result.candidateCount + ' dấu câu hỏi; nhận diện hợp lệ ' + result.total +
-        (result.rejected.length ? '; loại ' + result.rejected.length + ' câu.' : '.');
+    status.textContent = 'Tìm thấy ' + result.candidateCount + (result.expectedCount ? '/' + result.expectedCount : '') + ' dấu câu hỏi; nhận diện hợp lệ ' + result.total +
+        (result.rejected.length ? '; loại ' + result.rejected.length + ' câu — tải lên đang bị khóa.' : (result.hasBlockingErrors ? '; cần xử lý cảnh báo chặn trước khi tải.' : '.'));
     status.classList.toggle('has-warning', !!(result.rejected.length || result.warnings.length));
     const details = modal.querySelector('#question-import-preview-details');
     details.replaceChildren();
@@ -1415,9 +1591,9 @@ const renderQuestionImportPreview = (topic, result) => {
     const ackWrap = modal.querySelector('#question-import-preview-ack-wrap');
     const ack = modal.querySelector('#question-import-preview-ack');
     ack.checked = false;
-    ackWrap.hidden = !pendingQuestionImport.needsAcknowledgement;
+    ackWrap.hidden = !pendingQuestionImport.needsAcknowledgement || result.hasBlockingErrors;
     const confirm = modal.querySelector('#question-import-preview-confirm');
-    confirm.disabled = result.total === 0 || result.estimatedBytes > 900 * 1024 || pendingQuestionImport.needsAcknowledgement;
+    confirm.disabled = result.total === 0 || result.hasBlockingErrors || result.estimatedBytes > 900 * 1024 || pendingQuestionImport.needsAcknowledgement;
     modal.style.display = 'flex';
 };
 
