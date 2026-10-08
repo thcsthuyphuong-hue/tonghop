@@ -1208,27 +1208,35 @@ const parseWordQuestionBank = async (arrayBuffer) => {
     };
 
     const processText = (rawText, images) => {
-        let text = cleanLine(rawText);
+        const text = cleanLine(rawText);
         if (!text && !images) return;
         if (current.region === 'explanation') {
             current.e = append(current.e, text, images, true);
             return;
         }
         const explanation = text.match(/(?:^|\s)(?:giải\s*thích|lời\s*giải)\s*[:.)\-–—]\s*/i);
-        if (explanation) {
-            const before = cleanLine(text.slice(0, explanation.index));
-            if (before || images) addContent(before, before ? '' : images);
-            current.region = 'explanation';
-            current.e = append(current.e, text.slice(explanation.index + explanation[0].length), images, true);
-            return;
-        }
         const answer = text.match(/(?:^|\s)(?:đáp\s*án|đáp\s*số|answer)\s*[:.)\-–—]?\s*/i);
-        if (answer) {
+        if (answer && (!explanation || answer.index < explanation.index)) {
             const before = cleanLine(text.slice(0, answer.index));
             if (before) addContent(before, '');
-            setAnswer(text.slice(answer.index + answer[0].length));
+            const answerStart = answer.index + answer[0].length;
+            const explanationAfter = text.slice(answerStart).match(/(?:^|\s)(?:giải\s*thích|lời\s*giải)\s*[:.)\-–—]\s*/i);
+            const answerEnd = explanationAfter ? answerStart + explanationAfter.index : text.length;
+            setAnswer(text.slice(answerStart, answerEnd));
             current.region = 'answer';
-            if (images) addIssue('Hình nằm cùng dòng với nhãn đáp án; hãy đặt hình ở câu hỏi hoặc giải thích.');
+            if (explanationAfter) {
+                current.region = 'explanation';
+                current.e = append(current.e, text.slice(answerEnd + explanationAfter[0].length), images, true);
+            } else if (images) {
+                addIssue('Hình nằm cùng dòng với nhãn đáp án; hãy đặt hình ở câu hỏi hoặc giải thích.');
+            }
+            return;
+        }
+        if (explanation) {
+            const before = cleanLine(text.slice(0, explanation.index));
+            if (before) addContent(before, '');
+            current.region = 'explanation';
+            current.e = append(current.e, text.slice(explanation.index + explanation[0].length), images, true);
             return;
         }
         if (current.region === 'answer') return;
@@ -1244,10 +1252,12 @@ const parseWordQuestionBank = async (arrayBuffer) => {
                 finish();
                 section = parsedHeading.type;
                 const tail = cleanLine(heading[2]);
-                const qMark = matchWordQuestion(tail);
+                const questionOffset = tail.search(/(?:^|\\s)(?:câu(?:\\s*(?:hỏi|số))?\\s*#?\\s*\\d+|question\\s*#?\\s*\\d+|\\d+\\s*[.)])/i);
+                const questionText = questionOffset >= 0 ? tail.slice(questionOffset).trim() : '';
+                const qMark = matchWordQuestion(questionText);
                 if (qMark) {
                     startQuestion(qMark.number);
-                    processText(tail.slice(qMark.length), block.images);
+                    processText(questionText.slice(qMark.length), block.images);
                 }
                 return;
             }
