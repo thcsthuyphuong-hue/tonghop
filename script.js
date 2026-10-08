@@ -1596,7 +1596,7 @@ const renderQuestionImportPreview = (topic, result) => {
             '</div>' +
             '<div id="question-import-preview-status" class="question-import-preview-status"></div>' +
             '<div id="question-import-preview-details" class="question-import-preview-details"></div>' +
-            '<label id="question-import-preview-ack-wrap" class="question-import-preview-ack"><input id="question-import-preview-ack" type="checkbox"> Tôi đã xem các cảnh báo và vẫn muốn tiếp tục tải phần câu đã nhận diện.</label>' +
+            '<label id="question-import-preview-ack-wrap" class="question-import-preview-ack"><input id="question-import-preview-ack" type="checkbox"><span id="question-import-preview-ack-text"></span></label>' +
             '<div class="question-import-preview-actions"><button type="button" id="question-import-preview-cancel" class="btn btn-gray">HỦY</button><button type="button" id="question-import-preview-confirm" class="btn btn-fire">XÁC NHẬN TẢI LÊN</button></div>' +
         '</div>';
         document.body.appendChild(modal);
@@ -1613,7 +1613,6 @@ const renderQuestionImportPreview = (topic, result) => {
         modal.querySelector('#question-import-preview-ack').onchange = () => {
             modal.querySelector('#question-import-preview-confirm').disabled =
                 !pendingQuestionImport || pendingQuestionImport.result.total === 0 ||
-                pendingQuestionImport.result.hasBlockingErrors ||
                 pendingQuestionImport.result.estimatedBytes > 900 * 1024 ||
                 (pendingQuestionImport.needsAcknowledgement && !modal.querySelector('#question-import-preview-ack').checked);
         };
@@ -1621,10 +1620,6 @@ const renderQuestionImportPreview = (topic, result) => {
             const staged = pendingQuestionImport;
             if (!staged || staged.result.total === 0) {
                 showCustomAlert('Không có câu hợp lệ để tải lên.');
-                return;
-            }
-            if (staged.result.hasBlockingErrors) {
-                showCustomAlert('Có câu bị loại, thiếu đáp án/công thức hoặc số câu chưa khớp. Hãy sửa file và đọc lại; hệ thống không cho ghi một phần ngân hàng đề.');
                 return;
             }
             if (staged.result.estimatedBytes > 900 * 1024) {
@@ -1655,7 +1650,7 @@ const renderQuestionImportPreview = (topic, result) => {
     pendingQuestionImport = {
         topic,
         result,
-        needsAcknowledgement: !!(result.rejected.length || result.warnings.length)
+        needsAcknowledgement: !!(result.hasBlockingErrors || result.rejected.length || result.warnings.length)
     };
     const counts = result.sections;
     const topicOption = document.getElementById('import-q-topic').selectedOptions[0];
@@ -1667,7 +1662,8 @@ const renderQuestionImportPreview = (topic, result) => {
     modal.querySelector('#question-import-count-total').textContent = result.total;
     const status = modal.querySelector('#question-import-preview-status');
     status.textContent = 'Tìm thấy ' + result.candidateCount + (result.expectedCount ? '/' + result.expectedCount : '') + ' dấu câu hỏi; nhận diện hợp lệ ' + result.total +
-        (result.rejected.length ? '; loại ' + result.rejected.length + ' câu — tải lên đang bị khóa.' : (result.hasBlockingErrors ? '; cần xử lý cảnh báo chặn trước khi tải.' : '.'));
+        (result.rejected.length ? '; loại ' + result.rejected.length + ' câu.' : '') +
+        (result.hasBlockingErrors ? ' Có cảnh báo cấu trúc; có thể tải phần hợp lệ sau khi xác nhận bên dưới.' : (result.warnings.length ? ' Hãy đọc cảnh báo trước khi xác nhận.' : '.'));
     status.classList.toggle('has-warning', !!(result.rejected.length || result.warnings.length));
     const details = modal.querySelector('#question-import-preview-details');
     details.replaceChildren();
@@ -1690,9 +1686,11 @@ const renderQuestionImportPreview = (topic, result) => {
     const ackWrap = modal.querySelector('#question-import-preview-ack-wrap');
     const ack = modal.querySelector('#question-import-preview-ack');
     ack.checked = false;
-    ackWrap.hidden = !pendingQuestionImport.needsAcknowledgement || result.hasBlockingErrors;
+    ackWrap.hidden = !pendingQuestionImport.needsAcknowledgement || result.total === 0;
+    modal.querySelector('#question-import-preview-ack-text').textContent =
+        'Tôi biết mình đang làm gì — chấp nhận tải lên ' + result.total + ' câu hợp lệ và thay thế ngân hàng đề hiện tại của chuyên đề này.';
     const confirm = modal.querySelector('#question-import-preview-confirm');
-    confirm.disabled = result.total === 0 || result.hasBlockingErrors || result.estimatedBytes > 900 * 1024 || pendingQuestionImport.needsAcknowledgement;
+    confirm.disabled = result.total === 0 || result.estimatedBytes > 900 * 1024 || pendingQuestionImport.needsAcknowledgement;
     modal.style.display = 'flex';
 };
 
