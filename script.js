@@ -1193,7 +1193,7 @@ const parseWordQuestionBank = async (arrayBuffer) => {
         return match ? match[1].toUpperCase() : '';
     };
     const readTfAnswers = (text, target) => {
-        const matcher = /(?:^|[\s;])([a-d])\s*[.)\-:]\s*(Đúng|Sai|Đ|S|D|T|True|False)\b/gi;
+        const matcher = /(?:^|[\s;])([a-d])\s*[.)\-:]\s*(Đúng|Sai|Đ|S|D|T|True|False)(?=$|[\s;,.!?):\]])/gi;
         let match;
         while ((match = matcher.exec(text))) {
             const idx = match[1].toLowerCase().charCodeAt(0) - 97;
