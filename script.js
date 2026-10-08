@@ -638,7 +638,12 @@ function viewAdminReview(docId) {
         if(q.type === 'mcq') {
             (q.shuffledOptions || q.o).forEach((o, idx) => { const isC = norm(o) === norm(q.a), isU = arUserAnswers[q.id] === o; h += `<div style="padding: 8px; margin: 5px 0; border-radius: 5px; background: ${isC ? '#d1fae5' : (isU ? '#fee2e2' : '#f8fafc')}; border: 1px solid ${isC ? 'var(--success)' : (isU ? 'var(--danger)' : '#e2e8f0')}"><b>${labels[idx]}.</b> ${o} ${isC?'✓':(isU?'✗':'')}</div>`; });
         } else if(q.type === 'tf') {
-            q.sts.forEach((st, si) => { let uV = (arUserAnswers[q.id]||{})[si], isC = (uV === st.a); h += `<div style="padding: 5px; border-bottom:1px solid #e2e8f0;">${st.l} ${st.t} <br><span style="font-size:0.8rem;">Bạn: <b style="color:${isC?'#10b981':'#ef4444'}">${uV===true?'Đúng':(uV===false?'Sai':'Trống')}</b> | Đáp án: <b>${st.a?'Đúng':'Sai'}</b></span></div>`; });
+            q.sts.forEach((st, si) => {
+                const uV = (arUserAnswers[q.id] || {})[si], isC = uV === st.a;
+                const answerState = uV === undefined ? 'unanswered' : (isC ? 'correct' : 'wrong');
+                const chosenText = uV === true ? 'Đúng' : (uV === false ? 'Sai' : 'Chưa trả lời');
+                h += `<div class="tf-review-row tf-review-${answerState} tf-review-admin"><span class="tf-review-statement">${st.l} ${st.t}</span><div class="tf-review-feedback"><span class="tf-review-selected">Học sinh chọn: <b>${chosenText}</b>${uV === undefined ? '' : (isC ? ' ✓' : ' ✗')}</span><span class="tf-review-correct-answer">Đáp án đúng: <b>${st.a ? 'Đúng' : 'Sai'}</b></span></div></div>`;
+            });
         } else {
             const isC = checkShortAns(arUserAnswers[q.id], q.a); h += `<div style="padding: 8px; background: #f8fafc; border-radius: 5px;">Bạn nhập: <b style="color:${isC?'#10b981':'#ef4444'}">${arUserAnswers[q.id]||'Trống'}</b> <br> Đáp án: <b style="color:#10b981">${q.a}</b></div>`;
         }
@@ -1845,7 +1850,12 @@ document.getElementById('btn-view-review').onclick = () => {
             if(norm(userAnswers[q.id]||'') !== norm(q.a)) h += `<div class="review-choice-box review-wrong" style="padding:10px; border-radius:8px; margin-top:10px; background:#fee2e2; border:1px solid #ef4444;">Bạn chọn: <b>${userAnswers[q.id]||'Chưa chọn'}</b>. Đáp án: <b style="color:#10b981">${q.a}</b></div>`;
         } else if(q.type === 'tf') {
             h += `<div style="background:#f1f5f9; padding:15px; border-radius:12px; margin-bottom:15px; font-style:italic;">${q.ctx}</div>`;
-            q.sts.forEach((st, si) => { let uV = (userAnswers[q.id]||{})[si], isC = (uV === st.a); h += `<div class="tf-row" style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #f1f5f9;"><span>${st.l} ${st.t}</span><div style="font-size:0.8rem; text-align:right; width: max-content;"><span style="color:${isC?'#10b981':'#ef4444'}">Bạn: <b>${uV===true?'Đúng':(uV===false?'Sai':'?')}</b></span><br><span>Đáp án: <b>${st.a?'Đúng':'Sai'}</b> ${isC?'✓':'✗'}</span></div></div>`; });
+            q.sts.forEach((st, si) => {
+                const uV = (userAnswers[q.id] || {})[si], isC = uV === st.a;
+                const answerState = uV === undefined ? 'unanswered' : (isC ? 'correct' : 'wrong');
+                const chosenText = uV === true ? 'Đúng' : (uV === false ? 'Sai' : 'Chưa trả lời');
+                h += `<div class="tf-review-row tf-review-${answerState}"><span class="tf-review-statement">${st.l} ${st.t}</span><div class="tf-review-feedback"><span class="tf-review-selected">Bạn chọn: <b>${chosenText}</b>${uV === undefined ? '' : (isC ? ' ✓' : ' ✗')}</span><span class="tf-review-correct-answer">Đáp án đúng: <b>${st.a ? 'Đúng' : 'Sai'}</b></span></div></div>`;
+            });
         } else {
             const isC = checkShortAns(userAnswers[q.id], q.a); h += `<p>Bạn nhập: <b style="color:${isC?'#10b981':'#ef4444'}">${userAnswers[q.id]||'Trống'}</b></p><p>Đáp án đúng: <b style="color:#10b981">${q.a}</b> ${isC?'✓':'✗'}</p>`;
         }
