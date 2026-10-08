@@ -891,3 +891,14 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
 #screen-admin #admin-results-section .admin-sort-control > select option {
   color: #1e293b;
 }
+
+/* Results filter layout: move the sort caption to the card's top-left and align all controls. */
+#screen-admin #admin-results-section > .admin-controls { position:relative; }
+#screen-admin #admin-results-section .admin-excel-filters { padding-top:25px; align-items:end; }
+#screen-admin #admin-results-section .admin-sort-control { position:static; }
+#screen-admin #admin-results-section .admin-sort-control > label {
+  position:absolute;
+  top:8px;
+  left:15px;
+  margin:0;
+}
