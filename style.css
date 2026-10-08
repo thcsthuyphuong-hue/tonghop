@@ -1107,3 +1107,44 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
   animation-duration:230ms;
   animation-timing-function:cubic-bezier(.4,0,.7,.2);
 }
+
+
+/* Match the remaining visible suggestions and sort dropdown to the Liquid Glass menus. */
+@keyframes autocompleteGlassOpen {
+  from { opacity:0; transform:perspective(760px) rotateX(-8deg) scaleY(.94) translateY(-5px); filter:blur(2px); }
+  to { opacity:1; transform:perspective(760px) rotateX(0) scaleY(1) translateY(0); filter:blur(0); }
+}
+#screen-start .autocomplete-items {
+  top:calc(100% + 7px);
+  padding:6px;
+  border:1px solid rgba(255,255,255,.42) !important;
+  border-top:1px solid rgba(255,255,255,.42) !important;
+  border-radius:16px;
+  color:#fff !important;
+  background:radial-gradient(circle at 8% 0%,rgba(255,255,255,.18),transparent 38%),
+    linear-gradient(145deg,rgba(48,37,105,.95),rgba(28,23,72,.96)) !important;
+  box-shadow:0 22px 55px rgba(12,8,42,.40),inset 0 1px 0 rgba(255,255,255,.24);
+  backdrop-filter:blur(26px) saturate(165%);
+  -webkit-backdrop-filter:blur(26px) saturate(165%);
+  transform-origin:top center;
+  animation:autocompleteGlassOpen 260ms cubic-bezier(.16,1,.3,1) both;
+}
+#screen-start .autocomplete-items div {
+  padding:10px 12px;
+  border:1px solid transparent !important;
+  border-radius:10px;
+  color:rgba(255,255,255,.90) !important;
+  transition:background-color 180ms ease,border-color 180ms ease,transform 180ms ease;
+}
+#screen-start .autocomplete-items div:hover,
+#screen-start .autocomplete-items .autocomplete-active {
+  color:#fff !important;
+  border-color:rgba(255,255,255,.14) !important;
+  background:rgba(255,255,255,.15) !important;
+}
+#screen-admin .admin-sort-glass-select { width:100%; }
+#screen-admin .admin-sort-menu { max-height:min(300px,55vh); overflow:auto; }
+#screen-admin .admin-sort-trigger { min-height:44px; }
+@media (prefers-reduced-motion: reduce) {
+  #screen-start .autocomplete-items { animation-duration:.01ms !important; }
+}
