@@ -1193,13 +1193,18 @@ const parseWordQuestionBank = async (arrayBuffer) => {
         return match ? match[1].toUpperCase() : '';
     };
     const readTfAnswers = (text, target) => {
-        const matcher = /(?:^|[\s;])([a-d])\s*[.)\-:]\s*(Đúng|Sai|Đ|S|D|T|True|False)(?=$|[\s;,.!?):\]])/gi;
-        let match;
-        while ((match = matcher.exec(text))) {
-            const idx = match[1].toLowerCase().charCodeAt(0) - 97;
-            const value = parseTruthValue(match[2]);
-            if (value !== null) target[idx] = value;
-        }
+        const matchers = [
+            /(?:^|[\s;])([a-d])\s*[.)\-:]\s*(Đúng|Sai|Đ|S|D|T|True|False)(?=$|[\s;,.!?):\]])/gi,
+            /(?:^|[\s;])(?:ý\s*)?([a-d])\s+(đúng|sai)(?=$|[\s;,.!?):\]])/gi
+        ];
+        matchers.forEach(matcher => {
+            let match;
+            while ((match = matcher.exec(text))) {
+                const idx = match[1].toLowerCase().charCodeAt(0) - 97;
+                const value = parseTruthValue(match[2]);
+                if (value !== null) target[idx] = value;
+            }
+        });
     };
     const finish = () => {
         if (!current) return;
