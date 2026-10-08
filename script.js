@@ -1196,7 +1196,7 @@ const parseWordQuestionBank = async (arrayBuffer) => {
             return;
         }
         if (current.type === 'tf') {
-            const labelled = [...value.matchAll(/(?:^|[\\s,;|])([a-d])\\s*[.)\\-:]\\s*(Đúng|Sai|Đ|S|D|T|True|False)/gi)];
+            const labelled = [...value.matchAll(/(?:^|[\s,;|])([a-d])\s*[.)\-:]\s*(Đúng|Sai|Đ|S|D|T|True|False)/gi)];
             if (labelled.length) {
                 const assigned = new Set();
                 labelled.forEach(match => {
