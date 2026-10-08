@@ -852,53 +852,82 @@ const createStoredZip = (entries) => {
 };
 
 const buildWordTemplateBlob = () => {
-    if (typeof Blob === 'undefined' || typeof TextEncoder === 'undefined') {
-        throw new Error('WORD-E01: Trình duyệt không hỗ trợ Blob/TextEncoder cần thiết để tạo file Word.');
-    }
-
+    if (typeof Blob === 'undefined' || typeof TextEncoder === 'undefined') throw new Error('WORD-E01: Trình duyệt không hỗ trợ Blob/TextEncoder cần thiết để tạo file Word.');
     const body = [];
-    body.push(wordParagraphXml('MẪU NGÂN HÀNG ĐỀ VẬT LÝ 9', { bold: true, size: 32, align: 'center', after: 180 }));
-    body.push(wordParagraphXml(`Phiên bản mẫu: ${WORD_TEMPLATE_VERSION}`, { italics: true, align: 'center', after: 120 }));
-    body.push(wordParagraphXml('HƯỚNG DẪN: Không đổi tên các tiêu đề PHẦN. Mỗi câu bắt đầu bằng "Câu ...". Giữ đúng dòng "Đáp án:" và "Giải thích:".', { bold: true, after: 160 }));
-
-    body.push(wordParagraphXml('PHẦN I - TRẮC NGHIỆM', { bold: true, size: 28, after: 120 }));
-    body.push(wordQuestionXml('Câu 1. Công thức tính điện trở dây dẫn hình trụ là:', [
-        'A. R = ρ l/S', 'B. R = l/(ρS)', 'C. R = ρ S/l', 'D. R = S/(ρl)'
-    ], 'A', 'Điện trở tỉ lệ thuận với chiều dài l, tỉ lệ nghịch với tiết diện S.'));
-
-    body.push(wordParagraphXml('PHẦN II - ĐÚNG / SAI', { bold: true, size: 28, after: 120 }));
-    body.push(wordQuestionXml('Câu 1. Cho đoạn mạch nối tiếp:', [
-        'a) Dòng điện luôn bằng nhau ở mọi điểm — Đúng',
-        'b) Hiệu điện thế bằng nhau ở mọi điểm — Sai',
-        'c) Điện trở tương đương bằng tổng các điện trở — Đúng',
-        'd) Khi tăng 1 điện trở thì dòng mạch tăng — Sai'
-    ], 'Đ, S, Đ, S', 'Mạch nối tiếp có I bằng nhau, U bằng tổng, R bằng tổng.'));
-
-    body.push(wordParagraphXml('PHẦN III - TRẢ LỜI NGẮN', { bold: true, size: 28, after: 120 }));
-    body.push(wordQuestionXml('Câu 1. Bếp điện có điện trở 80 Ω, cường độ dòng điện 2,5 A. Tính U?', [], '200', 'U = I × R = 2,5 × 80 = 200 V.'));
-
-    body.push(wordParagraphXml('LƯU Ý KÝ HIỆU', { bold: true, size: 28, after: 120 }));
-    body.push(wordParagraphXml('Bạn có thể gõ hoặc dán trực tiếp các ký hiệu như m³, m², Ω, Δ, ρ, μ và công thức. Không cần dùng ký tự ô vuông.', { after: 100 }));
-
-    const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:w16cex="http://schemas.microsoft.com/office/word/2018/wordml/cex" xmlns:w16cid="http://schemas.microsoft.com/office/word/2016/wordml/cid" xmlns:w16="http://schemas.microsoft.com/office/word/2018/wordml" xmlns:w16du="http://schemas.microsoft.com/office/word/2023/wordml" xmlns:w16sdtdh="http://schemas.microsoft.com/office/word/2024/wordml/sdtdatahash" xmlns:w16sdtfl="http://schemas.microsoft.com/office/word/2024/wordml/sdtformatlock" xmlns:w16wml="http://schemas.microsoft.com/office/word/2024/wordml" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" mc:Ignorable="w14 w15 w16cex w16cid w16 w16du w16sdtdh w16sdtfl w16wml">\n<w:body>${body.join('')}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/></w:sectPr></w:body></w:document>`;
-
-    const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/></Types>`;
-    const rootRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/></Relationships>`;
-    const docRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>`;
-    const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:eastAsia="Arial"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="100"/></w:pPr></w:pPrDefault></w:docDefaults></w:styles>`;
-    const core = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>Mẫu Ngân Hàng Đề Vật Lý 9</dc:title><dc:creator>Hệ thống luyện tập</dc:creator><cp:lastModifiedBy>Hệ thống luyện tập</cp:lastModifiedBy></cp:coreProperties>`;
-    const app = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"><Application>Web Question Bank</Application></Properties>`;
-
-    const blob = createStoredZip([
-        { name: '[Content_Types].xml', data: contentTypes },
-        { name: '_rels/.rels', data: rootRels },
-        { name: 'word/document.xml', data: documentXml },
-        { name: 'word/styles.xml', data: styles },
-        { name: 'word/_rels/document.xml.rels', data: docRels },
-        { name: 'docProps/core.xml', data: core },
-        { name: 'docProps/app.xml', data: app }
-    ]);
-    if (!blob || blob.size < 1000) throw new Error(`WORD-E04: File DOCX tạo ra quá nhỏ (${blob?.size || 0} bytes).`);
+    body.push(wordParagraphXml('MẪU NGÂN HÀNG ĐỀ VẬT LÝ 9 - IMPORT 40 CÂU',{bold:true,size:32,align:'center',after:180}));
+    body.push(wordParagraphXml('Phiên bản mẫu: 2.0',{italics:true,align:'center',after:120}));
+    body.push(wordParagraphXml('CẤU TRÚC: PHẦN I = 24 MCQ; PHẦN II = 8 Đúng/Sai (4 ý a-d/câu); PHẦN III = 8 trả lời ngắn. Giữ nguyên nhãn A-D, a-d, Đáp án và Giải thích.',{bold:true,after:160}));
+    body.push(wordParagraphXml('Có thể thay toàn bộ nội dung mẫu. Công thức nên dùng text/Unicode như Ω, ρ, μ, Δ, m², m³; không cần Equation của Word.',{after:120}));
+    body.push(wordParagraphXml('PHẦN I - TRẮC NGHIỆM',{bold:true,size:28,after:120}));
+        body.push(wordQuestionXml('Câu 1. [Nội dung câu hỏi trắc nghiệm 1]', ['A. [Phương án A]','B. [Phương án B]','C. [Phương án C]','D. [Phương án D]'], 'A', '[Giải thích câu 1]'));
+        body.push(wordQuestionXml('Câu 2. [Nội dung câu hỏi trắc nghiệm 2]', ['A. [Phương án A]','B. [Phương án B]','C. [Phương án C]','D. [Phương án D]'], 'A', '[Giải thích câu 2]'));
+        body.push(wordQuestionXml('Câu 3. [Nội dung câu hỏi trắc nghiệm 3]', ['A. [Phương án A]','B. [Phương án B]','C. [Phương án C]','D. [Phương án D]'], 'A', '[Giải thích câu 3]'));
+        body.push(wordQuestionXml('Câu 4. [Nội dung câu hỏi trắc nghiệm 4]', ['A. [Phương án A]','B. [Phương án B]','C. [Phương án C]','D. [Phương án D]'], 'A', '[Giải thích câu 4]'));
+        body.push(wordQuestionXml('Câu 5. [Nội dung câu hỏi trắc nghiệm 5]', ['A. [Phương án A]','B. [Phương án B]','C. [Phương án C]','D. [Phương án D]'], 'A', '[Giải thích câu 5]'));
+        body.push(wordQuestionXml('Câu 6. [Nội dung câu hỏi trắc nghiệm 6]', ['A. [Phương án A]','B. [Phương án B]','C. [Phương án C]','D. [Phương án D]'], 'A', '[Giải thích câu 6]'));
+        body.push(wordQuestionXml('Câu 7. [Nội dung câu hỏi trắc nghiệm 7]', ['A. [Phương án A]','B. [Phương án B]','C. [Phương án C]','D. [Phương án D]'], 'A', '[Giải thích câu 7]'));
+        body.push(wordQuestionXml('Câu 8. [Nội dung câu hỏi trắc nghiệm 8]', ['A. [Phương án A]','B. [Phương án B]','C. [Phương án C]','D. [Phương án D]'], 'A', '[Giải thích câu 8]'));
+        body.push(wordQuestionXml('Câu 9. [Nội dung câu hỏi trắc nghiệm 9]', ['A. [Phương án A]','B. [Phương án B]','C. [Phương án C]','D. [Phương án D]'], 'A', '[Giải thích câu 9]'));
+        body.push(wordQuestionXml('Câu 10. [Nội dung câu hỏi trắc nghiệm 10]', ['A. [Phương án A]','B. [Phương án B]','C. [Phương án C]','D. [Phương án D]'], 'A', '[Giải thích câu 10]'));
+        body.push(wordQuestionXml('Câu 11. [Nội dung câu hỏi trắc nghiệm 11]', ['A. [Phương án A]','B. [Phương án B]','C. [Phương án C]','D. [Phương án D]'], 'A', '[Giải thích câu 11]'));
+        body.push(wordQuestionXml('Câu 12. [Nội dung câu hỏi trắc nghiệm 12]', ['A. [Phương án A]','B. [Phương án B]','C. [Phương án C]','D. [Phương án D]'], 'A', '[Giải thích câu 12]'));
+        body.push(wordQuestionXml('Câu 13. [Nội dung câu hỏi trắc nghiệm 13]', ['A. [Phương án A]','B. [Phương án B]','C. [Phương án C]','D. [Phương án D]'], 'A', '[Giải thích câu 13]'));
+        body.push(wordQuestionXml('Câu 14. [Nội dung câu hỏi trắc nghiệm 14]', ['A. [Phương án A]','B. [Phương án B]','C. [Phương án C]','D. [Phương án D]'], 'A', '[Giải thích câu 14]'));
+        body.push(wordQuestionXml('Câu 15. [Nội dung câu hỏi trắc nghiệm 15]', ['A. [Phương án A]','B. [Phương án B]','C. [Phương án C]','D. [Phương án D]'], 'A', '[Giải thích câu 15]'));
+        body.push(wordQuestionXml('Câu 16. [Nội dung câu hỏi trắc nghiệm 16]', ['A. [Phương án A]','B. [Phương án B]','C. [Phương án C]','D. [Phương án D]'], 'A', '[Giải thích câu 16]'));
+        body.push(wordQuestionXml('Câu 17. [Nội dung câu hỏi trắc nghiệm 17]', ['A. [Phương án A]','B. [Phương án B]','C. [Phương án C]','D. [Phương án D]'], 'A', '[Giải thích câu 17]'));
+        body.push(wordQuestionXml('Câu 18. [Nội dung câu hỏi trắc nghiệm 18]', ['A. [Phương án A]','B. [Phương án B]','C. [Phương án C]','D. [Phương án D]'], 'A', '[Giải thích câu 18]'));
+        body.push(wordQuestionXml('Câu 19. [Nội dung câu hỏi trắc nghiệm 19]', ['A. [Phương án A]','B. [Phương án B]','C. [Phương án C]','D. [Phương án D]'], 'A', '[Giải thích câu 19]'));
+        body.push(wordQuestionXml('Câu 20. [Nội dung câu hỏi trắc nghiệm 20]', ['A. [Phương án A]','B. [Phương án B]','C. [Phương án C]','D. [Phương án D]'], 'A', '[Giải thích câu 20]'));
+        body.push(wordQuestionXml('Câu 21. [Nội dung câu hỏi trắc nghiệm 21]', ['A. [Phương án A]','B. [Phương án B]','C. [Phương án C]','D. [Phương án D]'], 'A', '[Giải thích câu 21]'));
+        body.push(wordQuestionXml('Câu 22. [Nội dung câu hỏi trắc nghiệm 22]', ['A. [Phương án A]','B. [Phương án B]','C. [Phương án C]','D. [Phương án D]'], 'A', '[Giải thích câu 22]'));
+        body.push(wordQuestionXml('Câu 23. [Nội dung câu hỏi trắc nghiệm 23]', ['A. [Phương án A]','B. [Phương án B]','C. [Phương án C]','D. [Phương án D]'], 'A', '[Giải thích câu 23]'));
+        body.push(wordQuestionXml('Câu 24. [Nội dung câu hỏi trắc nghiệm 24]', ['A. [Phương án A]','B. [Phương án B]','C. [Phương án C]','D. [Phương án D]'], 'A', '[Giải thích câu 24]'));
+    body.push(wordParagraphXml('PHẦN II - ĐÚNG / SAI',{bold:true,size:28,after:120}));
+        body.push(wordParagraphXml('Câu 25. [Ngữ cảnh/câu dẫn Đúng-Sai 1]',{bold:true,after:100}));
+        body.push(wordParagraphXml('a) [Mệnh đề a] — Đúng',{after:50})); body.push(wordParagraphXml('b) [Mệnh đề b] — Sai',{after:50})); body.push(wordParagraphXml('c) [Mệnh đề c] — Đúng',{after:50})); body.push(wordParagraphXml('d) [Mệnh đề d] — Sai',{after:50}));
+        body.push(wordParagraphXml('Đáp án: Đúng, Sai, Đúng, Sai',{bold:true,after:50})); body.push(wordParagraphXml('Giải thích: [Giải thích câu 25]',{after:160}));
+        body.push(wordParagraphXml('Câu 26. [Ngữ cảnh/câu dẫn Đúng-Sai 2]',{bold:true,after:100}));
+        body.push(wordParagraphXml('a) [Mệnh đề a] — Đúng',{after:50})); body.push(wordParagraphXml('b) [Mệnh đề b] — Sai',{after:50})); body.push(wordParagraphXml('c) [Mệnh đề c] — Đúng',{after:50})); body.push(wordParagraphXml('d) [Mệnh đề d] — Sai',{after:50}));
+        body.push(wordParagraphXml('Đáp án: Đúng, Sai, Đúng, Sai',{bold:true,after:50})); body.push(wordParagraphXml('Giải thích: [Giải thích câu 26]',{after:160}));
+        body.push(wordParagraphXml('Câu 27. [Ngữ cảnh/câu dẫn Đúng-Sai 3]',{bold:true,after:100}));
+        body.push(wordParagraphXml('a) [Mệnh đề a] — Đúng',{after:50})); body.push(wordParagraphXml('b) [Mệnh đề b] — Sai',{after:50})); body.push(wordParagraphXml('c) [Mệnh đề c] — Đúng',{after:50})); body.push(wordParagraphXml('d) [Mệnh đề d] — Sai',{after:50}));
+        body.push(wordParagraphXml('Đáp án: Đúng, Sai, Đúng, Sai',{bold:true,after:50})); body.push(wordParagraphXml('Giải thích: [Giải thích câu 27]',{after:160}));
+        body.push(wordParagraphXml('Câu 28. [Ngữ cảnh/câu dẫn Đúng-Sai 4]',{bold:true,after:100}));
+        body.push(wordParagraphXml('a) [Mệnh đề a] — Đúng',{after:50})); body.push(wordParagraphXml('b) [Mệnh đề b] — Sai',{after:50})); body.push(wordParagraphXml('c) [Mệnh đề c] — Đúng',{after:50})); body.push(wordParagraphXml('d) [Mệnh đề d] — Sai',{after:50}));
+        body.push(wordParagraphXml('Đáp án: Đúng, Sai, Đúng, Sai',{bold:true,after:50})); body.push(wordParagraphXml('Giải thích: [Giải thích câu 28]',{after:160}));
+        body.push(wordParagraphXml('Câu 29. [Ngữ cảnh/câu dẫn Đúng-Sai 5]',{bold:true,after:100}));
+        body.push(wordParagraphXml('a) [Mệnh đề a] — Đúng',{after:50})); body.push(wordParagraphXml('b) [Mệnh đề b] — Sai',{after:50})); body.push(wordParagraphXml('c) [Mệnh đề c] — Đúng',{after:50})); body.push(wordParagraphXml('d) [Mệnh đề d] — Sai',{after:50}));
+        body.push(wordParagraphXml('Đáp án: Đúng, Sai, Đúng, Sai',{bold:true,after:50})); body.push(wordParagraphXml('Giải thích: [Giải thích câu 29]',{after:160}));
+        body.push(wordParagraphXml('Câu 30. [Ngữ cảnh/câu dẫn Đúng-Sai 6]',{bold:true,after:100}));
+        body.push(wordParagraphXml('a) [Mệnh đề a] — Đúng',{after:50})); body.push(wordParagraphXml('b) [Mệnh đề b] — Sai',{after:50})); body.push(wordParagraphXml('c) [Mệnh đề c] — Đúng',{after:50})); body.push(wordParagraphXml('d) [Mệnh đề d] — Sai',{after:50}));
+        body.push(wordParagraphXml('Đáp án: Đúng, Sai, Đúng, Sai',{bold:true,after:50})); body.push(wordParagraphXml('Giải thích: [Giải thích câu 30]',{after:160}));
+        body.push(wordParagraphXml('Câu 31. [Ngữ cảnh/câu dẫn Đúng-Sai 7]',{bold:true,after:100}));
+        body.push(wordParagraphXml('a) [Mệnh đề a] — Đúng',{after:50})); body.push(wordParagraphXml('b) [Mệnh đề b] — Sai',{after:50})); body.push(wordParagraphXml('c) [Mệnh đề c] — Đúng',{after:50})); body.push(wordParagraphXml('d) [Mệnh đề d] — Sai',{after:50}));
+        body.push(wordParagraphXml('Đáp án: Đúng, Sai, Đúng, Sai',{bold:true,after:50})); body.push(wordParagraphXml('Giải thích: [Giải thích câu 31]',{after:160}));
+        body.push(wordParagraphXml('Câu 32. [Ngữ cảnh/câu dẫn Đúng-Sai 8]',{bold:true,after:100}));
+        body.push(wordParagraphXml('a) [Mệnh đề a] — Đúng',{after:50})); body.push(wordParagraphXml('b) [Mệnh đề b] — Sai',{after:50})); body.push(wordParagraphXml('c) [Mệnh đề c] — Đúng',{after:50})); body.push(wordParagraphXml('d) [Mệnh đề d] — Sai',{after:50}));
+        body.push(wordParagraphXml('Đáp án: Đúng, Sai, Đúng, Sai',{bold:true,after:50})); body.push(wordParagraphXml('Giải thích: [Giải thích câu 32]',{after:160}));
+    body.push(wordParagraphXml('PHẦN III - TRẢ LỜI NGẮN',{bold:true,size:28,after:120}));
+        body.push(wordQuestionXml('Câu 33. [Nội dung câu hỏi trả lời ngắn 1]', [], '0', '[Giải thích câu 33]'));
+        body.push(wordQuestionXml('Câu 34. [Nội dung câu hỏi trả lời ngắn 2]', [], '0', '[Giải thích câu 34]'));
+        body.push(wordQuestionXml('Câu 35. [Nội dung câu hỏi trả lời ngắn 3]', [], '0', '[Giải thích câu 35]'));
+        body.push(wordQuestionXml('Câu 36. [Nội dung câu hỏi trả lời ngắn 4]', [], '0', '[Giải thích câu 36]'));
+        body.push(wordQuestionXml('Câu 37. [Nội dung câu hỏi trả lời ngắn 5]', [], '0', '[Giải thích câu 37]'));
+        body.push(wordQuestionXml('Câu 38. [Nội dung câu hỏi trả lời ngắn 6]', [], '0', '[Giải thích câu 38]'));
+        body.push(wordQuestionXml('Câu 39. [Nội dung câu hỏi trả lời ngắn 7]', [], '0', '[Giải thích câu 39]'));
+        body.push(wordQuestionXml('Câu 40. [Nội dung câu hỏi trả lời ngắn 8]', [], '0', '[Giải thích câu 40]'));
+    body.push(wordParagraphXml('LƯU Ý KHI SOẠN FILE',{bold:true,size:28,after:120}));
+    body.push(wordParagraphXml('MCQ phải có đủ A-D và một đáp án. Đúng/Sai phải đủ a-d và 4 đáp án. Trả lời ngắn phải có đáp án. Không để phương án rỗng. Không dùng nhiều đáp án cho một MCQ.',{after:100}));
+    const documentXml=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${body.join('')}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/></w:sectPr></w:body></w:document>`;
+    const contentTypes=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/></Types>`;
+    const rootRels=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/></Relationships>`;
+    const docRels=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>`;
+    const styles=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:eastAsia="Arial"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr></w:rPrDefault></w:docDefaults></w:styles>`;
+    const core=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>Mẫu Ngân Hàng Đề Vật Lý 9 - Import 40 câu</dc:title><dc:creator>Hệ thống luyện tập</dc:creator></cp:coreProperties>`;
+    const app=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"><Application>Web Question Bank</Application></Properties>`;
+    const blob=createStoredZip([{name:'[Content_Types].xml',data:contentTypes},{name:'_rels/.rels',data:rootRels},{name:'word/document.xml',data:documentXml},{name:'word/styles.xml',data:styles},{name:'word/_rels/document.xml.rels',data:docRels},{name:'docProps/core.xml',data:core},{name:'docProps/app.xml',data:app}]);
+    if(!blob||blob.size<1000) throw new Error(`WORD-E04: File DOCX tạo ra quá nhỏ (${blob?.size||0} bytes).`);
     return blob;
 };
 
