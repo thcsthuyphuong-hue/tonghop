@@ -1199,3 +1199,33 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
   transform:none;
   filter:none;
 }
+
+
+/* Login artwork: remove the orbital diagram and keep a clear, softly glowing nucleus. */
+@keyframes nucleusGlow {
+  0%,100% { transform:scale(1); box-shadow:0 0 34px rgba(172,177,255,.32), inset 0 1px 0 rgba(255,255,255,.32); }
+  50% { transform:scale(1.035); box-shadow:0 0 48px rgba(201,183,255,.52), inset 0 1px 0 rgba(255,255,255,.42); }
+}
+.welcome-art { isolation:isolate; }
+.welcome-art .art-orbit { display:none !important; }
+.art-atom {
+  position:absolute;
+  top:83px;
+  right:82px;
+  z-index:4;
+  display:grid;
+  place-items:center;
+  width:112px;
+  height:112px;
+  visibility:visible !important;
+  opacity:1 !important;
+  border:1px solid rgba(255,255,255,.44);
+  border-radius:50%;
+  color:#fff;
+  font-size:4rem;
+  line-height:1;
+  text-shadow:0 0 18px rgba(239,244,255,.92);
+  background:radial-gradient(circle,rgba(255,255,255,.30),rgba(164,151,255,.22) 48%,rgba(120,103,232,.08) 72%);
+  animation:nucleusGlow 4.2s ease-in-out infinite;
+}
+.art-atom::after { content:none !important; animation:none !important; }
