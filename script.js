@@ -493,6 +493,71 @@ function setupAdminExcelFilters(options) {
  root.querySelectorAll('.admin-filter-search').forEach(i=>i.oninput=()=>{const q=i.value.trim().toLocaleLowerCase('vi');i.closest('.admin-filter-menu').querySelectorAll('.admin-filter-option').forEach(x=>x.hidden=!x.innerText.toLocaleLowerCase('vi').includes(q));});
  root.querySelectorAll('.admin-filter-group').forEach(g=>{const k=g.dataset.filterGroup,d=defs.find(x=>x.key===k),b=g.querySelector('.admin-filter-trigger'),update=()=>{state[k]=[...g.querySelectorAll('[data-filter-check]:checked')].map(x=>x.value);b.firstChild.textContent=state[k].length?d.label+' ('+state[k].length+') ▾':d.label+': Tất cả ▾';};g.querySelectorAll('[data-filter-check]').forEach(x=>x.onchange=update);g.querySelector('[data-filter-action="all"]').onclick=()=>{g.querySelectorAll('[data-filter-check]').forEach(x=>x.checked=true);update();};g.querySelector('[data-filter-action="clear"]').onclick=()=>{g.querySelectorAll('[data-filter-check]').forEach(x=>x.checked=false);update();};g.querySelector('.admin-filter-apply').onclick=()=>renderAdmin();});
  if(sortControl){sortControl.classList.add('admin-sort-control');root.appendChild(sortControl);}
+ setupAdminSortGlassMenu();
+}
+
+
+function setupAdminSortGlassMenu() {
+    const select = document.getElementById('admin-sort');
+    if (!select || select.dataset.glassMenuReady) return;
+    select.dataset.glassMenuReady = 'true';
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'admin-single-filter admin-sort-glass-select';
+    const trigger = document.createElement('button');
+    trigger.type = 'button';
+    trigger.className = 'admin-filter-trigger admin-sort-trigger';
+    trigger.setAttribute('aria-haspopup', 'listbox');
+    trigger.setAttribute('aria-expanded', 'false');
+    trigger.setAttribute('aria-label', 'Sắp xếp kết quả');
+    const menu = document.createElement('div');
+    menu.className = 'admin-filter-menu admin-sort-menu';
+    menu.hidden = true;
+    const optionsBox = document.createElement('div');
+    optionsBox.className = 'admin-filter-options';
+    optionsBox.setAttribute('role', 'listbox');
+
+    const updateSelection = () => {
+        const selected = [...select.options].find(option => option.value === select.value);
+        trigger.textContent = (selected ? selected.textContent : 'Chọn cách sắp xếp') + ' ▾';
+        optionsBox.querySelectorAll('[role="option"]').forEach(item => {
+            item.setAttribute('aria-selected', String(item.dataset.value === select.value));
+        });
+    };
+    [...select.options].forEach(option => {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'admin-filter-option admin-single-filter-option';
+        item.textContent = option.textContent;
+        item.dataset.value = option.value;
+        item.setAttribute('role', 'option');
+        item.setAttribute('aria-selected', String(option.value === select.value));
+        item.onclick = () => {
+            select.value = option.value;
+            updateSelection();
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+            setLiquidGlassMenu(menu, false, 'down');
+            trigger.setAttribute('aria-expanded', 'false');
+        };
+        optionsBox.appendChild(item);
+    });
+    menu.appendChild(optionsBox);
+    wrapper.append(trigger, menu);
+    select.parentNode.insertBefore(wrapper, select);
+    select.hidden = true;
+    updateSelection();
+
+    trigger.onclick = () => {
+        const open = menu.hidden || menu.dataset.rollState === 'closing';
+        setLiquidGlassMenu(menu, open, 'down');
+        trigger.setAttribute('aria-expanded', String(open));
+    };
+    document.addEventListener('click', event => {
+        if (!wrapper.contains(event.target)) {
+            setLiquidGlassMenu(menu, false, 'down');
+            trigger.setAttribute('aria-expanded', 'false');
+        }
+    });
 }
 
 async function renderAdmin() {
