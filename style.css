@@ -902,3 +902,71 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
   left:15px;
   margin:0;
 }
+
+/* DOCX import preview and safe inline images. */
+.question-import-preview {
+  width: min(760px, 100%);
+  max-height: min(90vh, 860px);
+  overflow: auto;
+}
+.question-import-preview h3 { margin: 0 0 8px; color: #fff; }
+.question-import-counts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 18px 0;
+}
+.question-import-counts > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 14px 8px;
+  border: 1px solid rgba(255,255,255,.24);
+  border-radius: 14px;
+  background: rgba(255,255,255,.10);
+  text-align: center;
+}
+.question-import-counts b { color: #fff; font-size: 1.5rem; }
+.question-import-counts span { color: rgba(255,255,255,.78); font-size: .78rem; }
+.question-import-preview-status {
+  padding: 12px 14px;
+  border: 1px solid rgba(110,231,183,.38);
+  border-radius: 12px;
+  background: rgba(16,185,129,.14);
+  color: #ecfdf5;
+  font-weight: 700;
+}
+.question-import-preview-status.has-warning {
+  border-color: rgba(251,191,36,.45);
+  background: rgba(245,158,11,.14);
+  color: #fffbeb;
+}
+.question-import-preview-details {
+  max-height: 230px;
+  margin-top: 12px;
+  padding: 2px 14px;
+  overflow: auto;
+  border-radius: 12px;
+  background: rgba(15,12,48,.20);
+  color: rgba(255,255,255,.84);
+}
+.question-import-preview-details li { margin: 7px 0; }
+.question-import-preview-ack {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 14px 0;
+  color: rgba(255,255,255,.88);
+  font-size: .9rem;
+}
+.question-import-preview-ack[hidden] { display: none; }
+.question-import-preview-ack input { width: auto; margin-top: 3px; accent-color: #c084fc; }
+.question-import-preview-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+.question-import-preview-actions button:disabled { opacity: .48; cursor: not-allowed; }
+.imported-question-image { display: block; max-width: 100%; height: auto; margin: 10px auto; border-radius: 8px; }
+@media (max-width: 540px) {
+  .question-import-counts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .question-import-preview-actions { flex-direction: column-reverse; }
+  .question-import-preview-actions button { width: 100%; }
+}
