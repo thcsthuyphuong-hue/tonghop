@@ -49,6 +49,7 @@ const audioFinish = new Audio('https://www.soundjay.com/misc/sounds/bell-ringing
 
 const closeOverlay = (modal) => {
     modal.style.display = 'none';
+    if (modal.id === 'question-import-preview-modal') pendingQuestionImport = null;
     if (modal.id === 'delete-auth-modal') { pendingAuthAction = null; currentDeleteId = null; importedStudentsCache = []; importedQuestionsCache = {}; document.getElementById('delete-pw').value = ''; document.getElementById('delete-email').value = ''; document.getElementById('file-import-students').value = ''; document.getElementById('file-import-questions').value = '';}
     if (modal.id === 'admin-auth-modal') { document.getElementById('admin-pw').value = ''; }
 };
@@ -995,14 +996,14 @@ const getWordParagraphs = (html) => {
         clone.querySelectorAll('img').forEach(img => {
             const src = img.getAttribute('src') || '';
             const alt = img.getAttribute('alt') || '';
-            if (/^data:image\/(?:png|jpe?g|gif|webp);base64,/i.test(src)) {
+            if (/^data:image\/(?:png|jpe?g|gif|webp);base64,[a-z0-9+/]+=*$/i.test(src)) {
                 images.push('<img class="imported-question-image" src="' + src.replace(/"/g, '&quot;') + '" alt="' + alt.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;') + '">');
             }
             img.remove();
         });
         clone.querySelectorAll('br').forEach(br => br.replaceWith(' '));
         const text = cleanLine(clone.textContent);
-        if (text || images.length) blocks.push({ text, images: images.join('') });
+        if (text || images.length) blocks.push({ text, images: images.join(''), imageCount: images.length });
     };
     const walk = (node) => {
         if (!node || node.nodeType !== 1) return;
@@ -1065,6 +1066,7 @@ const parseWordQuestionBank = async (arrayBuffer) => {
     const sections = { mcq: [], tf: [], short: [] };
     const rejected = [];
     const warnings = [];
+    const questionNumbers = { mcq: [], tf: [], short: [] };
     let section = '';
     let current = null;
     let candidateCount = 0;
@@ -1107,6 +1109,7 @@ const parseWordQuestionBank = async (arrayBuffer) => {
     const startQuestion = (number) => {
         finish();
         candidateCount++;
+        if (number) questionNumbers[section].push(Number(number));
         current = section === 'mcq'
             ? { type: section, number, q: '', a: '', o: [], e: '', sts: [], issues: [], region: 'content' }
             : section === 'tf'
@@ -1233,6 +1236,7 @@ const parseWordQuestionBank = async (arrayBuffer) => {
     };
 
     blocks.forEach(block => {
+        imageCount += block.imageCount || 0;
         const heading = cleanLine(block.text).match(/^(?:phần\s*)?(iii|ii|i|3|2|1)\s*[\).:–—-]?\s*(.*)$/i);
         if (heading) {
             const parsedHeading = parseWordSection(block.text);
@@ -1262,6 +1266,12 @@ const parseWordQuestionBank = async (arrayBuffer) => {
     const total = sections.mcq.length + sections.tf.length + sections.short.length;
     if (!section) warnings.push('Không nhận diện được tiêu đề phần; hãy dùng PHẦN I, PHẦN II hoặc PHẦN III.');
     if (rejected.length) warnings.push('Có ' + rejected.length + ' câu bị loại vì thiếu trường bắt buộc hoặc dữ liệu mơ hồ.');
+    Object.entries(questionNumbers).forEach(([type, numbers]) => {
+        const unique = [...new Set(numbers)].sort((a, b) => a - b);
+        const missing = [];
+        for (let n = 1; n < unique.length; n++) if (unique[n] - unique[n - 1] > 1) missing.push(...Array.from({ length: Math.min(unique[n] - unique[n - 1] - 1, 20) }, (_, i) => unique[n - 1] + i + 1));
+        if (missing.length) warnings.push('Có thể thiếu số câu ở phần ' + type.toUpperCase() + ': ' + missing.slice(0, 12).join(', ') + (missing.length > 12 ? '…' : '') + '.');
+    });
     if (imageCount) warnings.push('DOCX có hình ảnh; các hình được giữ dưới dạng ảnh nhúng trong nội dung câu hỏi. Kiểm tra kỹ preview và dung lượng trước khi tải.');
     const estimatedBytes = new Blob([JSON.stringify(sections)]).size;
     if (estimatedBytes > 850 * 1024) warnings.push('Dữ liệu có hình/công thức nhúng khá lớn (' + Math.ceil(estimatedBytes / 1024) + ' KB); Firestore có giới hạn kích thước mỗi tài liệu.');
@@ -1435,6 +1445,14 @@ async function executePendingAdminAction() {
         } catch(e) { showCustomAlert("Lỗi khi tải dữ liệu lên Server!"); }
     }
     else if (pendingAuthAction === 'import_questions' && Object.keys(importedQuestionsCache).length > 0) {
+        const invalidBank = Object.values(importedQuestionsCache).some(bank => !bank || !['mcq','tf','short'].some(key => Array.isArray(bank[key]) && bank[key].length));
+        const oversizedBank = Object.values(importedQuestionsCache).some(bank => new Blob([JSON.stringify(bank)]).size > 900 * 1024);
+        if (invalidBank || oversizedBank) {
+            showCustomAlert(invalidBank ? 'Không có câu hợp lệ để ghi vào Firebase.' : 'Dữ liệu đề vượt ngưỡng an toàn 900 KB; hãy giảm kích thước ảnh.');
+            importedQuestionsCache = {};
+            pendingAuthAction = null;
+            return;
+        }
         showCustomAlert("Đang tiến hành đẩy kho đề lên Đám mây, vui lòng đợi...");
         try {
             const topics = Object.keys(importedQuestionsCache);
@@ -1479,7 +1497,7 @@ document.getElementById('btn-admin-inbox').onclick = () => {
     document.getElementById('delete-auth-modal').style.display = 'flex'; 
 };
 
-document.getElementById('btn-delete-cancel').onclick = () => { document.getElementById('delete-auth-modal').style.display = 'none'; currentDeleteId = null; pendingAuthAction = null; importedStudentsCache = []; importedQuestionsCache = {};};
+document.getElementById('btn-delete-cancel').onclick = () => { document.getElementById('delete-auth-modal').style.display = 'none'; currentDeleteId = null; pendingAuthAction = null; importedStudentsCache = []; importedQuestionsCache = {}; pendingQuestionImport = null;};
 
 document.getElementById('btn-delete-confirm').onclick = async () => { 
     const email = document.getElementById('delete-email').value.trim();
