@@ -1143,7 +1143,7 @@ const parseWordQuestionBank = async (arrayBuffer) => {
                     const option = cleanLine(text.slice(start, end));
                     if (option) current.o.push(option);
                 });
-                if (images) addIssue('Hình nằm cùng dòng với phương án; vui lòng tách hình ra đoạn riêng để tránh ghép nhầm.');
+                if (images && current.o.length) current.o[current.o.length - 1] = append(current.o[current.o.length - 1], '', images, false);
                 return;
             }
             if (current.o.length) current.o[current.o.length - 1] = append(current.o[current.o.length - 1], text, images, false);
@@ -1222,7 +1222,7 @@ const parseWordQuestionBank = async (arrayBuffer) => {
             current.e = append(current.e, text.slice(explanation.index + explanation[0].length), images, true);
             return;
         }
-        const answer = text.match(/(?:^|\s)(?:đáp\s*án|đáp\s*số|answer)\s*[:.)\-–—]\s*/i);
+        const answer = text.match(/(?:^|\s)(?:đáp\s*án|đáp\s*số|answer)\s*[:.)\-–—]?\s*/i);
         if (answer) {
             const before = cleanLine(text.slice(0, answer.index));
             if (before) addContent(before, '');
@@ -1353,7 +1353,8 @@ const renderQuestionImportPreview = (topic, result) => {
         needsAcknowledgement: !!(result.rejected.length || result.warnings.length)
     };
     const counts = result.sections;
-    modal.querySelector('#question-import-preview-topic').textContent = 'Chuyên đề: ' + topic;
+    const topicOption = document.getElementById('import-q-topic').selectedOptions[0];
+    modal.querySelector('#question-import-preview-topic').textContent = 'Chuyên đề: ' + (topicOption ? topicOption.textContent : topic);
     modal.querySelector('#question-import-count-mcq').textContent = counts.mcq.length;
     modal.querySelector('#question-import-count-tf').textContent = counts.tf.length;
     modal.querySelector('#question-import-count-short').textContent = counts.short.length;
