@@ -859,3 +859,35 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
   transform-origin: bottom center;
   animation-name: liquidGlassRollCloseUp;
 }
+
+
+/* Place the existing results sort control in the fifth filter slot. */
+#screen-admin #admin-results-section .admin-sort-control {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  width: 100%;
+  min-width: 0;
+  margin: 0 !important;
+}
+#screen-admin #admin-results-section .admin-sort-control > label {
+  display: block;
+  margin: 0 0 6px;
+  color: rgba(255,255,255,.86);
+  font-size: .75rem;
+  font-weight: 800;
+}
+#screen-admin #admin-results-section .admin-sort-control > select {
+  width: 100% !important;
+  min-height: 44px;
+  margin: 0 !important;
+  padding: 10px 13px !important;
+  border: 1px solid rgba(255,255,255,.44) !important;
+  border-radius: 12px !important;
+  color: #fff !important;
+  background: linear-gradient(135deg,rgba(255,255,255,.20),rgba(255,255,255,.10)) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.22),0 8px 22px rgba(22,12,66,.12) !important;
+}
+#screen-admin #admin-results-section .admin-sort-control > select option {
+  color: #1e293b;
+}
