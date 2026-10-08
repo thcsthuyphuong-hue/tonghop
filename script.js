@@ -27,6 +27,7 @@ let arExamData = [], arUserAnswers = {};
 let globalStudentList = []; 
 let importedStudentsCache = []; 
 let importedQuestionsCache = {}; // Cache lưu trữ đề thi khi đọc từ excel
+let pendingQuestionImport = null;
 
 let practiceTimeLimit = 2700;
 let testTimeLimit = 2700;
@@ -1267,30 +1268,134 @@ const parseWordQuestionBank = async (arrayBuffer) => {
     return { sections, total, candidateCount, rejected, warnings, estimatedBytes, imageCount };
 };
 
-document.getElementById('file-import-questions').onchange = async (e) => {
-    const file = e.target.files[0]; if (!file) return;
-    const selectedTopic = document.getElementById('import-q-topic').value;
-    if (!selectedTopic) { showCustomAlert('⚠️ Vui lòng CHỌN CHUYÊN ĐỀ trước khi Import!'); e.target.value = ''; return; }
-    try {
-        const data = await file.arrayBuffer();
-        const parsed = await parseWordQuestionBank(data);
-        importedQuestionsCache = {};
-        importedQuestionsCache[selectedTopic] = parsed;
-        const total = parsed.mcq.length + parsed.tf.length + parsed.short.length;
-        if (total > 0) {
+const renderQuestionImportPreview = (topic, result) => {
+    let modal = document.getElementById('question-import-preview-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'question-import-preview-modal';
+        modal.className = 'modal-overlay';
+        modal.setAttribute('role', 'presentation');
+        modal.innerHTML = '<div class="modal-box question-import-preview" role="dialog" aria-modal="true" aria-labelledby="question-import-preview-title">' +
+            '<h3 id="question-import-preview-title">XEM TRƯỚC ĐỀ WORD</h3>' +
+            '<p id="question-import-preview-topic"></p>' +
+            '<div class="question-import-counts">' +
+                '<div><b id="question-import-count-mcq">0</b><span>Trắc nghiệm</span></div>' +
+                '<div><b id="question-import-count-tf">0</b><span>Đúng/Sai</span></div>' +
+                '<div><b id="question-import-count-short">0</b><span>Trả lời ngắn</span></div>' +
+                '<div><b id="question-import-count-total">0</b><span>Tổng nhận diện</span></div>' +
+            '</div>' +
+            '<div id="question-import-preview-status" class="question-import-preview-status"></div>' +
+            '<div id="question-import-preview-details" class="question-import-preview-details"></div>' +
+            '<label id="question-import-preview-ack-wrap" class="question-import-preview-ack"><input id="question-import-preview-ack" type="checkbox"> Tôi đã xem các cảnh báo và vẫn muốn tiếp tục tải phần câu đã nhận diện.</label>' +
+            '<div class="question-import-preview-actions"><button type="button" id="question-import-preview-cancel" class="btn btn-gray">HỦY</button><button type="button" id="question-import-preview-confirm" class="btn btn-fire">XÁC NHẬN TẢI LÊN</button></div>' +
+        '</div>';
+        document.body.appendChild(modal);
+        modal.addEventListener('mousedown', event => {
+            if (event.target === modal) {
+                pendingQuestionImport = null;
+                modal.style.display = 'none';
+            }
+        });
+        modal.querySelector('#question-import-preview-cancel').onclick = () => {
+            pendingQuestionImport = null;
+            modal.style.display = 'none';
+        };
+        modal.querySelector('#question-import-preview-ack').onchange = () => {
+            modal.querySelector('#question-import-preview-confirm').disabled =
+                !pendingQuestionImport || pendingQuestionImport.result.total === 0 ||
+                pendingQuestionImport.result.estimatedBytes > 900 * 1024 ||
+                (pendingQuestionImport.needsAcknowledgement && !modal.querySelector('#question-import-preview-ack').checked);
+        };
+        modal.querySelector('#question-import-preview-confirm').onclick = () => {
+            const staged = pendingQuestionImport;
+            if (!staged || staged.result.total === 0) {
+                showCustomAlert('Không có câu hợp lệ để tải lên.');
+                return;
+            }
+            if (staged.result.estimatedBytes > 900 * 1024) {
+                showCustomAlert('Dữ liệu đề quá lớn để ghi an toàn vào một tài liệu Firebase. Hãy giảm kích thước ảnh.');
+                return;
+            }
+            if (staged.needsAcknowledgement && !modal.querySelector('#question-import-preview-ack').checked) {
+                showCustomAlert('Hãy xác nhận đã xem các cảnh báo trước khi tải lên.');
+                return;
+            }
+            importedQuestionsCache = {};
+            importedQuestionsCache[staged.topic] = staged.result.sections;
             pendingAuthAction = 'import_questions';
-            if (auth.currentUser && !auth.currentUser.isAnonymous) { executePendingAdminAction(); return; }
-            document.getElementById('auth-action-title').innerText = `Xác nhận Đẩy ${total} câu lên Cloud`;
-            document.getElementById('delete-pw').value = ''; document.getElementById('delete-email').value = '';
+            pendingQuestionImport = null;
+            modal.style.display = 'none';
+            const total = staged.result.total;
+            if (auth.currentUser && !auth.currentUser.isAnonymous) {
+                executePendingAdminAction();
+                return;
+            }
+            document.getElementById('auth-action-title').innerText = 'Xác nhận đẩy ' + total + ' câu lên Cloud';
+            document.getElementById('delete-pw').value = '';
+            document.getElementById('delete-email').value = '';
             document.getElementById('delete-auth-modal').style.display = 'flex';
-        } else {
-            showCustomAlert('File Word không có dữ liệu hợp lệ. Hãy tải file mẫu và giữ đúng các tiêu đề PHẦN, Câu, Đáp án, Giải thích!');
-        }
-    } catch(error) {
-        console.error('Lỗi đọc Word:', error);
-        showCustomAlert('Lỗi đọc file Word. Vui lòng dùng file .docx mẫu của hệ thống!');
+        };
     }
-    document.getElementById('file-import-questions').value = '';
+
+    pendingQuestionImport = {
+        topic,
+        result,
+        needsAcknowledgement: !!(result.rejected.length || result.warnings.length)
+    };
+    const counts = result.sections;
+    modal.querySelector('#question-import-preview-topic').textContent = 'Chuyên đề: ' + topic;
+    modal.querySelector('#question-import-count-mcq').textContent = counts.mcq.length;
+    modal.querySelector('#question-import-count-tf').textContent = counts.tf.length;
+    modal.querySelector('#question-import-count-short').textContent = counts.short.length;
+    modal.querySelector('#question-import-count-total').textContent = result.total;
+    const status = modal.querySelector('#question-import-preview-status');
+    status.textContent = 'Tìm thấy ' + result.candidateCount + ' dấu câu hỏi; nhận diện hợp lệ ' + result.total +
+        (result.rejected.length ? '; loại ' + result.rejected.length + ' câu.' : '.');
+    status.classList.toggle('has-warning', !!(result.rejected.length || result.warnings.length));
+    const details = modal.querySelector('#question-import-preview-details');
+    details.replaceChildren();
+    const messages = [...result.warnings];
+    result.rejected.slice(0, 12).forEach(item => messages.push((item.number ? 'Câu ' + item.number + ': ' : 'Câu không rõ số: ') + item.reason));
+    if (result.rejected.length > 12) messages.push('… và ' + (result.rejected.length - 12) + ' câu lỗi khác.');
+    if (!messages.length) {
+        const ok = document.createElement('p');
+        ok.textContent = 'Không phát hiện câu bị loại hoặc cảnh báo.';
+        details.appendChild(ok);
+    } else {
+        const list = document.createElement('ul');
+        messages.forEach(message => {
+            const li = document.createElement('li');
+            li.textContent = message;
+            list.appendChild(li);
+        });
+        details.appendChild(list);
+    }
+    const ackWrap = modal.querySelector('#question-import-preview-ack-wrap');
+    const ack = modal.querySelector('#question-import-preview-ack');
+    ack.checked = false;
+    ackWrap.hidden = !pendingQuestionImport.needsAcknowledgement;
+    const confirm = modal.querySelector('#question-import-preview-confirm');
+    confirm.disabled = result.total === 0 || result.estimatedBytes > 900 * 1024 || pendingQuestionImport.needsAcknowledgement;
+    modal.style.display = 'flex';
+};
+
+document.getElementById('file-import-questions').onchange = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const selectedTopic = document.getElementById('import-q-topic').value;
+    if (!selectedTopic) {
+        showCustomAlert('⚠️ Vui lòng CHỌN CHUYÊN ĐỀ trước khi Import!');
+        event.target.value = '';
+        return;
+    }
+    try {
+        const result = await parseWordQuestionBank(await file.arrayBuffer());
+        renderQuestionImportPreview(selectedTopic, result);
+    } catch (error) {
+        console.error('Lỗi đọc Word:', error);
+        showCustomAlert('Lỗi đọc file Word. Vui lòng kiểm tra file .docx và kết nối thư viện Mammoth.');
+    }
+    event.target.value = '';
 };
 
 // ADMIN ACTIONS PIPELINE
