@@ -1275,6 +1275,7 @@ const parseWordQuestionBank = async (arrayBuffer) => {
 
     const total = sections.mcq.length + sections.tf.length + sections.short.length;
     if (!section) warnings.push('Không nhận diện được tiêu đề phần; hãy dùng PHẦN I, PHẦN II hoặc PHẦN III.');
+    if (!candidateCount) warnings.push('Không nhận diện được câu hỏi. Hãy kiểm tra cách ghi số câu và tiêu đề PHẦN.');
     if (rejected.length) warnings.push('Có ' + rejected.length + ' câu bị loại vì thiếu trường bắt buộc hoặc dữ liệu mơ hồ.');
     Object.entries(questionNumbers).forEach(([type, numbers]) => {
         const unique = [...new Set(numbers)].sort((a, b) => a - b);
