@@ -1148,3 +1148,54 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
 @media (prefers-reduced-motion: reduce) {
   #screen-start .autocomplete-items { animation-duration:.01ms !important; }
 }
+
+
+/* Login atom repair: fixed tilted orbit tracks, moving electrons, visible nucleus. */
+@keyframes electronOrbit { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+@keyframes electronGlow { 0%,100% { opacity:.72; box-shadow:0 0 7px 2px rgba(223,238,255,.40); } 50% { opacity:1; box-shadow:0 0 14px 5px rgba(223,238,255,.90); } }
+.welcome-art::before { content:none !important; animation:none !important; }
+.welcome-art::after { z-index:0; pointer-events:none; }
+.art-orbit {
+  z-index:1;
+  transform-origin:center;
+  animation:none !important;
+  overflow:visible;
+}
+.art-orbit.orbit-a { transform:rotate(-18deg); }
+.art-orbit.orbit-b { transform:rotate(35deg); }
+.art-orbit.orbit-c {
+  width:300px; height:118px; right:-22px; top:86px;
+  transform:rotate(72deg);
+}
+.art-orbit::after { content:none !important; animation:none !important; }
+.electron-track {
+  position:absolute; inset:0; display:block; border-radius:50%;
+  transform-origin:center; animation:electronOrbit 8s linear infinite;
+  will-change:transform; pointer-events:none;
+}
+.orbit-b .electron-track { animation-duration:11.2s; animation-direction:reverse; }
+.orbit-c .electron-track { animation-duration:9.3s; }
+.electron-dot {
+  position:absolute; top:50%; right:-4px; width:8px; height:8px;
+  border:1px solid rgba(255,255,255,.78); border-radius:50%;
+  background:#f8fbff; transform:translateY(-50%);
+  animation:electronGlow 2.4s ease-in-out infinite;
+}
+.orbit-b .electron-dot { animation-delay:-.8s; }
+.orbit-c .electron-dot { animation-delay:-1.5s; }
+.art-atom {
+  z-index:3;
+  color:#fff;
+  text-shadow:0 0 18px rgba(239,244,255,.85);
+}
+.art-atom::after { content:none !important; animation:none !important; }
+#screen-start.active .welcome-card,
+#screen-start.active .student-card,
+#screen-start.active .feature-card:nth-child(1),
+#screen-start.active .feature-card:nth-child(2),
+#screen-start.active .feature-card:nth-child(3) {
+  animation:none !important;
+  opacity:1;
+  transform:none;
+  filter:none;
+}
