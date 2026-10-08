@@ -1292,7 +1292,8 @@ const renderQuestionImportPreview = (topic, result) => {
                 '<div><b id="question-import-count-mcq">0</b><span>Trắc nghiệm</span></div>' +
                 '<div><b id="question-import-count-tf">0</b><span>Đúng/Sai</span></div>' +
                 '<div><b id="question-import-count-short">0</b><span>Trả lời ngắn</span></div>' +
-                '<div><b id="question-import-count-total">0</b><span>Tổng nhận diện</span></div>' +
+                '<div><b id="question-import-count-errors">0</b><span>Câu lỗi/bị loại</span></div>' +
+                '<div><b id="question-import-count-total">0</b><span>Tổng hợp lệ</span></div>' +
             '</div>' +
             '<div id="question-import-preview-status" class="question-import-preview-status"></div>' +
             '<div id="question-import-preview-details" class="question-import-preview-details"></div>' +
@@ -1358,6 +1359,7 @@ const renderQuestionImportPreview = (topic, result) => {
     modal.querySelector('#question-import-count-mcq').textContent = counts.mcq.length;
     modal.querySelector('#question-import-count-tf').textContent = counts.tf.length;
     modal.querySelector('#question-import-count-short').textContent = counts.short.length;
+    modal.querySelector('#question-import-count-errors').textContent = result.rejected.length;
     modal.querySelector('#question-import-count-total').textContent = result.total;
     const status = modal.querySelector('#question-import-preview-status');
     status.textContent = 'Tìm thấy ' + result.candidateCount + ' dấu câu hỏi; nhận diện hợp lệ ' + result.total +
