@@ -912,7 +912,7 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
 .question-import-preview h3 { margin: 0 0 8px; color: #fff; }
 .question-import-counts {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 10px;
   margin: 18px 0;
 }
