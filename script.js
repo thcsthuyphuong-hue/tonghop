@@ -1413,34 +1413,59 @@ const parseWordQuestionBank = async (arrayBuffer) => {
     let answerTableMode = false;
     let answerTableType = '';
     let answerTableNumber = '';
+    let answerTableTruthIndex = 0;
     const parseAnswerTableBlock = (text) => {
-        const part = cleanLine(text).match(/^phần\s*(iii|ii|i|3|2|1)\b/i);
+        const normalized = cleanLine(text);
+        const part = normalized.match(/^phần\s*(iii|ii|i|3|2|1)\b/i);
         if (part) {
             answerTableType = parseWordSection('PHẦN ' + part[1])?.type || '';
             answerTableNumber = '';
+            answerTableTruthIndex = 0;
             return true;
         }
-        if (/^(?:câu|đáp\s*án|answer)$/i.test(cleanLine(text))) return true;
-        const number = cleanLine(text).match(/^(\d+\.\d+(?:\.\d+)*)\.?$/);
+        if (/^(?:câu|đáp\s*án|answer|a|b|c|d)$/i.test(normalized)) return true;
+        const number = normalized.match(/^(\d+\.\d+(?:\.\d+)*)\.?$/);
         if (number) {
             answerTableNumber = number[1];
+            answerTableTruthIndex = 0;
+            const suffix = Number(answerTableNumber.split('.').pop());
+            const inferredType = suffix >= 33 ? 'short' : (suffix >= 25 ? 'tf' : (suffix >= 1 && suffix <= 24 ? 'mcq' : ''));
+            if (inferredType) answerTableType = inferredType;
             return true;
         }
-        if (!answerTableType || !answerTableNumber) return true;
+        if (!answerTableNumber) return true;
         const key = keyFor(answerTableNumber);
         if (answerTableType === 'mcq') {
-            const letter = cleanLine(text).match(/^([A-D])\s*[.)]?$/i);
+            const letter = normalized.match(/^(?:đáp\s*án\s*)?\(?([A-D])\)?\s*[.)]?$/i);
             if (letter) keyedAnswers.mcq[key] = { ...(keyedAnswers.mcq[key] || {}), answer: letter[1].toUpperCase() };
+            answerTableNumber = '';
         } else if (answerTableType === 'tf') {
             const target = (keyedAnswers.tf[key] = keyedAnswers.tf[key] || { truth: {} }).truth;
-            readTfAnswers(text, target);
-            const sequence = cleanLine(text).split(/[;,\s|/]+/).filter(Boolean);
-            if (sequence.length === 4 && sequence.every(token => parseTruthValue(token) !== null)) sequence.forEach((token, index) => { target[index] = parseTruthValue(token); });
-        } else {
-            const value = cleanLine(text).replace(/^A\s*[.)]\s*/i, '');
+            const sequence = normalized.split(/[;,\s|/]+/).filter(Boolean);
+            if (sequence.length === 4 && sequence.every(token => parseTruthValue(token) !== null)) {
+                sequence.forEach((token, index) => { target[index] = parseTruthValue(token); });
+                answerTableNumber = '';
+                answerTableTruthIndex = 0;
+            } else {
+                const value = parseTruthValue(normalized);
+                if (value !== null) {
+                    target[answerTableTruthIndex] = value;
+                    answerTableTruthIndex++;
+                    if (answerTableTruthIndex >= 4) {
+                        answerTableNumber = '';
+                        answerTableTruthIndex = 0;
+                    }
+                } else {
+                    const beforeCount = Object.keys(target).length;
+                    readTfAnswers(normalized, target);
+                    if (Object.keys(target).length > beforeCount) answerTableNumber = '';
+                }
+            }
+        } else if (answerTableType === 'short') {
+            const value = normalized.replace(/^(?:đáp\s*số|đáp\s*án)\s*[:：-]?\s*/i, '').replace(/^A\s*[.)]\s*/i, '');
             if (value) keyedAnswers.short[key] = { answer: value };
-        }
-        answerTableNumber = '';
+            answerTableNumber = '';
+        } else answerTableNumber = '';
         return true;
     };
 
