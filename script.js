@@ -1412,13 +1412,15 @@ const parseWordQuestionBank = async (arrayBuffer) => {
 
     let answerTableMode = false;
     let answerTableType = '';
+    let answerTableExplicitType = '';
     let answerTableNumber = '';
     let answerTableTruthIndex = 0;
     const parseAnswerTableBlock = (text) => {
         const normalized = cleanLine(text);
         const part = normalized.match(/^phần\s*(iii|ii|i|3|2|1)\b/i);
         if (part) {
-            answerTableType = parseWordSection('PHẦN ' + part[1])?.type || '';
+            answerTableExplicitType = parseWordSection('PHẦN ' + part[1])?.type || '';
+            answerTableType = answerTableExplicitType;
             answerTableNumber = '';
             answerTableTruthIndex = 0;
             return true;
@@ -1430,7 +1432,7 @@ const parseWordQuestionBank = async (arrayBuffer) => {
             answerTableTruthIndex = 0;
             const suffix = Number(answerTableNumber.split('.').pop());
             const inferredType = suffix >= 33 ? 'short' : (suffix >= 25 ? 'tf' : (suffix >= 1 && suffix <= 24 ? 'mcq' : ''));
-            if (inferredType) answerTableType = inferredType;
+            answerTableType = answerTableExplicitType || inferredType || answerTableType;
             return true;
         }
         if (!answerTableNumber) return true;
@@ -1485,7 +1487,9 @@ const parseWordQuestionBank = async (arrayBuffer) => {
             answerKeyMode = '';
             answerTableMode = true;
             answerTableType = '';
+            answerTableExplicitType = '';
             answerTableNumber = '';
+            answerTableTruthIndex = 0;
             return;
         }
         if (answerTableMode) {
