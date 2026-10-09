@@ -1311,3 +1311,40 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
   color:rgba(245,247,255,.96) !important;
   text-shadow:0 1px 3px rgba(15,11,48,.56);
 }
+
+
+/* Keep true/false controls aligned when a statement wraps, with a compact mobile layout. */
+#screen-quiz .tf-row {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:14px;
+}
+#screen-quiz .tf-row > span {
+  min-width:0;
+  overflow-wrap:anywhere;
+}
+#screen-quiz .tf-row > div {
+  display:flex;
+  flex:0 0 auto;
+  flex-wrap:nowrap;
+  gap:8px;
+}
+#screen-quiz .tf-row .tf-btn {
+  box-sizing:border-box;
+  min-width:78px;
+  white-space:nowrap;
+}
+@media (max-width:600px) {
+  #screen-quiz .tf-row {
+    grid-template-columns:minmax(0,1fr);
+    gap:10px;
+  }
+  #screen-quiz .tf-row > div {
+    justify-self:end;
+  }
+  #screen-quiz .tf-row .tf-btn {
+    min-width:clamp(66px,22vw,78px);
+    padding:9px 12px;
+  }
+}
