@@ -1189,8 +1189,11 @@ const parseWordQuestionBank = async (arrayBuffer) => {
     };
     const keyFor = (number) => String(number || '').trim();
     const inferMcqAnswer = (text) => {
-        const match = cleanLine(text).match(/(?:đáp\s*án\s*(?:là)?\s*|phương\s*án\s+)([A-D])\s*(?:là\s*)?(?:đúng|là\s+đáp\s*án|được\s*chọn)/i);
-        return match ? match[1].toUpperCase() : '';
+        const value = cleanLine(text);
+        const labelled = value.match(/(?:đáp\s*án(?:\s+đúng)?|phương\s*án|chọn)\s*(?:là)?\s*[:：-]?\s*\(?([A-D])\)?(?=$|[\s.,;:!?])/i);
+        if (labelled) return labelled[1].toUpperCase();
+        const reversed = value.match(/(?:^|[\s;])([A-D])\s+(?:là\s+)?đáp\s*án(?:\s+đúng)?(?=$|[\s.,;:!?])/i);
+        return reversed ? reversed[1].toUpperCase() : '';
     };
     const readTfAnswers = (text, target) => {
         const matchers = [
@@ -1310,7 +1313,7 @@ const parseWordQuestionBank = async (arrayBuffer) => {
                 addIssue('Phát hiện nhiều đáp án trắc nghiệm (' + value + '), nhưng hệ thống hiện chỉ chấm một lựa chọn mỗi câu.');
                 return;
             }
-            const letter = value.match(/^([A-D])(?:\s*[.)])?$/i);
+            const letter = value.match(/^(?:(?:đáp\s*án(?:\s+đúng)?|phương\s*án|chọn|đúng)\s*(?:là)?\s*[:：-]?\s*)?\(?([A-D])\)?(?:\s*(?:là\s+đáp\s*án|đúng))?$/i);
             if (letter) {
                 const index = letter[1].toUpperCase().charCodeAt(0) - 65;
                 current.a = current.o[index] || letter[1].toUpperCase();
