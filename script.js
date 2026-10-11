@@ -16,6 +16,31 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+/**
+ * Giữ mã Firebase gốc; mã APP-* là mã nghiệp vụ riêng được ghi trong README.md.
+ */
+function getFirebaseErrorMessage(error, appCode, fallback) {
+    const code = error?.code || "unknown";
+    const messages = {
+        "permission-denied": "Firestore từ chối quyền truy cập. Kiểm tra Rules và phiên đăng nhập.",
+        "unauthenticated": "Phiên đăng nhập không hợp lệ hoặc đã hết hạn.",
+        "unavailable": "Firebase tạm thời không khả dụng. Kiểm tra kết nối rồi thử lại.",
+        "resource-exhausted": "Đã vượt giới hạn tài nguyên hoặc hạn mức.",
+        "invalid-argument": "Dữ liệu gửi lên không hợp lệ.",
+        "deadline-exceeded": "Yêu cầu hết thời gian chờ.",
+        "auth/invalid-credential": "Email hoặc mật khẩu không hợp lệ.",
+        "auth/invalid-login-credentials": "Email hoặc mật khẩu không hợp lệ.",
+        "auth/wrong-password": "Email hoặc mật khẩu không hợp lệ.",
+        "auth/user-not-found": "Không tìm thấy tài khoản.",
+        "auth/user-disabled": "Tài khoản đã bị vô hiệu hóa.",
+        "auth/too-many-requests": "Có quá nhiều lần thử. Hãy chờ rồi thử lại.",
+        "auth/network-request-failed": "Không thể kết nối dịch vụ xác thực. Kiểm tra mạng."
+    };
+    const detail = messages[code] || fallback || "Đã xảy ra lỗi không xác định.";
+    console.error("[" + appCode + "] Firebase error", { firebaseCode: code, message: error?.message || "", error });
+    return "[" + appCode + "] " + detail + " (Firebase: " + code + ")";
+}
+
 const appId_fixed = 'kham-pha-vat-ly-9'; 
 const collectionName = 'quiz_results'; 
 const collectionReports = 'error_reports';
@@ -463,7 +488,7 @@ async function calculateResult() {
             await addDoc(collection(db, 'artifacts', appId_fixed, 'public', 'data', collectionName), { 
                 name: u.name, school: u.sch, sbd: u.sbd, class: u.cls, topic: u.topic, score: fs, duration: dur, mode: mode, timestamp: new Date().toISOString(), examData: currentExam, userAnswers: userAnswers 
             }); 
-        } catch(e) { hasSaved = false; }
+        } catch(e) { hasSaved = false; showCustomAlert(getFirebaseErrorMessage(e, "APP-SUB-001", "Không thể lưu kết quả bài làm.")); }
     }
     fetchRankAndLeaderboard(fs, u.topic);
 }
@@ -1776,7 +1801,7 @@ async function executePendingAdminAction() {
             const deletePromises = []; snap.forEach(docSnap => { deletePromises.push(deleteDoc(doc(db, 'artifacts', appId_fixed, 'public', 'data', collectionStudents, docSnap.id))); });
             await Promise.all(deletePromises);
             showCustomAlert("✅ Đã làm sạch toàn bộ danh sách học sinh!"); renderAdminStudents();
-        } catch(e) { showCustomAlert("Lỗi khi xóa dữ liệu!"); }
+        } catch(e) { showCustomAlert(getFirebaseErrorMessage(e, "APP-STU-002", "Không thể xóa dữ liệu học sinh.")); }
     }
     else if (pendingAuthAction === 'import_students' && importedStudentsCache.length > 0) {
         showCustomAlert("Đang tiến hành nhập dữ liệu, vui lòng đợi...");
@@ -1784,7 +1809,7 @@ async function executePendingAdminAction() {
             for(let i=0; i<importedStudentsCache.length; i++) { await addDoc(collection(db, 'artifacts', appId_fixed, 'public', 'data', collectionStudents), importedStudentsCache[i]); }
             showCustomAlert(`✅ Đã import thành công ${importedStudentsCache.length} học sinh!`);
             importedStudentsCache = []; renderAdminStudents();
-        } catch(e) { showCustomAlert("Lỗi khi tải dữ liệu lên Server!"); }
+        } catch(e) { showCustomAlert(getFirebaseErrorMessage(e, "APP-STU-001", "Không thể import danh sách học sinh.")); }
     }
     else if (pendingAuthAction === 'import_questions' && Object.keys(importedQuestionsCache).length > 0) {
         const invalidBank = Object.values(importedQuestionsCache).some(bank => !bank || !['mcq','tf','short'].some(key => Array.isArray(bank[key]) && bank[key].length));
@@ -1804,7 +1829,7 @@ async function executePendingAdminAction() {
             }
             showCustomAlert(`✅ Đã đẩy thành công dữ liệu của ${topics.length} chuyên đề!`);
             importedQuestionsCache = {}; renderAdminQuestions();
-        } catch(e) { showCustomAlert("Lỗi khi đẩy đề lên Server!"); console.error(e); }
+        } catch(e) { showCustomAlert(getFirebaseErrorMessage(e, "APP-BANK-001", "Không thể import ngân hàng đề.")); }
     }
     else if (pendingAuthAction === 'delete_all_questions') {
         showCustomAlert("Đang xóa toàn bộ Ngân hàng đề, vui lòng đợi...");
@@ -1813,12 +1838,12 @@ async function executePendingAdminAction() {
             const deletePromises = []; snap.forEach(docSnap => { deletePromises.push(deleteDoc(doc(db, 'artifacts', appId_fixed, 'public', 'data', collectionBanks, docSnap.id))); });
             await Promise.all(deletePromises);
             showCustomAlert("✅ Đã xóa sạch kho đề trên hệ thống!"); renderAdminQuestions();
-        } catch(e) { showCustomAlert("Lỗi khi xóa dữ liệu đề!"); }
+        } catch(e) { showCustomAlert(getFirebaseErrorMessage(e, "APP-BANK-002", "Không thể xóa ngân hàng đề.")); }
     }
     else if (pendingAuthAction === 'config') {
         const pTime = parseInt(document.getElementById('cfg-time-practice').value), tTime = parseInt(document.getElementById('cfg-time-test').value), mHints = parseInt(document.getElementById('cfg-max-hints').value);
         if(isNaN(pTime) || isNaN(tTime) || isNaN(mHints) || pTime <= 0 || tTime <= 0 || mHints < 0) { showCustomAlert("⚠️ Vui lòng nhập số hợp lệ!"); return; }
-        try { await setDoc(doc(db, 'artifacts', appId_fixed, 'public', 'data', 'config', 'timer_settings'), { practice: pTime, test: tTime, maxHints: mHints, lastUpdated: new Date().toISOString() }, { merge: true }); practiceTimeLimit = pTime * 60; testTimeLimit = tTime * 60; maxHintsAllowed = mHints; showCustomAlert("Đã cập nhật cấu hình thành công!"); } catch(e) { showCustomAlert("Lỗi khi lưu cấu hình!"); }
+        try { await setDoc(doc(db, 'artifacts', appId_fixed, 'public', 'data', 'config', 'timer_settings'), { practice: pTime, test: tTime, maxHints: mHints, lastUpdated: new Date().toISOString() }, { merge: true }); practiceTimeLimit = pTime * 60; testTimeLimit = tTime * 60; maxHintsAllowed = mHints; showCustomAlert("Đã cập nhật cấu hình thành công!"); } catch(e) { showCustomAlert(getFirebaseErrorMessage(e, "APP-CFG-001", "Không thể lưu cấu hình.")); }
     } else if (pendingAuthAction === 'inbox') { renderAdminInbox(); }
     pendingAuthAction = null;
 }
@@ -1853,7 +1878,7 @@ document.getElementById('btn-delete-confirm').onclick = async () => {
         document.getElementById('delete-auth-modal').style.display = 'none'; 
         executePendingAdminAction();
     } catch (error) {
-        showCustomAlert("⚠️ XÁC THỰC THẤT BẠI! Hãy kiểm tra tài khoản Firebase.");
+        showCustomAlert(getFirebaseErrorMessage(error, "APP-AUTH-001", "Xác thực giáo viên thất bại."));
     }
     document.getElementById('btn-delete-confirm').innerText = "XÁC NHẬN";
 };
@@ -1917,7 +1942,7 @@ document.getElementById('btn-report-submit').onclick = async () => {
         await addDoc(collection(db, 'artifacts', appId_fixed, 'public', 'data', collectionReports), { name: window.finalUserData?.name || "Học sinh Ẩn danh", question: qPos, detail: detail, image: reportImageBase64, timestamp: new Date().toISOString() });
         document.getElementById('report-modal').style.display = 'none'; showCustomAlert("Cảm ơn bạn đã gửi báo lỗi!");
         document.getElementById('report-question').value = ''; document.getElementById('report-detail').value = ''; document.getElementById('report-file').value = ''; document.getElementById('report-img-preview').style.display = 'none'; reportImageBase64 = "";
-    } catch(e) { showCustomAlert("Có lỗi xảy ra, vui lòng thử lại sau!"); }
+    } catch(e) { showCustomAlert(getFirebaseErrorMessage(e, "APP-REPORT-001", "Không thể gửi báo cáo lỗi.")); }
     btn.innerText = "GỬI PHẢN HỒI"; btn.disabled = false;
 };
 
@@ -1930,7 +1955,7 @@ async function renderAdminInbox() {
         listBody.innerHTML = reports.map(r => `<tr><td><small>${new Date(r.timestamp).toLocaleString('vi-VN')}</small></td><td><b>${r.name}</b></td><td>${r.question || '-'}</td><td>${r.detail || '-'}</td><td>${r.image ? `<button class="btn btn-gray btn-view-img" data-img="${r.image}" style="padding:4px 8px; font-size:0.75rem;">Xem ảnh 🖼️</button>` : '-'}</td><td><button class="btn-del-report" data-id="${r.id}" style="background:var(--danger); color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer; font-size: 0.8rem;">Xóa</button></td></tr>`).join('');
         listBody.querySelectorAll('.btn-del-report').forEach(b => { b.onclick = async () => { if (confirm("Xóa báo cáo lỗi này?")) { b.innerText = "..."; b.disabled = true; await deleteDoc(doc(db, 'artifacts', appId_fixed, 'public', 'data', collectionReports, b.dataset.id)); renderAdminInbox(); } } });
         listBody.querySelectorAll('.btn-view-img').forEach(b => { b.onclick = () => { document.getElementById('image-viewer-img').src = b.dataset.img; document.getElementById('image-viewer-modal').style.display = 'flex'; } });
-    } catch(e) {}
+    } catch(e) { console.error("[APP-REPORT-002] Không thể tải hộp thư báo lỗi", e); listBody.innerHTML = "<tr><td colspan='6'>[APP-REPORT-002] Không thể tải hộp thư báo lỗi. Kiểm tra quyền giáo viên và Console.</td></tr>"; }
 }
 document.getElementById('btn-inbox-close').onclick = () => document.getElementById('admin-inbox-modal').style.display = 'none';
 
