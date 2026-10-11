@@ -39,6 +39,40 @@ Giáo viên có thể tải ngân hàng câu hỏi lên Firebase theo từng chu
 - **Hộp thư báo lỗi:** xem phản hồi và ảnh học sinh gửi.
 - Các thao tác quản trị yêu cầu quyền truy cập được cấu hình cho hệ thống.
 
+## Mã lỗi và chẩn đoán
+
+Ứng dụng ưu tiên giữ nguyên mã lỗi chính thức từ Firebase SDK. Mã `permission-denied`, `unauthenticated`, `unavailable`, `auth/invalid-credential` là mã do SDK trả về, không phải mã tự đặt. Khi báo lỗi, gửi cả mã `APP-*` và mã Firebase trong ngoặc nếu có; xem Console để biết chi tiết. Không ghi mật khẩu hoặc token vào log.
+
+### Mã nghiệp vụ riêng của HUE SMART TEST
+
+| Mã | Chức năng | Hướng kiểm tra |
+|---|---|---|
+| `APP-AUTH-001` | Đăng nhập giáo viên thất bại | Kiểm tra tài khoản và mã Firebase Auth gốc |
+| `APP-CFG-001` | Lưu cấu hình thất bại | Kiểm tra phiên giáo viên và Firestore Rules |
+| `APP-BANK-001` | Import ngân hàng đề thất bại | Kiểm tra dữ liệu, quyền ghi và kích thước tài liệu |
+| `APP-BANK-002` | Xóa ngân hàng đề thất bại | Kiểm tra quyền giáo viên và Rules |
+| `APP-STU-001` | Import danh sách học sinh thất bại | Kiểm tra dữ liệu và quyền ghi |
+| `APP-STU-002` | Xóa dữ liệu học sinh thất bại | Kiểm tra quyền giáo viên và Rules |
+| `APP-SUB-001` | Lưu kết quả bài làm thất bại | Kiểm tra phiên anonymous, quyền tạo kết quả và kết nối |
+| `APP-REPORT-001` | Gửi báo cáo lỗi thất bại | Kiểm tra quyền tạo báo cáo, dữ liệu ảnh và kết nối |
+| `APP-REPORT-002` | Đọc hộp thư báo lỗi thất bại | Kiểm tra đăng nhập giáo viên và quyền đọc `error_reports` |
+
+### Một số mã Firebase thường gặp
+
+| Mã Firebase gốc | Ý nghĩa |
+|---|---|
+| `permission-denied` | Firestore Rules từ chối thao tác |
+| `unauthenticated` | Chưa có phiên xác thực hợp lệ |
+| `unavailable` | Dịch vụ tạm thời không khả dụng |
+| `resource-exhausted` | Vượt hạn mức hoặc tài nguyên |
+| `invalid-argument` | Dữ liệu hoặc tham số không hợp lệ |
+| `auth/invalid-credential` | Thông tin đăng nhập không hợp lệ |
+| `auth/user-disabled` | Tài khoản bị vô hiệu hóa |
+| `auth/too-many-requests` | Quá nhiều lần thử đăng nhập |
+| `auth/network-request-failed` | Lỗi kết nối dịch vụ xác thực |
+
+Danh sách Firebase trên chỉ gồm một số mã thường gặp, không phải toàn bộ mã SDK. Khi gặp mã khác, giữ nguyên `error.code` và `error.message` để tra cứu tài liệu Firebase; không thay mã gốc bằng mã tự đặt.
+
 ## Yêu cầu sử dụng
 
 - Trình duyệt hiện đại và kết nối Internet.
