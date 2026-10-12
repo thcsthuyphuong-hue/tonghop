@@ -32,6 +32,8 @@ function message(text, error = false) {
   el.classList.remove("hidden");
   el.style.borderColor = error ? "#fb7185" : "#9b89ff55";
   el.style.background = error ? "#be123c24" : "#7259ee22";
+  // Thông báo nằm gần đầu trang; đưa người dùng lên để luôn nhìn thấy thông báo.
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 function clearMessage() { $("global-message").classList.add("hidden"); }
 function show(el, yes = true) { $(el).classList.toggle("hidden", !yes); }
