@@ -24,7 +24,7 @@ const READING_MS = 5 * 60 * 1000;
 const $ = id => document.getElementById(id);
 let user = null, role = null, roomId = null, roomData = null, participantData = null;
 let roomUnsub = null, rosterUnsub = null, submissionsUnsub = null, tickTimer = null;
-let roster = [], submissions = [], answers = {}, submitted = false, endTimeWriteInFlight = false;
+let roster = [], submissions = [], answers = {}, submitted = false, endTimeWriteInFlight = false, lastRenderedPhase = null;
 
 function message(text, error = false) {
   const el = $("global-message");
@@ -223,11 +223,12 @@ function listenRoom(code) {
       }).catch(e => message("Không kiểm tra được trạng thái thí sinh: " + e.message, true));
     }
   }, e => message("Mất kết nối phòng thi: " + e.message, true));
-  tickTimer = setInterval(renderRoom, 500);
+  tickTimer = setInterval(tickCountdown, 500);
 }
 function renderRoom() {
   if (!roomData) return;
   const phase = phaseOf(roomData);
+  lastRenderedPhase = phase;
   $("room-heading").textContent = roomData.title || "Phòng thi";
   $("room-subtitle").textContent = "Mã phòng: " + roomId + " · " + (roomData.topicLabel || "");
   $("room-role").textContent = role === "host" ? "HOST / GIÁO VIÊN" : "CLIENT / HỌC SINH";
@@ -255,6 +256,18 @@ function renderRoom() {
   if (role === "student" && !participantData?.approved) $("room-notice").textContent += " Yêu cầu của bạn đang chờ Host duyệt.";
   if (role === "student" && participantData?.submitted) $("submit-exam-btn").disabled = true;
   if (role === "student" && participantData?.approved && ["reading","running","grading","finished"].includes(phase)) renderExam(phase);
+}
+function tickCountdown() {
+  if (!roomData) return;
+  const phase = phaseOf(roomData);
+  if (phase !== lastRenderedPhase) {
+    renderRoom();
+    return;
+  }
+  let remain = null;
+  if (phase === "reading") remain = roomData.readingStartedAt.toMillis() + READING_MS - Date.now();
+  if (phase === "running") remain = (roomData.examEndsAt?.toMillis?.() ?? roomData.readingStartedAt.toMillis()+READING_MS+(roomData.durationMinutes||45)*60000) - Date.now();
+  $("countdown").textContent = remain === null ? (phase === "waiting" ? "CHỜ" : "--:--") : formatTime(remain);
 }
 function renderRoster() {
   $("roster-count").textContent = String(roster.length);
