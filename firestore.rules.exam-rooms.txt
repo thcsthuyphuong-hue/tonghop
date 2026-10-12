@@ -4,13 +4,12 @@ HUE SMART TEST 7991 — Firestore Rules bổ sung cho Host & Client.
 Hãy ghép các match block này vào service cloud.firestore hiện có; không xóa rules của quiz_results,
 question_banks, students_list, error_reports hoặc config. Sau khi ghép, kiểm tra Rules Emulator trước khi Publish.
 */
-function isExamHost() {
-  return request.auth != null
-    && request.auth.uid == "wg7QT6isC2dryLf8rxc6z9lUjNd2"
-    && request.auth.token.firebase.sign_in_provider == "password";
-}
-
 match /exam_rooms/{roomId} {
+  function isExamHost() {
+    return request.auth != null
+      && request.auth.uid == "wg7QT6isC2dryLf8rxc6z9lUjNd2"
+      && request.auth.token.firebase.sign_in_provider == "password";
+  }
   allow read: if request.auth != null;
   allow create: if isExamHost()
     && request.resource.data.hostUid == request.auth.uid
