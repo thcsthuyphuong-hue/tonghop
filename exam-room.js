@@ -293,8 +293,14 @@ async function approveAll() {
   try {
     await requireHost();
     if (!["waiting","reading"].includes(phaseOf(roomData))) throw new Error("Danh sách đã khóa sau giai đoạn đọc đề.");
-    await Promise.all(roster.filter(p=>!p.approved).map(p=>updateDoc(participantRef(p.id),{approved:true,approvedAt:serverTimestamp()})));
-    message("Đã duyệt các thí sinh đang chờ.");
+    if (!roster.length) throw new Error("Danh sách đang trống: Host chưa tải được thí sinh từ Firebase. Kiểm tra thông báo quyền đọc danh sách và Firestore Rules.");
+    const pending = roster.filter(p=>!p.approved);
+    if (!pending.length) {
+      message("Không có thí sinh nào đang chờ duyệt.");
+      return;
+    }
+    await Promise.all(pending.map(p=>updateDoc(participantRef(p.id),{approved:true,approvedAt:serverTimestamp()})));
+    message("Đã duyệt " + pending.length + " thí sinh.");
   } catch(e) { message(e.message || "Không thể duyệt danh sách.", true); }
 }
 async function startReading() {
