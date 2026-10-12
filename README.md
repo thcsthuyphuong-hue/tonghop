@@ -55,11 +55,11 @@ Mở trang **[Phòng thi Host & Client](./exam-room.html)** hoặc truy cập `h
 ### Cấu hình Firebase bắt buộc
 
 1. Trong Firebase Authentication, bật **Email/Password** và **Anonymous**.
-2. Mở `firestore.rules.exam-rooms.txt`. Đây là **đoạn Rules bổ sung**, không phải file Rules hoàn chỉnh. Ghép các `match` block vào Rules đang dùng cho dự án `khtn-10`; **không xóa hoặc thay thế Rules hiện tại** của ngân hàng đề, danh sách học sinh, kết quả, báo lỗi và cấu hình. Kiểm thử Rules trước khi Publish.
-3. Danh sách Host hiện chỉ gồm UID giáo viên đã cấu hình trong `exam-room.js` và `firestore.rules.exam-rooms.txt`. Nếu thêm giáo viên, cập nhật đồng thời danh sách cho phép ở cả hai nơi.
+2. Mở file `firestore.rules`. Đây là **file Firestore Rules đầy đủ** cho dự án, bao gồm cả ứng dụng luyện đề và phòng thi Host & Client. Khi thay đổi Rules, cập nhật toàn bộ file này rồi Publish; không ghép thêm đoạn Rules từ file phụ.
+3. Danh sách Host hiện chỉ gồm UID giáo viên đã cấu hình trong `exam-room.js` và `firestore.rules`. Nếu thêm giáo viên, cập nhật đồng thời danh sách cho phép ở cả hai nơi.
 4. Sau khi cấu hình Rules, kiểm thử bằng hai phiên trình duyệt riêng: một tài khoản giáo viên làm Host và một phiên ẩn danh làm Client. Thử cả trường hợp học sinh chưa được duyệt, vào muộn, nộp bài sau giờ và đọc đáp án.
 
-**Bảo mật:** đáp án được lưu riêng trong `exam_rooms/{roomId}/private/answer_key`, không nằm trong dữ liệu câu hỏi mà Client đọc. Rules phải được ghép và Publish thì quyền này mới được thực thi; chỉ ẩn đáp án ở giao diện là không đủ. Không mở quyền đọc/ghi toàn bộ `exam_rooms` cho mọi người dùng.
+**Bảo mật:** đáp án được lưu riêng trong `exam_rooms/{roomId}/private/answer_key`, không nằm trong dữ liệu câu hỏi mà Client đọc. Rules trong `firestore.rules` phải được Publish thì quyền này mới được thực thi; chỉ ẩn đáp án ở giao diện là không đủ. Không mở quyền đọc/ghi toàn bộ `exam_rooms` cho mọi người dùng.
 
 **Phạm vi phiên bản đầu:** phòng thi dùng chung Firestore và cần Internet; trạng thái, danh sách, bài nộp và điểm lưu trên Firebase. Đồng hồ của các Client dựa vào mốc thời gian chung do Firebase ghi. Đây là bản triển khai phía trình duyệt, chưa có Cloud Functions riêng để xử lý mọi chuyển trạng thái ở máy chủ; vì vậy nên kiểm thử kỹ trước khi dùng cho kỳ thi chính thức. Khi cần mức bảo đảm cao hơn, chuyển thao tác bắt đầu/kết thúc phòng và chấp nhận bài nộp sang Cloud Functions.
 
