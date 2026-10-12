@@ -23,7 +23,7 @@ const HOST_UID_ALLOWLIST = ["wg7QT6isC2dryLf8rxc6z9lUjNd2"];
 const READING_MS = 5 * 60 * 1000;
 const $ = id => document.getElementById(id);
 let user = null, role = null, roomId = null, roomData = null, participantData = null;
-let roomUnsub = null, rosterUnsub = null, submissionsUnsub = null, tickTimer = null;
+let roomUnsub = null, rosterUnsub = null, submissionsUnsub = null, participantUnsub = null, tickTimer = null;
 let roster = [], submissions = [], answers = {}, submitted = false, endTimeWriteInFlight = false, lastRenderedPhase = null;
 
 function message(text, error = false) {
@@ -55,8 +55,8 @@ function formatTime(ms) {
   return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
 }
 function stopListeners() {
-  [roomUnsub, rosterUnsub, submissionsUnsub].forEach(fn => { if (fn) fn(); });
-  roomUnsub = rosterUnsub = submissionsUnsub = null;
+  [roomUnsub, rosterUnsub, submissionsUnsub, participantUnsub].forEach(fn => { if (fn) fn(); });
+  roomUnsub = rosterUnsub = submissionsUnsub = participantUnsub = null;
   if (tickTimer) clearInterval(tickTimer);
   tickTimer = null;
 }
@@ -217,10 +217,13 @@ function listenRoom(code) {
         submissions = s.docs.map(d => ({id:d.id,...d.data()})); renderSubmissions();
       }, e => message("Không tải được bài nộp: " + e.message, true));
     } else {
-      getDoc(participantRef(user.uid, code)).then(s => {
-        participantData = s.exists() ? {uid:user.uid,...s.data()} : participantData;
+      // Theo dõi hồ sơ thí sinh theo thời gian thực để trạng thái duyệt/nộp bài
+      // cập nhật ngay cả khi tài liệu phòng thi không thay đổi.
+      participantUnsub = participantUnsub || onSnapshot(participantRef(user.uid, code), s => {
+        participantData = s.exists() ? {uid:user.uid,...s.data()} : null;
+        submitted = !!participantData?.submitted;
         renderRoom();
-      }).catch(e => message("Không kiểm tra được trạng thái thí sinh: " + e.message, true));
+      }, e => message("Không cập nhật được trạng thái thí sinh: " + e.message, true));
     }
   }, e => message("Mất kết nối phòng thi: " + e.message, true));
   tickTimer = setInterval(tickCountdown, 500);
