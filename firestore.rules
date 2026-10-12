@@ -133,7 +133,7 @@ service cloud.firestore {
           && request.resource.data.submitted == false
           && request.resource.data.keys().hasOnly([
             "uid", "name", "class", "sbd", "school",
-            "approved", "submitted", "createdAt"
+            "approved", "submitted", "joinedAt"
           ])
           && (roomData().status == "waiting"
             || (roomData().status == "reading"
