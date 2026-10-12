@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#21145f">
+<title>Phòng thi | HUE SMART TEST 7991</title>
+<style>
+:root{font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;color:#f7f6ff;background:#100d2b;font-synthesis:none}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 15% 0%,#43318c 0,transparent 40%),radial-gradient(ellipse at 90% 20%,#164e63 0,transparent 32%),#100d2b}
+header{padding:22px max(18px,calc((100vw - 1100px)/2));border-bottom:1px solid #ffffff24;background:#100d2bcc;position:sticky;top:0;z-index:2;backdrop-filter:blur(16px)}
+header strong{font-size:1.05rem;letter-spacing:.04em}header small{display:block;color:#c6c0f1;margin-top:4px}
+main{max-width:1100px;margin:28px auto;padding:0 16px 48px}.panel{background:#ffffff0d;border:1px solid #ffffff24;border-radius:20px;padding:22px;margin:14px 0;box-shadow:0 18px 50px #0002}
+h1{font-size:clamp(1.5rem,4vw,2.25rem);margin:0 0 10px}h2{font-size:1.2rem;margin:0 0 14px}p{color:#d9d5f4;line-height:1.55}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:14px}
+label{display:block;font-weight:650;font-size:.9rem;margin:12px 0 6px;color:#e9e5ff}
+input,select,textarea{width:100%;padding:12px 13px;border:1px solid #ffffff36;border-radius:11px;background:#171338;color:white;font:inherit;min-width:0}
+button{border:0;border-radius:11px;padding:12px 16px;font:inherit;font-weight:750;cursor:pointer;color:white;background:#7359ee}
+button.secondary{background:#ffffff18;border:1px solid #ffffff30}button.danger{background:#b92f57}button:disabled{opacity:.45;cursor:not-allowed}
+.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}.muted{color:#bdb7e7;font-size:.88rem}.hidden{display:none!important}
+.pill{display:inline-flex;border:1px solid #ffffff30;border-radius:999px;padding:5px 10px;font-size:.82rem;color:#dcd6ff}
+.notice{padding:12px 14px;border-radius:12px;background:#7259ee22;border:1px solid #9b89ff55;margin:12px 0;line-height:1.5}
+.status{font-size:1.1rem;font-weight:800}.timer{font-size:clamp(2rem,7vw,3.4rem);font-variant-numeric:tabular-nums;font-weight:900;letter-spacing:.04em}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.person,.submission,.question{padding:14px;border:1px solid #ffffff20;border-radius:14px;background:#ffffff08;margin:10px 0}
+.person small,.submission small{display:block;color:#c5bee9;margin-top:4px}.person .actions{margin-top:8px}
+.qtitle{font-weight:800;margin:0 0 10px;line-height:1.5}.option{display:flex;gap:9px;align-items:flex-start;padding:10px;border:1px solid #ffffff26;border-radius:10px;margin:7px 0;cursor:pointer}.option input{width:auto;margin-top:4px}.option:has(input:checked){border-color:#a99aff;background:#8d75ff22}
+.tfline{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid #ffffff18}.tfline label{display:inline-flex;align-items:center;gap:5px;margin:0 0 0 8px}.tfline input{width:auto}
+.question img{max-width:100%}
+footer{text-align:center;color:#a9a2d6;padding:20px}
+@media(max-width:600px){.panel{padding:16px}.tfline{grid-template-columns:1fr}.tfline>div{display:flex;justify-content:flex-end}}
+</style>
+</head>
+<body>
+<header><strong>HUE SMART TEST 7991</strong><small>Phòng thi trực tuyến · Host & Client</small></header>
+<main>
+<section class="panel">
+<h1>Phòng thi Host & Client</h1>
+<p>Host đăng nhập bằng tài khoản giáo viên. Học sinh vào bằng mã phòng; 5 phút đầu chỉ đọc đề, sau đó hệ thống đồng bộ giờ làm bài qua Firebase.</p>
+<div id="global-message" class="notice hidden" role="status"></div>
+<div class="grid">
+<div>
+<h2>👩‍🏫 Giáo viên / Host</h2>
+<div id="host-login">
+<label for="host-email">Email giáo viên</label><input id="host-email" type="email" autocomplete="username" placeholder="email@truong.edu.vn">
+<label for="host-password">Mật khẩu</label><input id="host-password" type="password" autocomplete="current-password">
+<div class="actions"><button id="host-login-btn">Đăng nhập</button></div>
+<p class="muted">Dùng Firebase Authentication của hệ thống. Chỉ UID giáo viên được cấp quyền mới được tạo phòng.</p>
+</div>
+<div id="host-create" class="hidden">
+<label for="room-title">Tên phòng / bài kiểm tra</label><input id="room-title" maxlength="100" value="Kiểm tra Vật lý 9">
+<label for="bank-topic">Ngân hàng đề</label><select id="bank-topic"><option value="mix">Đề tổng hợp</option><option value="bai_11">Bài 11: Điện trở. Định luật Ohm</option><option value="bai_12">Bài 12: Đoạn mạch nối tiếp, song song</option><option value="bai_13">Bài 13: Năng lượng điện và công suất</option><option value="bai_14">Bài 14: Cảm ứng điện từ. Dòng điện XC</option><option value="bai_15">Bài 15: Tác dụng của dòng điện XC</option></select>
+<label for="duration">Thời gian làm bài (phút)</label><input id="duration" type="number" min="1" max="180" value="45">
+<div class="actions"><button id="create-room-btn">Nạp đề & tạo phòng</button><button id="host-logout-btn" class="secondary">Đăng xuất</button></div>
+</div>
+</div>
+<div>
+<h2>🧑‍🎓 Học sinh / Client</h2>
+<label for="join-code">Mã phòng</label><input id="join-code" maxlength="8" autocomplete="off" placeholder="VD: 7K4P9Q">
+<label for="student-name">Họ và tên</label><input id="student-name" maxlength="100" placeholder="Nguyễn Văn A">
+<div class="grid">
+<div><label for="student-class">Lớp</label><input id="student-class" maxlength="20" placeholder="9A1"></div>
+<div><label for="student-sbd">Số báo danh</label><input id="student-sbd" maxlength="30" placeholder="01"></div>
+</div>
+<label for="student-school">Trường</label><input id="student-school" maxlength="120" placeholder="THCS Thuỷ Phương">
+<div class="actions"><button id="join-room-btn">Vào phòng thi</button></div>
+<p class="muted">Không cần tài khoản email. Mỗi thiết bị dùng phiên Firebase riêng.</p>
+</div>
+</div>
+</section>
+
+<section id="room-panel" class="panel hidden">
+<div class="row"><div><span class="pill" id="room-role">PHÒNG THI</span><h2 id="room-heading" style="margin-top:10px">Phòng</h2><p id="room-subtitle" class="muted"></p></div><div style="text-align:right"><div id="phase-label" class="status">Đang chờ</div><div id="countdown" class="timer">--:--</div></div></div>
+<div id="room-notice" class="notice">Đang kết nối phòng thi…</div>
+<div id="host-room-controls" class="actions hidden"><button id="approve-all-btn" class="secondary">Duyệt tất cả đang chờ</button><button id="start-reading-btn">Bắt đầu 5 phút đọc đề</button><button id="finish-room-btn" class="danger">Kết thúc phòng</button></div>
+<div id="roster-wrap" class="hidden"><h2>Danh sách thí sinh <span class="pill" id="roster-count">0</span></h2><div id="roster-list"></div></div>
+<div id="exam-wrap" class="hidden"><h2 id="exam-heading">Đề thi</h2><div id="questions"></div><div class="actions"><button id="submit-exam-btn">Nộp bài</button></div></div>
+<div id="host-submissions-wrap" class="hidden"><h2>Bài nộp & chấm điểm</h2><p class="muted">Trắc nghiệm và đúng/sai được tự chấm; phần trả lời ngắn cho giáo viên chấm thủ công. Tổng điểm thang 10.</p><div id="submissions-list"></div></div>
+<div class="actions"><button id="leave-room-btn" class="secondary">Rời màn hình phòng</button></div>
+</section>
+</main>
+<footer>HUE SMART TEST 7991 · Cần kết nối Internet để đồng bộ dữ liệu.</footer>
+<script type="module" src="exam-room.js?v=20261012-host-client-v1"></script>
+</body></html>
