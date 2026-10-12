@@ -28,7 +28,10 @@ match /exam_rooms/{roomId} {
     function ownsRoom() {
       return isExamHost() && room().hostUid == request.auth.uid;
     }
-    allow read: if request.auth != null && (request.auth.uid == uid || ownsRoom());
+    // Host cần quyền list trên toàn bộ collection để onSnapshot(collection(...)) hoạt động.
+    // Học sinh chỉ được get hồ sơ của chính mình.
+    allow get: if request.auth != null && (request.auth.uid == uid || ownsRoom());
+    allow list: if ownsRoom();
     allow create: if request.auth != null
       && request.auth.uid == uid
       && request.resource.data.uid == uid
