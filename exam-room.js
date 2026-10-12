@@ -24,7 +24,7 @@ const READING_MS = 5 * 60 * 1000;
 const $ = id => document.getElementById(id);
 let user = null, role = null, roomId = null, roomData = null, participantData = null;
 let roomUnsub = null, rosterUnsub = null, submissionsUnsub = null, tickTimer = null;
-let roster = [], submissions = [], answers = {}, submitted = false;
+let roster = [], submissions = [], answers = {}, submitted = false, endTimeWriteInFlight = false;
 
 function message(text, error = false) {
   const el = $("global-message");
@@ -203,6 +203,11 @@ function listenRoom(code) {
     if (!snap.exists()) { message("Phòng thi không còn tồn tại.", true); return; }
     roomData = snap.data();
     renderRoom();
+    if (role === "host" && roomData.readingStartedAt?.toMillis?.() && !roomData.examEndsAt && !endTimeWriteInFlight) {
+      endTimeWriteInFlight = true;
+      const computedEnd = Timestamp.fromMillis(roomData.readingStartedAt.toMillis() + READING_MS + (Number(roomData.durationMinutes) || 45) * 60000);
+      updateDoc(roomRef(code), { examEndsAt: computedEnd }).catch(e => message("Không đồng bộ được giờ kết thúc: " + e.message, true)).finally(() => { endTimeWriteInFlight = false; });
+    }
     if (role === "host") {
       rosterUnsub = rosterUnsub || onSnapshot(collection(db, ROOT, code, "participants"), s => {
         roster = s.docs.map(d => ({id:d.id,...d.data()})); renderRoster(); renderSubmissions();
@@ -278,9 +283,7 @@ async function startReading() {
     await requireHost();
     if (phaseOf(roomData)!=="waiting") throw new Error("Phòng đã bắt đầu hoặc không còn ở trạng thái chờ.");
     if (!roster.some(p=>p.approved)) throw new Error("Hãy duyệt ít nhất một thí sinh trước.");
-    const now = Timestamp.now();
-    const end = Timestamp.fromMillis(now.toMillis()+READING_MS+(Number(roomData.durationMinutes)||45)*60000);
-    await updateDoc(roomRef(), {status:"reading",readingStartedAt:now,examEndsAt:end});
+    await updateDoc(roomRef(), {status:"reading",readingStartedAt:serverTimestamp(),examEndsAt:null});
     message("Đã bắt đầu 5 phút đọc đề. Mốc thời gian được chia sẻ qua Firebase.");
   } catch(e) { message(e.message || "Không thể bắt đầu phòng.", true); }
 }
@@ -302,12 +305,14 @@ function renderExam(phase) {
   if (phase === "reading") $("questions").querySelectorAll("input").forEach(el=>el.disabled=true);
   if (phase === "running" && !submitted) {
     $("questions").querySelectorAll('input[type="radio"]').forEach(el => el.addEventListener("change", () => {
-      const qid = el.name.split("_")[0];
-      if (el.name.endsWith("_" + el.name.split("_").at(-1)) && /_\d+$/.test(el.name)) {
-        const match = el.name.match(/^(q_\d+)_(\d+)$/);
-        if (match) { const v = answers[match[1]] || {}; v[Number(match[2])] = el.value==="true"; answers[match[1]]=v; return; }
+      const tfMatch = el.name.match(/^(q_\d+)_(\d+)$/);
+      if (tfMatch) {
+        const v = answers[tfMatch[1]] || {};
+        v[Number(tfMatch[2])] = el.value === "true";
+        answers[tfMatch[1]] = v;
+      } else {
+        answers[el.name] = el.value;
       }
-      answers[qid] = el.value;
     }));
     $("questions").querySelectorAll("[data-short]").forEach(el=>el.addEventListener("input",()=>{answers[el.dataset.short]=el.value;}));
   }
