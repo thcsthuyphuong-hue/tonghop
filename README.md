@@ -103,3 +103,6 @@ Danh sách Firebase trên chỉ gồm một số mã thường gặp, không ph�
 - Kết nối Firebase của dự án cần hoạt động để tải danh sách học sinh, ngân hàng đề, lưu kết quả và sử dụng công cụ quản trị.
 - Đề cần được tải lên đúng chuyên đề trước khi học sinh có thể làm bài theo chuyên đề đó.
 
+## Author
+
+Văn Hùng Nguyễn
