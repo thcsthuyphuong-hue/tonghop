@@ -1,0 +1,166 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Giáo viên được cấp quyền bằng Firebase Authentication email/password.
+    function isTeacher() {
+      return request.auth != null
+        && request.auth.uid == "wg7QT6isC2dryLf8rxc6z9lUjNd2"
+        && request.auth.token.firebase.sign_in_provider == "password";
+    }
+
+    function isStudent() {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider == "anonymous";
+    }
+
+    // Ngân hàng đề, cấu hình, danh sách học sinh, kết quả và báo lỗi hiện có.
+    match /artifacts/kham-pha-vat-ly-9/public/data/{collection}/{docId} {
+      allow read: if collection == "question_banks"
+        || collection == "config";
+      allow write: if isTeacher()
+        && (collection == "question_banks"
+          || collection == "config");
+
+      allow read: if collection == "students_list";
+      allow write: if isTeacher()
+        && collection == "students_list";
+
+      allow read: if collection == "quiz_results";
+      allow create: if collection == "quiz_results"
+        && isStudent();
+      allow update, delete: if collection == "quiz_results"
+        && isTeacher();
+
+      allow create: if collection == "error_reports"
+        && isStudent();
+      allow read, update, delete: if collection == "error_reports"
+        && isTeacher();
+    }
+
+    // Phòng thi Host & Client.
+    match /exam_rooms/{roomId} {
+      function isExamHost() {
+        return isTeacher();
+      }
+
+      function ownsRoom() {
+        return isExamHost()
+          && resource.data.hostUid == request.auth.uid;
+      }
+
+      allow get: if request.auth != null;
+      allow list: if false;
+
+      allow create: if isExamHost()
+        && request.resource.data.hostUid == request.auth.uid
+        && request.resource.data.status == "waiting";
+
+      allow update: if ownsRoom()
+        && request.resource.data.hostUid == resource.data.hostUid
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(["status", "readingStartedAt", "examEndsAt", "finishedAt"]);
+
+      allow delete: if false;
+
+      match /participants/{uid} {
+        function roomData() {
+          return get(/databases/$(database)/documents/exam_rooms/$(roomId)).data;
+        }
+
+        function ownsRoom() {
+          return isTeacher()
+            && roomData().hostUid == request.auth.uid;
+        }
+
+        // get: học sinh chỉ đọc hồ sơ của chính mình; Host đọc trong phòng mình.
+        allow get: if request.auth != null
+          && (request.auth.uid == uid || ownsRoom());
+
+        // list: cho phép Host tải toàn bộ roster của đúng phòng mình.
+        allow list: if ownsRoom();
+
+        allow create: if isStudent()
+          && request.auth.uid == uid
+          && request.resource.data.uid == uid
+          && request.resource.data.approved == false
+          && request.resource.data.submitted == false
+          && (roomData().status == "waiting"
+            || (roomData().status == "reading"
+              && roomData().readingStartedAt != null
+              && request.time < roomData().readingStartedAt + duration.value(5, "m")));
+
+        allow update: if (ownsRoom()
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(["approved", "approvedAt"]))
+          || (isStudent()
+            && request.auth.uid == uid
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(["name", "class", "sbd", "school"]));
+
+        allow delete: if false;
+      }
+
+      match /submissions/{uid} {
+        function roomData() {
+          return get(/databases/$(database)/documents/exam_rooms/$(roomId)).data;
+        }
+
+        function ownsRoom() {
+          return isTeacher()
+            && roomData().hostUid == request.auth.uid;
+        }
+
+        function approvedParticipant() {
+          return get(/databases/$(database)/documents/exam_rooms/$(roomId)/participants/$(uid)).data.approved == true;
+        }
+
+        allow get: if request.auth != null
+          && (request.auth.uid == uid || ownsRoom());
+        allow list: if ownsRoom();
+
+        allow create: if isStudent()
+          && request.auth.uid == uid
+          && approvedParticipant()
+          && roomData().status == "reading"
+          && roomData().readingStartedAt != null
+          && roomData().examEndsAt != null
+          && request.time >= roomData().readingStartedAt + duration.value(5, "m")
+          && request.time < roomData().examEndsAt
+          && request.resource.data.uid == uid
+          && request.resource.data.state == "submitted"
+          && request.resource.data.submittedAt == request.time
+          && request.resource.data.keys().hasOnly(["uid", "answers", "submittedAt", "state"]);
+
+        allow update: if ownsRoom()
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(["manualShortScore", "manualScores", "gradeState", "finalScore"]);
+        allow delete: if false;
+      }
+
+      match /private/{privateDocId} {
+        allow get: if isTeacher()
+          && get(/databases/$(database)/documents/exam_rooms/$(roomId)).data.hostUid == request.auth.uid;
+        allow list: if false;
+        allow create, update: if isTeacher()
+          && get(/databases/$(database)/documents/exam_rooms/$(roomId)).data.hostUid == request.auth.uid;
+        allow delete: if false;
+      }
+
+      match /grades/{uid} {
+        allow get: if isTeacher()
+          && get(/databases/$(database)/documents/exam_rooms/$(roomId)).data.hostUid == request.auth.uid;
+        allow list: if false;
+        allow create, update: if isTeacher()
+          && get(/databases/$(database)/documents/exam_rooms/$(roomId)).data.hostUid == request.auth.uid;
+        allow delete: if false;
+      }
+    }
+
+    // Mặc định từ chối mọi đường dẫn không được khai báo phía trên.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
