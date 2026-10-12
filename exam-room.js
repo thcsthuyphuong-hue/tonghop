@@ -188,8 +188,9 @@ async function joinRoom() {
     } else {
       await updateDoc(participantRef(user.uid, code), {name, class:cls, sbd, school});
     }
-    roomId = code; role = "student"; participantData = {uid:user.uid,name,class:cls,sbd,school};
-    submitted = false; answers = {};
+    roomId = code; role = "student";
+    participantData = {uid:user.uid,...(existing.exists() ? existing.data() : {name,class:cls,sbd,school,approved:false,submitted:false})};
+    submitted = !!participantData.submitted; answers = {};
     show("room-panel"); show("host-login", false); show("host-create", false);
     listenRoom(code);
     message("Đã gửi yêu cầu vào phòng. Chờ Host duyệt danh sách.");
@@ -365,7 +366,7 @@ async function renderSubmissions() {
     const isGraded=sub.gradeState==="graded";
     const shortQs=(roomData.publicQuestions||[]).filter(q=>q.type==="short");
     const shortReview=shortQs.map(q=>`<div class="tfline"><span><b>Câu ${q.displayNum}:</b> ${escapeHtml((sub.answers||{})[q.id]||"(bỏ trống)")}</span><div><label>Điểm (tối đa ${(shortQs.length?2/shortQs.length:0).toFixed(2)}) <input style="width:90px" type="number" min="0" max="${(shortQs.length?2/shortQs.length:0).toFixed(2)}" step="0.1" data-manual="${sub.id}" data-qid="${q.id}" value="${escapeHtml(sub.manualScores?.[q.id] ?? "")}" ${isGraded?'disabled':''}></label></div></div>`).join("");
-    return `<div class="submission"><div class="row"><div><b>${escapeHtml(p.name||sub.id)}</b><small>${escapeHtml(p.class||"")} · SBD ${escapeHtml(p.sbd||"")} · ${isGraded?'Đã chấm':'Đã nộp'}</small></div><span class="pill">Tự chấm: ${score.autoScore.toFixed(2)}/5</span></div><p class="muted">MCQ: ${score.mcqScore.toFixed(2)}/3 · Đúng/Sai: ${score.tfScore.toFixed(2)}/2 · Trả lời ngắn: chấm thủ công tối đa 2 điểm.</p>${shortReview}<div class="actions"><button data-grade="${sub.id}" ${isGraded?'disabled':''}>Lưu điểm thủ công</button><span class="pill">${isGraded?'Tổng: '+Number(sub.finalScore||0).toFixed(2)+'/10':'Chưa chấm xong'}</span></div></div>`;
+    return `<div class="submission"><div class="row"><div><b>${escapeHtml(p.name||sub.id)}</b><small>${escapeHtml(p.class||"")} · SBD ${escapeHtml(p.sbd||"")} · ${isGraded?'Đã chấm':'Đã nộp'}</small></div><span class="pill">Tự chấm: ${score.autoScore.toFixed(2)}/5</span></div><p class="muted">MCQ: ${score.mcqScore.toFixed(2)}/3 · Đúng/Sai: ${score.tfScore.toFixed(2)}/2 · Trả lời ngắn: chấm thủ công tối đa 5 điểm.</p>${shortReview}<div class="actions"><button data-grade="${sub.id}" ${isGraded?'disabled':''}>Lưu điểm thủ công</button><span class="pill">${isGraded?'Tổng: '+Number(sub.finalScore||0).toFixed(2)+'/10':'Chưa chấm xong'}</span></div></div>`;
   }).join("");
   hostList.querySelectorAll("[data-grade]").forEach(btn=>btn.onclick=()=>saveManualGrade(btn.dataset.grade));
 }
@@ -377,7 +378,7 @@ async function saveManualGrade(uid) {
     const scores={}; let total=0;
     questions.forEach(q=>{
       const input=$("submissions-list").querySelector(`[data-manual="${CSS.escape(uid)}"][data-qid="${CSS.escape(q.id)}"]`);
-      const max=questions.length?2/questions.length:0;
+      const max=questions.length?5/questions.length:0;
       const val=Math.max(0,Math.min(max,Number(input?.value)||0));
       scores[q.id]=Number(val.toFixed(2)); total+=val;
     });
