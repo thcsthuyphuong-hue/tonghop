@@ -262,6 +262,8 @@ function startFire() {
         update() { this.x += this.vx + Math.sin(this.life * 10) * 1.5; this.y += this.vy; this.life -= this.decay; this.size *= 0.992; }
         draw() {
             if (this.life <= 0) return;
+            const halfWidth = this.size / 2.5;
+            if (this.x + halfWidth < 0 || this.x - halfWidth > canvas.width || this.y + this.size < 0 || this.y - this.size * 1.3 > canvas.height) return;
             ctx.save(); ctx.translate(this.x, this.y); ctx.beginPath(); ctx.moveTo(0, 0);
             ctx.bezierCurveTo(-this.size/2.5, -this.size/2, -this.size/3, -this.size*0.8, 0, -this.size * 1.3);
             ctx.bezierCurveTo(this.size/3, -this.size*0.8, this.size/2.5, -this.size/2, 0, 0);
@@ -2246,6 +2248,7 @@ function setupLoginTopicGlassMenu() {
     select.hidden = true;
     trigger.textContent = select.options[select.selectedIndex].textContent + '  ▾';
 
+    let positionFrame = 0;
     const positionMenu = () => {
         if (menu.hidden) return;
         const rect = trigger.getBoundingClientRect();
@@ -2271,11 +2274,23 @@ function setupLoginTopicGlassMenu() {
         menu.dataset.openDirection = openBelow ? 'down' : 'up';
     };
 
+    const scheduleMenuPosition = () => {
+        if (menu.hidden || positionFrame) return;
+        positionFrame = requestAnimationFrame(() => {
+            positionFrame = 0;
+            positionMenu();
+        });
+    };
+
     const closeMenu = () => {
         setLiquidGlassMenu(menu, false, menu.dataset.openDirection);
         trigger.setAttribute('aria-expanded', 'false');
-        window.removeEventListener('resize', positionMenu);
-        window.removeEventListener('scroll', positionMenu, true);
+        if (positionFrame) {
+            cancelAnimationFrame(positionFrame);
+            positionFrame = 0;
+        }
+        window.removeEventListener('resize', scheduleMenuPosition);
+        window.removeEventListener('scroll', scheduleMenuPosition, true);
     };
 
     const openMenu = () => {
@@ -2284,8 +2299,8 @@ function setupLoginTopicGlassMenu() {
         trigger.setAttribute('aria-expanded', 'true');
         positionMenu();
         setLiquidGlassMenu(menu, true, menu.dataset.openDirection);
-        window.addEventListener('resize', positionMenu);
-        window.addEventListener('scroll', positionMenu, true);
+        window.addEventListener('resize', scheduleMenuPosition);
+        window.addEventListener('scroll', scheduleMenuPosition, true);
     };
 
     trigger.onclick = () => {
