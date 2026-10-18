@@ -153,7 +153,7 @@ async function createRoom() {
     const title = $("room-title").value.trim() || "Kiểm tra Vật lý 9";
     await setDoc(ref, {
       roomCode: code, title, topic, topicLabel: getBankTopicLabel(topic),
-      hostUid: user.uid, hostEmail: user.email || "",
+      hostUid: user.uid,
       status: "waiting", durationMinutes, readingMinutes: 5,
       publicQuestions, createdAt: serverTimestamp(), readingStartedAt: null,
       examEndsAt: null, finishedAt: null

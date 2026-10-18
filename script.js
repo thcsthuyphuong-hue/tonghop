@@ -44,6 +44,7 @@ function getFirebaseErrorMessage(error, appCode, fallback) {
 const appId_fixed = 'kham-pha-vat-ly-9'; 
 const collectionName = 'quiz_results'; 
 const collectionReports = 'error_reports';
+const collectionPublicResults = 'public_quiz_results';
 const collectionStudents = 'students_list'; 
 const collectionBanks = 'question_banks'; // COLLECTION KHO ĐỀ
 
@@ -230,9 +231,19 @@ async function loadStudentList() {
 }
 
 const initAuth = async () => { try { await signInAnonymously(auth); } catch (e) {} }; initAuth();
-onAuthStateChanged(auth, async user => { 
-    currentUser = user; 
-    if(user) { await loadTimeConfig(); await loadStudentList(); }
+onAuthStateChanged(auth, async user => {
+    currentUser = user;
+    if (!user) return;
+    await loadTimeConfig();
+    if (user.isAnonymous) {
+        const guestToggle = document.getElementById('guest-mode-toggle');
+        if (!guestToggle.checked) {
+            guestToggle.checked = true;
+            guestToggle.dispatchEvent(new Event('change'));
+        }
+    } else {
+        await loadStudentList();
+    }
 });
 
 let fireRequest;
@@ -482,10 +493,18 @@ async function calculateResult() {
     rb.innerText = txt; rb.style.background = col;
     if(fs >= 5.0) confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
     if(currentUser) {
-        try { 
-            await addDoc(collection(db, 'artifacts', appId_fixed, 'public', 'data', collectionName), { 
-                name: u.name, school: u.sch, sbd: u.sbd, class: u.cls, topic: u.topic, score: fs, duration: dur, mode: mode, timestamp: new Date().toISOString(), examData: currentExam, userAnswers: userAnswers 
-            }); 
+        try {
+            const summary = {
+                name: u.name, school: u.sch, sbd: u.sbd, class: u.cls,
+                topic: u.topic, score: fs, duration: dur, mode,
+                timestamp: new Date().toISOString()
+            };
+            const resultRef = doc(collection(db, 'artifacts', appId_fixed, 'public', 'data', collectionName));
+            const publicResultRef = doc(db, 'artifacts', appId_fixed, 'public', 'data', collectionPublicResults, resultRef.id);
+            const batch = writeBatch(db);
+            batch.set(resultRef, { ...summary, examData: currentExam, userAnswers });
+            batch.set(publicResultRef, summary);
+            await batch.commit();
         } catch(e) { hasSaved = false; showCustomAlert(getFirebaseErrorMessage(e, "APP-SUB-001", "Không thể lưu kết quả bài làm.")); }
     }
     fetchRankAndLeaderboard(fs, u.topic);
@@ -493,7 +512,7 @@ async function calculateResult() {
 
 async function fetchRankAndLeaderboard(myScore, myTopic) {
     try {
-        const snap = await getDocs(collection(db, 'artifacts', appId_fixed, 'public', 'data', collectionName));
+        const snap = await getDocs(collection(db, 'artifacts', appId_fixed, 'public', 'data', collectionPublicResults));
         let list = []; snap.forEach(d => list.push(d.data()));
         list = list.filter(r => (r.mode === 'test' || !r.mode) && r.topic === myTopic); 
         list.sort((a,b) => b.score - a.score || a.duration - b.duration);
@@ -583,12 +602,38 @@ function setupAdminSortGlassMenu() {
     });
 }
 
+async function syncPublicResultSummaries(results) {
+    const publicResultsRef = collection(db, 'artifacts', appId_fixed, 'public', 'data', collectionPublicResults);
+    const existing = await getDocs(publicResultsRef);
+    const existingIds = new Set(existing.docs.map(result => result.id));
+    const missing = results.filter(result => !existingIds.has(result.id));
+    for (let offset = 0; offset < missing.length; offset += 500) {
+        const batch = writeBatch(db);
+        missing.slice(offset, offset + 500).forEach(result => {
+            const summary = {
+                name: String(result.name || ''),
+                school: String(result.school || ''),
+                sbd: String(result.sbd || ''),
+                class: String(result.class || ''),
+                topic: String(result.topic || ''),
+                score: Number(result.score) || 0,
+                duration: Number(result.duration) || 0,
+                mode: result.mode === 'practice' ? 'practice' : 'test',
+                timestamp: typeof result.timestamp === 'string' ? result.timestamp : new Date().toISOString()
+            };
+            batch.set(doc(publicResultsRef, result.id), summary);
+        });
+        await batch.commit();
+    }
+}
+
 async function renderAdmin() {
     const listBody = document.getElementById('admin-list-body'), statsBox = document.getElementById('admin-stats');
     listBody.innerHTML = "<tr><td colspan='11'>Đang tải dữ liệu...</td></tr>";
     try {
         const snap = await getDocs(collection(db, 'artifacts', appId_fixed, 'public', 'data', collectionName));
         let rawData = []; snap.forEach(d => rawData.push({id: d.id, ...d.data()}));
+        await syncPublicResultSummaries(rawData);
         const classes = [...new Set(rawData.map(i => i.class))].sort(); 
         const schools = [...new Set(rawData.map(i => i.school))].filter(s => s).sort();
         const topics = [...new Set(rawData.map(i => i.topic))].filter(t => t).sort(); 
@@ -1784,10 +1829,13 @@ function deleteEntry(id, type) {
 }
 
 async function executePendingAdminAction() {
-    if (pendingAuthAction === 'delete_result' && currentDeleteId) { 
-        await deleteDoc(doc(db, 'artifacts', appId_fixed, 'public', 'data', collectionName, currentDeleteId)); 
-        renderAdmin(); currentDeleteId = null; 
-    } 
+    if (pendingAuthAction === 'delete_result' && currentDeleteId) {
+        const batch = writeBatch(db);
+        batch.delete(doc(db, 'artifacts', appId_fixed, 'public', 'data', collectionName, currentDeleteId));
+        batch.delete(doc(db, 'artifacts', appId_fixed, 'public', 'data', collectionPublicResults, currentDeleteId));
+        await batch.commit();
+        renderAdmin(); currentDeleteId = null;
+    }
     else if (pendingAuthAction === 'delete_student' && currentDeleteId) { 
         await deleteDoc(doc(db, 'artifacts', appId_fixed, 'public', 'data', collectionStudents, currentDeleteId)); 
         renderAdminStudents(); currentDeleteId = null; 
