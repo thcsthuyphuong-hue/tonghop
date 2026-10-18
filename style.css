@@ -322,8 +322,9 @@ footer div:first-child { color: rgba(255,255,255,.78) !important; }
   --secondary: #8b7cff;
   --accent: #ff7ad9;
   --glass-opacity: .18;
-  --glass: rgba(255,255,255,var(--glass-opacity));
-  --glass-strong: rgba(255,255,255,calc(var(--glass-opacity) + .10));
+  --theme-glass-rgb: 255,255,255;
+  --glass: rgba(var(--theme-glass-rgb),var(--glass-opacity));
+  --glass-strong: rgba(var(--theme-glass-rgb),calc(var(--glass-opacity) + .10));
   --glass-border: rgba(255,255,255,.34);
   --glass-shadow: 0 24px 70px rgba(28, 18, 80, .28);
   --ink: #fff;
@@ -403,7 +404,7 @@ body::before {
 .hero-grid { display:grid; grid-template-columns:minmax(0, 1.18fr) minmax(370px, .82fr); gap:20px; align-items:stretch; }
 .glass-card {
   border:1px solid var(--glass-border);
-  background:linear-gradient(135deg, rgba(255,255,255,calc(var(--glass-opacity) + .04)), rgba(255,255,255,calc(var(--glass-opacity) - .08)));
+  background:linear-gradient(135deg, rgba(var(--theme-glass-rgb),calc(var(--glass-opacity) + .04)), rgba(var(--theme-glass-rgb),calc(var(--glass-opacity) - .08)));
   box-shadow:var(--glass-shadow);
   backdrop-filter:blur(24px) saturate(145%);
   -webkit-backdrop-filter:blur(24px) saturate(145%);
@@ -1452,4 +1453,97 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
 }
 @media (max-width: 700px) {
   #screen-admin .graphics-settings-card { padding: 17px; }
+}
+
+
+:root[data-theme="ocean"] {
+  --theme-glass-rgb: 190,244,255;
+  --primary: #20b8d2;
+  --secondary: #458de7;
+  --accent: #61e1e9;
+  --glass-border: rgba(185,246,255,.40);
+  --glass-shadow: 0 24px 70px rgba(4,28,62,.34);
+}
+:root[data-theme="sunset"] {
+  --theme-glass-rgb: 255,218,225;
+  --primary: #ed5e91;
+  --secondary: #ff9a58;
+  --accent: #ffc27a;
+  --glass-border: rgba(255,225,226,.42);
+  --glass-shadow: 0 24px 70px rgba(71,17,60,.32);
+}
+:root[data-theme="night"] {
+  --theme-glass-rgb: 221,224,255;
+  --primary: #a7a4ff;
+  --secondary: #7773d6;
+  --accent: #b1b5ff;
+  --glass-border: rgba(205,209,255,.28);
+  --glass-shadow: 0 24px 70px rgba(0,0,0,.42);
+}
+:root[data-theme="ocean"] body {
+  background: radial-gradient(circle at 12% 18%,rgba(34,194,224,.34),transparent 30%),radial-gradient(circle at 86% 16%,rgba(73,142,255,.30),transparent 30%),radial-gradient(circle at 75% 84%,rgba(72,230,218,.22),transparent 28%),linear-gradient(135deg,#062e49 0%,#0b5577 38%,#147a8c 68%,#172b59 100%) !important;
+}
+:root[data-theme="sunset"] body {
+  background: radial-gradient(circle at 12% 18%,rgba(255,142,119,.40),transparent 30%),radial-gradient(circle at 86% 16%,rgba(255,91,166,.34),transparent 30%),radial-gradient(circle at 75% 84%,rgba(255,198,104,.22),transparent 28%),linear-gradient(135deg,#4a1d4e 0%,#87375e 38%,#bd5d62 68%,#37244f 100%) !important;
+}
+:root[data-theme="night"] body {
+  background: radial-gradient(circle at 12% 18%,rgba(103,104,190,.18),transparent 30%),radial-gradient(circle at 86% 16%,rgba(111,79,151,.16),transparent 30%),radial-gradient(circle at 75% 84%,rgba(63,105,150,.12),transparent 28%),linear-gradient(135deg,#10111f 0%,#1b1c31 42%,#242239 70%,#101522 100%) !important;
+}
+.graphics-theme-group {
+  display: grid;
+  gap: 10px;
+}
+.graphics-theme-options {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 10px;
+}
+.graphics-theme-option {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  padding: 11px;
+  border: 1px solid rgba(255,255,255,.24);
+  border-radius: 14px;
+  color: #fff;
+  text-align: left;
+  background: rgba(255,255,255,.07);
+  cursor: pointer;
+  transition: border-color .18s ease, background-color .18s ease, transform .18s ease;
+}
+.graphics-theme-option:hover {
+  transform: translateY(-1px);
+  background: rgba(255,255,255,.12);
+}
+.graphics-theme-option.is-selected {
+  border-color: rgba(255,255,255,.75);
+  background: rgba(255,255,255,.16);
+  box-shadow: 0 0 0 2px rgba(206,183,255,.16);
+}
+.graphics-theme-option > span:last-child {
+  display: grid;
+  gap: 3px;
+}
+.graphics-theme-option b {
+  font-size: .86rem;
+}
+.graphics-theme-option small {
+  color: rgba(255,255,255,.70);
+  font-size: .7rem;
+}
+.graphics-theme-swatch {
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(255,255,255,.4);
+  border-radius: 11px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.3);
+}
+.theme-swatch-aurora { background: linear-gradient(135deg,#625ce5,#bb68d4 55%,#55c6ed); }
+.theme-swatch-ocean { background: linear-gradient(135deg,#075375,#23bed0 55%,#79dafa); }
+.theme-swatch-sunset { background: linear-gradient(135deg,#773c83,#ed6486 55%,#ffb160); }
+.theme-swatch-night { background: linear-gradient(135deg,#111421,#30304c 55%,#66638c); }
+@media (max-width: 460px) {
+  .graphics-theme-options { grid-template-columns: 1fr; }
 }
