@@ -760,6 +760,20 @@ Object.entries(adminPanelTabs).forEach(([name, tab]) => {
     };
 });
 
+const graphicsThemeOptions = [...document.querySelectorAll('.graphics-theme-option')];
+const applyGraphicsTheme = theme => {
+    document.documentElement.dataset.theme = theme;
+    graphicsThemeOptions.forEach(option => {
+        const selected = option.dataset.theme === theme;
+        option.classList.toggle('is-selected', selected);
+        option.setAttribute('aria-checked', String(selected));
+    });
+};
+graphicsThemeOptions.forEach(option => {
+    option.onclick = () => applyGraphicsTheme(option.dataset.theme);
+});
+applyGraphicsTheme('aurora');
+
 const glassTransparencyInput = document.getElementById('glass-transparency');
 const glassTransparencyValue = document.getElementById('glass-transparency-value');
 const applyGlassTransparency = value => {
