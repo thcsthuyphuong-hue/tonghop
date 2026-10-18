@@ -2017,10 +2017,10 @@ document.getElementById('btn-auth-confirm').onclick = async () => {
     button.textContent = 'ĐANG ĐĂNG NHẬP...';
     try {
         await signInTeacherAccount(email, password);
-        closeOverlay(document.getElementById('admin-auth-modal'));
-        syncTeacherAuthButton();
         const tab = pendingAdminTab || 'results';
         pendingAdminTab = null;
+        closeOverlay(document.getElementById('admin-auth-modal'));
+        syncTeacherAuthButton();
         setAdminPanelTab(tab);
     } catch (error) {
         showCustomAlert(getFirebaseErrorMessage(error, 'APP-AUTH-001', 'Đăng nhập giáo viên thất bại.'));
