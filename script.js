@@ -53,6 +53,7 @@ const collectionStudents = 'students_list';
 const collectionBanks = 'question_banks';
 
 let currentUser = null, quizStartTime = 0, isQuizRunning = false, mode = '', currentIdx = 0, userAnswers = {}, timeLeft = 0, timerInt, currentExam = [];
+let pendingAdminTab = null;
 let arExamData = [], arUserAnswers = {};
 let globalStudentList = [];
 let importedStudentsCache = [];
@@ -81,7 +82,7 @@ const closeOverlay = (modal) => {
     modal.style.display = 'none';
     if (modal.id === 'question-import-preview-modal') pendingQuestionImport = null;
     if (modal.id === 'delete-auth-modal') { pendingAuthAction = null; currentDeleteId = null; importedStudentsCache = []; importedQuestionsCache = {}; document.getElementById('delete-pw').value = ''; document.getElementById('delete-email').value = ''; document.getElementById('file-import-students').value = ''; document.getElementById('file-import-questions').value = '';}
-    if (modal.id === 'admin-auth-modal') { document.getElementById('admin-pw').value = ''; }
+    if (modal.id === 'admin-auth-modal') { document.getElementById('admin-email').value = ''; document.getElementById('admin-pw').value = ''; pendingAdminTab = null; }
 };
 
 document.addEventListener('keydown', (e) => {
@@ -237,6 +238,7 @@ async function loadStudentList() {
 const initAuth = async () => { try { await signInAnonymously(auth); } catch (e) {} }; initAuth();
 onAuthStateChanged(auth, async user => {
     currentUser = user;
+    syncTeacherAuthButton();
     if (!user) return;
     await loadTimeConfig();
     if (user.isAnonymous) {
@@ -750,8 +752,9 @@ const adminPanelSections = {
 };
 
 function setAdminPanelTab(activeTab) {
-    if (activeTab === 'students' && !hasTeacherSession()) {
-        showCustomAlert('Danh sách học sinh chỉ dành cho tài khoản giáo viên.');
+    if (['students', 'questions'].includes(activeTab) && !hasTeacherSession()) {
+        pendingAdminTab = activeTab;
+        document.getElementById('admin-auth-modal').style.display = 'flex';
         return;
     }
     Object.entries(adminPanelTabs).forEach(([name, tab]) => tab.classList.toggle('active', name === activeTab));
@@ -1975,8 +1978,7 @@ document.getElementById('btn-delete-confirm').onclick = async () => {
 
     document.getElementById('btn-delete-confirm').innerText = "...";
     try {
-        await setPersistence(auth, browserSessionPersistence);
-        await signInWithEmailAndPassword(auth, email, pw);
+        await signInTeacherAccount(email, pw);
         document.getElementById('delete-auth-modal').style.display = 'none';
         executePendingAdminAction();
     } catch (error) {
@@ -1985,9 +1987,60 @@ document.getElementById('btn-delete-confirm').onclick = async () => {
     document.getElementById('btn-delete-confirm').innerText = "XÁC NHẬN";
 };
 
-document.getElementById('btn-admin-open').onclick = () => document.getElementById('admin-auth-modal').style.display = 'flex';
-document.getElementById('btn-auth-cancel').onclick = () => document.getElementById('admin-auth-modal').style.display = 'none';
-document.getElementById('btn-auth-confirm').onclick = () => { if(document.getElementById('admin-pw').value === "112233@@") { document.getElementById('admin-auth-modal').style.display='none'; showScreen('screen-admin'); renderAdmin(); } else showCustomAlert("Sai mật khẩu!"); };
+function syncTeacherAuthButton() {
+    const button = document.getElementById('btn-teacher-auth');
+    if (!button) return;
+    button.textContent = hasTeacherSession() ? '🚪 ĐĂNG XUẤT GIÁO VIÊN' : '🔐 ĐĂNG NHẬP GIÁO VIÊN';
+}
+
+async function signInTeacherAccount(email, password) {
+    await setPersistence(auth, browserSessionPersistence);
+    await signInWithEmailAndPassword(auth, email, password);
+    if (!hasTeacherSession()) {
+        await signOut(auth);
+        await signInAnonymously(auth);
+        throw new Error('Tài khoản này chưa được cấp quyền giáo viên.');
+    }
+}
+
+document.getElementById('btn-admin-open').onclick = () => {
+    showScreen('screen-admin');
+    setAdminPanelTab('results');
+};
+document.getElementById('btn-auth-cancel').onclick = () => closeOverlay(document.getElementById('admin-auth-modal'));
+document.getElementById('btn-auth-confirm').onclick = async () => {
+    const email = document.getElementById('admin-email').value.trim();
+    const password = document.getElementById('admin-pw').value;
+    if (!email || !password) { showCustomAlert('Vui lòng nhập email và mật khẩu giáo viên.'); return; }
+    const button = document.getElementById('btn-auth-confirm');
+    button.disabled = true;
+    button.textContent = 'ĐANG ĐĂNG NHẬP...';
+    try {
+        await signInTeacherAccount(email, password);
+        closeOverlay(document.getElementById('admin-auth-modal'));
+        syncTeacherAuthButton();
+        const tab = pendingAdminTab || 'results';
+        pendingAdminTab = null;
+        setAdminPanelTab(tab);
+    } catch (error) {
+        showCustomAlert(getFirebaseErrorMessage(error, 'APP-AUTH-001', 'Đăng nhập giáo viên thất bại.'));
+    } finally {
+        button.disabled = false;
+        button.textContent = 'ĐĂNG NHẬP';
+    }
+};
+document.getElementById('btn-teacher-auth').onclick = async () => {
+    if (!hasTeacherSession()) {
+        pendingAdminTab = null;
+        document.getElementById('admin-auth-modal').style.display = 'flex';
+        return;
+    }
+    await signOut(auth);
+    await signInAnonymously(auth);
+    setAdminPanelTab('results');
+    renderAdmin();
+    syncTeacherAuthButton();
+};
 
 document.getElementById('btn-init-practice').onclick = () => initGame('practice'); document.getElementById('btn-init-test').onclick = () => initGame('test');
 document.getElementById('btn-prev').onclick = () => { if(currentIdx > 0) { currentIdx--; renderQuestion(); window.scrollTo(0,0); } };
