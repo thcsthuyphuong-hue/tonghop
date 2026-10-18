@@ -321,8 +321,9 @@ footer div:first-child { color: rgba(255,255,255,.78) !important; }
   --primary: #6d4aff;
   --secondary: #8b7cff;
   --accent: #ff7ad9;
-  --glass: rgba(255,255,255,.18);
-  --glass-strong: rgba(255,255,255,.28);
+  --glass-opacity: .18;
+  --glass: rgba(255,255,255,var(--glass-opacity));
+  --glass-strong: rgba(255,255,255,calc(var(--glass-opacity) + .10));
   --glass-border: rgba(255,255,255,.34);
   --glass-shadow: 0 24px 70px rgba(28, 18, 80, .28);
   --ink: #fff;
@@ -402,7 +403,7 @@ body::before {
 .hero-grid { display:grid; grid-template-columns:minmax(0, 1.18fr) minmax(370px, .82fr); gap:20px; align-items:stretch; }
 .glass-card {
   border:1px solid var(--glass-border);
-  background:linear-gradient(135deg, rgba(255,255,255,.22), rgba(255,255,255,.10));
+  background:linear-gradient(135deg, rgba(255,255,255,calc(var(--glass-opacity) + .04)), rgba(255,255,255,calc(var(--glass-opacity) - .08)));
   box-shadow:var(--glass-shadow);
   backdrop-filter:blur(24px) saturate(145%);
   -webkit-backdrop-filter:blur(24px) saturate(145%);
@@ -1401,4 +1402,54 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
   .exam-room-root .exam-room-panel { padding: 16px; }
   .exam-room-root .tfline { grid-template-columns: 1fr; }
   .exam-room-root .tfline > div { display: flex; justify-content: flex-end; }
+}
+
+
+#screen-admin .graphics-settings-card {
+  display: grid;
+  gap: 14px;
+  padding: 22px;
+  color: #fff;
+}
+#screen-admin .graphics-settings-card h3,
+#screen-admin .graphics-settings-card p {
+  margin: 0;
+}
+.graphics-slider-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-weight: 800;
+}
+.graphics-slider-label output {
+  min-width: 54px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  color: #fff;
+  text-align: center;
+  background: rgba(255,255,255,.14);
+}
+.graphics-slider {
+  width: 100%;
+  accent-color: #cf9cff;
+  cursor: pointer;
+}
+#screen-admin .graphics-settings-card small {
+  color: rgba(255,255,255,.76);
+}
+.graphics-preview {
+  display: grid;
+  gap: 6px;
+  min-height: 100px;
+  padding: 18px;
+  border-radius: 18px;
+  color: #fff;
+}
+.graphics-preview span {
+  color: rgba(255,255,255,.78);
+  font-size: .85rem;
+}
+@media (max-width: 700px) {
+  #screen-admin .graphics-settings-card { padding: 17px; }
 }
