@@ -126,11 +126,13 @@
 
 <div id="admin-auth-modal" class="modal-overlay" style="z-index:20000;">
     <div class="card" style="width:100%; max-width:400px; text-align:center; padding: 30px 20px; margin: auto;">
-        <h2 style="color: var(--primary); margin-top:0;">Xác minh Quản trị</h2>
-        <input type="password" id="admin-pw" placeholder="Nhập mật khẩu..." style="margin-bottom:20px; text-align:center;">
+        <h2 style="color: var(--primary); margin-top:0;">Đăng nhập giáo viên</h2>
+        <p style="margin-bottom:15px; color:#64748b;">Đăng nhập tài khoản được cấp quyền quản trị.</p>
+        <input type="email" id="admin-email" placeholder="Email giáo viên" autocomplete="username" style="margin-bottom:10px; text-align:center;">
+        <input type="password" id="admin-pw" placeholder="Mật khẩu" autocomplete="current-password" style="margin-bottom:20px; text-align:center;">
         <div class="grid-2-col">
             <button class="btn btn-gray" id="btn-auth-cancel">HỦY</button>
-            <button class="btn btn-fire" id="btn-auth-confirm">XÁC NHẬN</button>
+            <button class="btn btn-fire" id="btn-auth-confirm">ĐĂNG NHẬP</button>
         </div>
     </div>
 </div>
@@ -313,7 +315,10 @@
         <section id="screen-admin" class="screen">
             <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
                 <h2 class="fire-text" style="margin:0; font-size: 1.5rem;">BẢNG QUẢN TRỊ CAO CẤP</h2>
-                <button id="btn-admin-close" class="btn btn-gray" style="padding: 8px 15px; font-size: 0.8rem;">ĐÓNG ✖</button>
+                <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+                    <button id="btn-teacher-auth" class="btn btn-fire" style="padding: 8px 15px; font-size: 0.8rem;">🔐 ĐĂNG NHẬP GIÁO VIÊN</button>
+                    <button id="btn-admin-close" class="btn btn-gray" style="padding: 8px 15px; font-size: 0.8rem;">ĐÓNG ✖</button>
+                </div>
             </div>
 
             <div class="admin-tabs">
