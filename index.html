@@ -36,7 +36,7 @@
         })();
 </script>
     
-    <link rel="stylesheet" href="style.css?v=20261018-graphics">
+    <link rel="stylesheet" href="style.css?v=20261018-themes">
 </head>
 
 <body>
@@ -494,7 +494,28 @@
             <div id="admin-graphics-section" style="display: none;">
                 <div class="card graphics-settings-card">
                     <h3>🎨 CÀI ĐẶT ĐỒ HỌA</h3>
-                    <p>Chỉnh độ trong suốt của các bề mặt liquid glass trên thiết bị này.</p>
+                    <p>Chọn giao diện và chỉnh liquid glass cho thiết bị này.</p>
+                    <div class="graphics-theme-group">
+                        <strong>Giao diện</strong>
+                        <div id="graphics-theme-options" class="graphics-theme-options" role="radiogroup" aria-label="Chọn giao diện">
+                            <button type="button" class="graphics-theme-option is-selected" data-theme="aurora" role="radio" aria-checked="true">
+                                <span class="graphics-theme-swatch theme-swatch-aurora"></span>
+                                <span><b>Cực quang</b><small>Tím xanh hiện tại</small></span>
+                            </button>
+                            <button type="button" class="graphics-theme-option" data-theme="ocean" role="radio" aria-checked="false">
+                                <span class="graphics-theme-swatch theme-swatch-ocean"></span>
+                                <span><b>Đại dương</b><small>Xanh biển mát</small></span>
+                            </button>
+                            <button type="button" class="graphics-theme-option" data-theme="sunset" role="radio" aria-checked="false">
+                                <span class="graphics-theme-swatch theme-swatch-sunset"></span>
+                                <span><b>Hoàng hôn</b><small>Hồng cam ấm</small></span>
+                            </button>
+                            <button type="button" class="graphics-theme-option" data-theme="night" role="radio" aria-checked="false">
+                                <span class="graphics-theme-swatch theme-swatch-night"></span>
+                                <span><b>Tối dịu</b><small>Nền tối ít chói</small></span>
+                            </button>
+                        </div>
+                    </div>
                     <label class="graphics-slider-label" for="glass-transparency">
                         <span>Độ trong suốt</span>
                         <output id="glass-transparency-value" for="glass-transparency">82%</output>
