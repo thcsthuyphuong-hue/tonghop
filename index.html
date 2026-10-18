@@ -1,23 +1,23 @@
-<!-- UI BUILD: GLASSMORPHISM OPTION 1 - VERIFIED 2026-10-07 -->
-<!-- CẬP NHẬT: IMPORT ĐỀ THI TỪ EXCEL LÊN FIREBASE, THUẬT TOÁN BỐC ĐỀ NGẪU NHIÊN 12-4-4 -->
+
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, ">
     <title>Hệ Thống Ôn Tập Vật Lý 9</title>
-    <!-- Hỗ trợ công thức Toán/Lý -->
+    
     <script>
         window.MathJax = {
             tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$']] },
             svg: { fontCache: 'global' }
         };
-    </script>
+</script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <!-- Thư viện hiệu ứng và tiện ích -->
+    
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <!-- Đọc file Word (.docx) cho ngân hàng đề. Chức năng tạo file mẫu không phụ thuộc CDN. -->
+    
     <script id="mammoth-lib" src="https://cdn.jsdelivr.net/npm/mammoth@1.10.0/mammoth.browser.min.js"></script>
     <script>
         (() => {
@@ -34,9 +34,9 @@
                 mammothScript.addEventListener('error', () => mark('mammoth-lib', false));
             }
         })();
-    </script>
+</script>
     
-    <link rel="stylesheet" href="style.css?v=20261009-tf-layout-r1">
+    <link rel="stylesheet" href="style.css?v=20261018-room-merge">
 </head>
 
 <body>
@@ -66,7 +66,7 @@
     </div>
 </div>
 
-<!-- Modal Báo Lỗi Học Sinh -->
+
 <div id="report-modal" class="modal-overlay">
     <div class="modal-box" style="text-align: left;">
         <h2 style="color: var(--danger); text-align: center; margin-top: 0; margin-bottom: 20px; font-size: 1.4rem;">GỬI BÁO LỖI</h2>
@@ -90,7 +90,7 @@
     </div>
 </div>
 
-<!-- Modal Cảnh Báo Gian Lận -->
+
 <div id="cheat-modal">
     <div style="background: white; padding: 40px 25px; border-radius: 20px; max-width: 500px; width: 90%; border: 8px solid var(--danger);">
         <h1 style="color:var(--danger); font-size: 2.5rem; margin:0">CẢNH BÁO!</h1>
@@ -101,7 +101,7 @@
     </div>
 </div>
 
-<!-- Modal Hộp thư báo lỗi (Admin) -->
+
 <div id="admin-inbox-modal" class="modal-overlay">
     <div class="card" style="width:100%; max-width:900px; text-align:left; max-height: 90vh; overflow-y: auto; margin: auto;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px;">
@@ -117,13 +117,13 @@
     </div>
 </div>
 
-<!-- Modal Xem Ảnh Phóng To -->
+
 <div id="image-viewer-modal" class="modal-overlay" style="z-index: 40000;" onclick="this.style.display='none'">
     <img id="image-viewer-img" src="" style="max-width: 95%; max-height: 90vh; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); object-fit: contain;">
     <p style="color: white; position: absolute; bottom: 20px; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.8); text-align: center; width: 100%;">Chạm bất kỳ đâu để đóng</p>
 </div>
 
-<!-- Các Modal Xác nhận -->
+
 <div id="admin-auth-modal" class="modal-overlay" style="z-index:20000;">
     <div class="card" style="width:100%; max-width:400px; text-align:center; padding: 30px 20px; margin: auto;">
         <h2 style="color: var(--primary); margin-top:0;">Xác minh Quản trị</h2>
@@ -267,6 +267,7 @@
                 <div class="start-actions" id="start-buttons">
                     <button id="btn-init-practice" class="btn btn-gray">📝 LUYỆN TẬP</button>
                     <button id="btn-init-test" class="btn btn-fire">🔥 KIỂM TRA</button>
+                    <button id="btn-open-exam-room" type="button" class="btn btn-gray" style="grid-column:1/-1">🏫 PHÒNG THI HOST &amp; CLIENT</button>
                 </div>
             </div>
         </div>
@@ -308,7 +309,7 @@
             </div>
         </section>
 
-        <!-- Màn hình Admin -->
+        
         <section id="screen-admin" class="screen">
             <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
                 <h2 class="fire-text" style="margin:0; font-size: 1.5rem;">BẢNG QUẢN TRỊ CAO CẤP</h2>
@@ -321,7 +322,7 @@
                 <div class="admin-tab" id="tab-questions">📚 QUẢN LÍ ĐỀ THI</div>
             </div>
 
-            <!-- TAB 1: KẾT QUẢ THI -->
+            
             <div id="admin-results-section">
                 <div class="card" style="padding: 20px; margin-bottom: 20px; background: #fffbeb; border: 2px solid #fcd34d;">
                     <h4 style="margin: 0 0 15px 0; color: #92400e; text-transform: uppercase;">⚙️ Cài đặt Thời gian & Gợi ý</h4>
@@ -398,7 +399,7 @@
                 </div>
             </div>
 
-            <!-- TAB 2: QUẢN LÝ DANH SÁCH HỌC SINH -->
+            
             <div id="admin-students-section" style="display: none;">
                 <div class="card" style="padding: 20px; margin-bottom: 20px; background: #f0fdf4; border: 2px solid #86efac;">
                     <h4 style="margin: 0 0 15px 0; color: #166534; text-transform: uppercase;">📥 Import Dữ Liệu Học Sinh</h4>
@@ -446,7 +447,7 @@
                 </div>
             </div>
 
-            <!-- TAB 3: QUẢN LÝ ĐỀ THI -->
+            
             <div id="admin-questions-section" style="display: none;">
                 <div class="card" style="padding: 20px; margin-bottom: 20px; background: #eff6ff; border: 2px solid #bfdbfe;">
                     <h4 style="margin: 0 0 15px 0; color: #1e40af; text-transform: uppercase;">📥 Import Ngân Hàng Đề Theo Từng Bài</h4>
@@ -491,6 +492,62 @@
 
         </section>
 
+
+        <section id="screen-exam-room" class="screen">
+  <div class="exam-room-root">
+    <div class="exam-room-head">
+      <div><strong>HUE SMART TEST 7991</strong><small>Phòng thi trực tuyến · Host &amp; Client</small></div>
+      <button id="btn-back-from-exam-room" type="button" class="exam-room-back">Về trang chính</button>
+    </div>
+    <div class="exam-room-content">
+<section class="exam-room-panel">
+<h1>Phòng thi Host & Client</h1>
+<p>Host đăng nhập bằng tài khoản giáo viên. Học sinh vào bằng mã phòng; 5 phút đầu chỉ đọc đề, sau đó hệ thống đồng bộ giờ làm bài qua Firebase.</p>
+<div id="global-message" class="notice hidden" role="status"></div>
+<div class="grid">
+<div>
+<h2>👩‍🏫 Giáo viên / Host</h2>
+<div id="host-login">
+<label for="host-email">Email giáo viên</label><input id="host-email" type="email" autocomplete="username" placeholder="email@truong.edu.vn">
+<label for="host-password">Mật khẩu</label><input id="host-password" type="password" autocomplete="current-password">
+<div class="actions"><button id="host-login-btn">Đăng nhập</button></div>
+<p class="muted">Dùng Firebase Authentication của hệ thống. Chỉ UID giáo viên được cấp quyền mới được tạo phòng.</p>
+</div>
+<div id="host-create" class="hidden">
+<label for="room-title">Tên phòng / bài kiểm tra</label><input id="room-title" maxlength="100" value="Kiểm tra Vật lý 9">
+<label for="bank-topic">Ngân hàng đề</label><select id="bank-topic"><option value="mix">Đề tổng hợp</option><option value="bai_11">Bài 11: Điện trở. Định luật Ohm</option><option value="bai_12">Bài 12: Đoạn mạch nối tiếp, song song</option><option value="bai_13">Bài 13: Năng lượng điện và công suất</option><option value="bai_14">Bài 14: Cảm ứng điện từ. Dòng điện XC</option><option value="bai_15">Bài 15: Tác dụng của dòng điện XC</option></select>
+<label for="duration">Thời gian làm bài (phút)</label><input id="duration" type="number" min="1" max="180" value="45">
+<div class="actions"><button id="create-room-btn">Nạp đề & tạo phòng</button><button id="host-logout-btn" class="secondary">Đăng xuất</button></div>
+</div>
+</div>
+<div>
+<h2>🧑‍🎓 Học sinh / Client</h2>
+<label for="join-code">Mã phòng</label><input id="join-code" maxlength="8" autocomplete="off" placeholder="VD: 7K4P9Q">
+<label for="student-name">Họ và tên</label><input id="student-name" maxlength="100" placeholder="Nguyễn Văn A">
+<div class="grid">
+<div><label for="student-class">Lớp</label><input id="student-class" maxlength="20" placeholder="9A1"></div>
+<div><label for="student-sbd">Số báo danh</label><input id="student-sbd" maxlength="30" placeholder="01"></div>
+</div>
+<label for="student-school">Trường</label><input id="student-school" maxlength="120" placeholder="THCS Thuỷ Phương">
+<div class="actions"><button id="join-room-btn">Vào phòng thi</button></div>
+<p class="muted">Không cần tài khoản email. Mỗi thiết bị dùng phiên Firebase riêng.</p>
+</div>
+</div>
+</section>
+
+<section id="room-panel" class="panel hidden">
+<div class="row"><div><span class="pill" id="room-role">PHÒNG THI</span><h2 id="room-heading" style="margin-top:10px">Phòng</h2><p id="room-subtitle" class="muted"></p></div><div style="text-align:right"><div id="phase-label" class="status">Đang chờ</div><div id="countdown" class="timer">--:--</div></div></div>
+<div id="room-notice" class="notice">Đang kết nối phòng thi…</div>
+<div id="host-room-controls" class="actions hidden"><button id="approve-all-btn" class="secondary">Duyệt tất cả đang chờ</button><button id="start-reading-btn">Bắt đầu 5 phút đọc đề</button><button id="finish-room-btn" class="danger">Kết thúc phòng</button></div>
+<div id="roster-wrap" class="hidden"><h2>Danh sách thí sinh <span class="pill" id="roster-count">0</span></h2><div id="roster-list"></div></div>
+<div id="exam-wrap" class="hidden"><h2 id="exam-heading">Đề thi</h2><div id="questions"></div><div class="actions"><button id="submit-exam-btn">Nộp bài</button></div></div>
+<div id="host-submissions-wrap" class="hidden"><h2>Bài nộp & chấm điểm</h2><p class="muted">Trắc nghiệm và đúng/sai được tự chấm; phần trả lời ngắn cho giáo viên chấm thủ công. Tổng điểm thang 10.</p><div id="submissions-list"></div></div>
+<div class="actions"><button id="leave-room-btn" class="secondary">Rời màn hình phòng</button></div>
+</section>
+    </div>
+  </div>
+</section>
+
         <footer>
             <div style="font-weight: 800; color: #cbd5e0; margin-bottom: 5px;">HỆ THỐNG LUYỆN TẬP VẬT LÝ 9</div>
             <div style="font-size: 0.85rem;">Bản quyền thuộc về Trường THCS Thuỷ Phương, Thành phố Huế</div>
@@ -498,7 +555,6 @@
     </div>
 </div>
 
-<script type="module" src="script.js?v=20261009-import-ease-r4"></script>
-<a href="exam-room.html" target="_blank" rel="noopener" aria-label="Mở phòng thi Host và Client" style="position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:1000;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 16px;max-width:calc(100vw - 180px);white-space:nowrap;border:1px solid rgba(255,255,255,.42);border-radius:999px;background:linear-gradient(135deg,#6553d9,#0e7490);color:#fff;text-decoration:none;font-size:.74rem;font-weight:800;box-shadow:0 8px 28px rgba(0,0,0,.28)">🏫 PHÒNG THI</a>
+<script type="module" src="script.js?v=20261018-room-merge"></script>
 </body>
 </html>

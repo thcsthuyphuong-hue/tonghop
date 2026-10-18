@@ -48,7 +48,7 @@ button { -webkit-tap-highlight-color: transparent; }
 #app-wrapper { position: relative; z-index: 1; width: 100%; overflow-x: hidden; }
 .container { width: min(1180px, 100%); min-height: 100vh; margin: 0 auto; display: flex; flex-direction: column; }
 
-/* ---------- HEADER ---------- */
+
 header#main-header {
     display: flex;
     position: sticky;
@@ -80,7 +80,7 @@ header#main-header > div:first-child > div:first-child { color: #fff !important;
     box-shadow: inset 0 1px 0 rgba(255,255,255,.18);
 }
 
-/* ---------- COMMON GLASS ---------- */
+
 .glass-card, .card, .card-start {
     background: var(--glass) !important;
     border: 1px solid var(--line) !important;
@@ -93,7 +93,7 @@ header#main-header > div:first-child > div:first-child { color: #fff !important;
 .screen.active { display: block; }
 @keyframes pageIn { from { opacity: 0; } to { opacity: 1; } }
 
-/* ---------- HOME ---------- */
+
 .home-shell { width: min(1080px, 100%); margin: 0 auto; }
 .home-hero {
     position: relative;
@@ -193,7 +193,7 @@ input[readonly] { background: rgba(225,230,241,.42) !important; color: #7b8196; 
 .start-actions-label .eyebrow { color: #6c6da8; }
 .start-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-/* ---------- BUTTONS ---------- */
+
 .btn { min-height: 44px; padding: 11px 18px; border: 1px solid rgba(255,255,255,.34); border-radius: 14px; font-weight: 900; cursor: pointer; color: #fff; box-shadow: 0 12px 25px rgba(39,31,92,.14), inset 0 1px 0 rgba(255,255,255,.30); transition: .2s ease; }
 .btn:hover:not(:disabled) { filter: brightness(1.04); box-shadow: 0 16px 32px rgba(39,31,92,.19), inset 0 1px 0 rgba(255,255,255,.34); }
 .btn-fire { background: linear-gradient(135deg, #5b5ce2, #7c5ce7 52%, #d968c7) !important; }
@@ -203,7 +203,7 @@ input[readonly] { background: rgba(225,230,241,.42) !important; color: #7b8196; 
 .btn-admin-float { right: 18px; background: rgba(37,35,91,.72); }
 .btn-report-float { left: 18px; background: rgba(190,48,91,.72); }
 
-/* ---------- QUIZ / RESULT ---------- */
+
 #screen-quiz { max-width: 1000px; width: 100%; margin: 0 auto; }
 #quiz-content > .card { border-radius: 26px; }
 .section-title { margin-bottom: 16px; padding: 12px 16px; border-left: 4px solid #8c6be9; border-radius: 0 14px 14px 0; color: #494b78; background: rgba(255,255,255,.34) !important; border-top: 1px solid rgba(255,255,255,.30); border-bottom: 1px solid rgba(255,255,255,.20); }
@@ -228,7 +228,7 @@ input.char-slot { width: 44px !important; height: 52px; padding: 0 !important; t
 #screen-result #final-score { color: white !important; }
 #screen-result #my-rank-text { color: #ffd47a !important; }
 
-/* ---------- ADMIN ---------- */
+
 #screen-admin { max-width: 1120px; width: 100%; margin: 0 auto; }
 .admin-tabs { display: flex; gap: 8px; margin-bottom: 18px; padding: 6px; border: 1px solid rgba(255,255,255,.36); border-radius: 16px; background: rgba(255,255,255,.20); }
 .admin-tab { flex: 1; padding: 11px 12px; border-radius: 11px; border: 1px solid transparent; text-align: center; color: #646881; font-weight: 900; font-size: .78rem; cursor: pointer; }
@@ -241,14 +241,14 @@ input.char-slot { width: 44px !important; height: 52px; padding: 0 !important; t
 .admin-table th { position: sticky; top: 0; z-index: 2; padding: 12px; color: white; background: linear-gradient(135deg, #5558c9, #7955c9) !important; font-size: .78rem; text-align: left; }
 .admin-table td { padding: 11px 12px; border-bottom: 1px solid rgba(91,92,226,.08); font-size: .82rem; }
 
-/* ---------- MODALS / ALERTS ---------- */
+
 .modal-overlay { position: fixed; inset: 0; z-index: 20000; display: none; align-items: center; justify-content: center; padding: 18px; overflow-y: auto; background: rgba(17,15,42,.72) !important; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 .modal-box { width: min(500px, 100%); margin: auto; padding: 28px; border-radius: 24px; color: var(--ink); background: rgba(255,255,255,.88) !important; border: 1px solid rgba(255,255,255,.76); box-shadow: 0 28px 80px rgba(10,8,35,.32); backdrop-filter: blur(25px); }
 #cheat-modal { background: rgba(9,8,25,.96); display: none; }
 #custom-alert { position: fixed; left: 50%; top: 20px; z-index: 100000; display: none; max-width: 90%; padding: 12px 22px; border-radius: 999px; color: white; background: #cf4664; box-shadow: 0 12px 30px rgba(207,70,100,.34); transform: translateX(-50%); font-weight: 900; text-align: center; }
 #image-viewer-modal { background: rgba(7,6,20,.86) !important; }
 
-/* ---------- WISH / CHEAT ---------- */
+
 #wish-overlay { position: fixed; inset: 0; z-index: 10000; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; background: #080714; }
 #fire-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .wish-content { position: relative; z-index: 2; width: min(800px, 90%); }
@@ -302,21 +302,21 @@ footer div:first-child { color: rgba(255,255,255,.78) !important; }
     *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
 
-/* Feature strip lives outside the two-column setup */
+
 .feature-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 18px 0 4px; }
 .feature-card { min-height: 88px; padding: 16px; border-radius: 20px; display: flex; align-items: center; gap: 12px; }
 .feature-card > span { width: 42px; height: 42px; flex: 0 0 42px; display: grid; place-items: center; border-radius: 14px; background: rgba(255,255,255,.46); border: 1px solid rgba(255,255,255,.54); font-size: 1.2rem; }
 .feature-card strong { display: block; color: #30324e; font-size: .82rem; }
 .feature-card small { display: block; margin-top: 3px; color: #73788e; font-size: .70rem; }
 
-/* Keep MathJax readable inside the glass cards */
+
 #quiz-content, #review-content, #ar-content { color: #252842; line-height: 1.55; }
 #quiz-content p, #quiz-content li, #review-content p, #review-content li { color: inherit; }
 
-/* =========================================================
-   OPTION 1 — GLASSMORPHISM MODERN UI
-   Rebuild visual layer; app logic/IDs remain unchanged.
-   ========================================================= */
+
+
+
+
 :root {
   --primary: #6d4aff;
   --secondary: #8b7cff;
@@ -456,7 +456,7 @@ body::before {
 .feature-card > span { width:45px; height:45px; display:grid; place-items:center; flex:0 0 45px; border-radius:14px; background:linear-gradient(135deg,rgba(94,214,255,.7),rgba(128,96,255,.7)); border:1px solid rgba(255,255,255,.26); font-size:1.2rem; }
 .feature-card strong { display:block; font-size:.9rem; } .feature-card small { display:block; margin-top:5px; color:var(--muted-ink); font-size:.68rem; }
 
-/* Keep all other screens consistent with the new visual system. */
+
 #screen-quiz .card, #screen-result .card, #screen-admin .card, .modal-box, #admin-inbox-modal .card, #admin-review-modal .card {
   background:rgba(255,255,255,.16) !important;
   color:#fff;
@@ -511,10 +511,10 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
   .feature-card { min-height:76px; }
 }
 
-/* =========================================================
-   ADMIN GEOMETRY — restore backup-beta positions only
-   Visual skin remains Glassmorphism.
-   ========================================================= */
+
+
+
+
 #screen-admin {
   width: 100%;
   max-width: none;
@@ -609,7 +609,7 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
   font-size: .9rem;
 }
 
-/* Preserve original two-column button rows on desktop. */
+
 #screen-admin .grid-2-col {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -656,7 +656,7 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
 }
 
 
-/* Responsive admin grade summary cards */
+
 #screen-admin .stats-summary {
   display: grid !important;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -699,7 +699,7 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
 }
 
 
-/* Bộ lọc Admin dạng Excel, hỗ trợ chọn nhiều giá trị */
+
 #screen-admin .admin-excel-filters { display:grid; grid-template-columns:repeat(4,minmax(135px,1fr)); gap:10px; flex:2 1 620px; min-width:min(100%,620px); }
 #screen-admin .admin-filter-group { position:relative; min-width:0; }
 #screen-admin .admin-filter-trigger { width:100%; min-height:44px; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 13px; border:1px solid rgba(255,255,255,.55); border-radius:12px; background:rgba(255,255,255,.72); color:var(--ink); font:inherit; font-weight:700; text-align:left; cursor:pointer; box-shadow:0 5px 16px rgba(33,25,90,.08); }
@@ -719,14 +719,14 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
 @media (max-width:380px) { #screen-admin .admin-excel-filters { grid-template-columns:1fr; } }
 
 
-/* Admin results toolbar: full-width filters above a compact action row. */
+
 #screen-admin #admin-results-section > .admin-controls { display:grid; grid-template-columns:minmax(0,1fr); align-items:stretch; gap:12px; }
 #screen-admin #admin-results-section .admin-excel-filters { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); width:100%; min-width:0; flex:none; gap:12px; }
 #screen-admin #admin-results-section .grid-2-col { display:flex; width:100%; grid-template-columns:none; align-items:center; justify-content:flex-end; gap:10px; }
 #screen-admin #admin-results-section .grid-2-col > button { width:auto !important; min-width:150px; min-height:44px; margin:0; }
 #screen-admin #admin-results-section .grid-2-col #btn-export-excel { flex:0 0 auto; grid-column:auto; }
 
-/* Frosted Liquid Glass multi-select popovers. */
+
 #screen-admin .admin-filter-menu { width:max(100%,270px); max-width:min(360px,92vw); padding:14px; overflow:hidden; color:#fff; border:1px solid rgba(255,255,255,.42); border-radius:18px; background:radial-gradient(circle at 8% 0%,rgba(255,255,255,.22),transparent 38%),linear-gradient(145deg,rgba(68,54,132,.78),rgba(35,28,83,.82)); box-shadow:0 22px 55px rgba(12,8,42,.40),inset 0 1px 0 rgba(255,255,255,.30),inset 0 -1px 0 rgba(255,255,255,.08); backdrop-filter:blur(26px) saturate(165%); -webkit-backdrop-filter:blur(26px) saturate(165%); }
 #screen-admin .admin-filter-trigger { border-color:rgba(255,255,255,.44); color:#fff; background:linear-gradient(135deg,rgba(255,255,255,.20),rgba(255,255,255,.10)); box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 8px 22px rgba(22,12,66,.12); }
 #screen-admin .admin-filter-trigger:hover, #screen-admin .admin-filter-trigger[aria-expanded="true"] { border-color:rgba(255,255,255,.72); background:linear-gradient(135deg,rgba(255,255,255,.28),rgba(255,255,255,.14)); box-shadow:0 0 0 3px rgba(184,153,255,.16),0 10px 26px rgba(24,14,70,.18); }
@@ -745,7 +745,7 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
 @media (max-width:420px) { #screen-admin #admin-results-section .admin-excel-filters { grid-template-columns:1fr; } #screen-admin #admin-results-section .grid-2-col { display:grid; grid-template-columns:1fr 1fr; } #screen-admin #admin-results-section .grid-2-col #btn-export-excel { grid-column:1 / -1; } }
 
 
-/* Student and question-bank filters reuse the admin Liquid Glass popover. */
+
 #screen-admin #admin-students-section .admin-student-excel-filters {
   display: grid;
   flex: 1 1 100%;
@@ -769,7 +769,7 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
 }
 
 
-/* Fix admin import popover stacking: lift its card above the later results table. */
+
 #screen-admin #admin-questions-section > .card {
   position: relative;
   z-index: 5;
@@ -781,7 +781,7 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
     linear-gradient(145deg, rgba(48,37,105,.95), rgba(28,23,72,.96));
 }
 
-/* Liquid Glass topic menu on the login screen; keep the native select as the value source. */
+
 #screen-start .topic-card { position: relative; z-index: 2; overflow: visible; }
 #screen-start .topic-select-glass { position: relative; z-index: 20; width: 100%; }
 .topic-select-glass-trigger {
@@ -817,7 +817,7 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
 }
 
 
-/* Adaptive Liquid Glass topic menu: render above page layers and follow the trigger. */
+
 .topic-select-glass-menu {
   position: fixed !important;
   z-index: 10000 !important;
@@ -827,7 +827,7 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
 }
 
 
-/* Liquid Glass roll-open/close motion for custom dropdown menus. */
+
 @keyframes liquidGlassRollOpenDown {
   from { opacity: 0; transform: perspective(720px) rotateX(-13deg) scaleY(.84) translateY(-7px); filter: blur(2px); }
   to { opacity: 1; transform: perspective(720px) rotateX(0) scaleY(1) translateY(0); filter: blur(0); }
@@ -865,7 +865,7 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
 }
 
 
-/* Place the existing results sort control in the fifth filter slot. */
+
 #screen-admin #admin-results-section .admin-sort-control {
   display: flex;
   flex-direction: column;
@@ -896,7 +896,7 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
   color: #1e293b;
 }
 
-/* Results filter layout: move the sort caption to the card's top-left and align all controls. */
+
 #screen-admin #admin-results-section > .admin-controls { position:relative; }
 #screen-admin #admin-results-section .admin-excel-filters { padding-top:25px; align-items:end; }
 #screen-admin #admin-results-section .admin-sort-control { position:static; }
@@ -907,7 +907,7 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
   margin:0;
 }
 
-/* DOCX import preview and safe inline images. */
+
 .question-import-preview {
   width: min(760px, 100%);
   max-height: min(90vh, 860px);
@@ -975,7 +975,7 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
   .question-import-preview-actions button { width: 100%; }
 }
 
-/* High-contrast feedback for true/false answers in both review screens. */
+
 .tf-review-row { display:grid; grid-template-columns:minmax(0,1fr) minmax(190px,auto); align-items:center; gap:12px; padding:12px 14px; margin:8px 0; border:1px solid rgba(255,255,255,.24); border-left:5px solid rgba(255,255,255,.42); border-radius:13px; background:rgba(255,255,255,.08); color:#fff; }
 .tf-review-row.tf-review-correct { border-color:rgba(52,211,153,.78); border-left-color:#34d399; background:rgba(16,185,129,.25); }
 .tf-review-row.tf-review-wrong { border-color:rgba(251,113,133,.82); border-left-color:#fb7185; background:rgba(239,68,68,.25); }
@@ -991,7 +991,7 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
     .tf-review-row { grid-template-columns:1fr; }
     .tf-review-feedback { justify-content:flex-start; }
 }
-/* Login composition entrance and the third orbital electron. */
+
 @keyframes electronOrbitC { from { offset-distance: 0%; } to { offset-distance: 100%; } }
 #screen-start.active .welcome-card { animation: motionCardEnter 620ms cubic-bezier(.2,.75,.25,1) .06s both; }
 #screen-start.active .student-card { animation: motionCardEnter 620ms cubic-bezier(.2,.75,.25,1) .14s both; }
@@ -1007,7 +1007,7 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
 }
 
 
-/* Motion polish: restrained UI animation without changing component geometry. */
+
 @keyframes motionScreenEnter { from { opacity:0; transform:translate3d(0,10px,0) scale(.996); filter:blur(2px); } to { opacity:1; transform:translate3d(0,0,0) scale(1); filter:blur(0); } }
 @keyframes motionCardEnter { from { opacity:0; transform:translate3d(0,12px,0) scale(.99); } to { opacity:1; transform:translate3d(0,0,0) scale(1); } }
 @keyframes motionModalIn { from { opacity:0; transform:translate3d(0,12px,0) scale(.965); filter:blur(3px); } to { opacity:1; transform:translate3d(0,0,0) scale(1); filter:blur(0); } }
@@ -1072,7 +1072,7 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
 }
 
 
-/* Dropdown motion refinement: reveal the glass surface from its anchor edge. */
+
 @keyframes liquidGlassRollOpenDown {
   0% { opacity:0; clip-path:inset(0 0 84% 0 round 18px); transform:perspective(900px) rotateX(-11deg) scaleY(.90) translateY(-6px); filter:blur(3px); }
   62% { opacity:1; clip-path:inset(0 0 0 0 round 18px); transform:perspective(900px) rotateX(1deg) scaleY(1.01) translateY(1px); filter:blur(0); }
@@ -1109,7 +1109,7 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
 }
 
 
-/* Match the remaining visible suggestions and sort dropdown to the Liquid Glass menus. */
+
 @keyframes autocompleteGlassOpen {
   from { opacity:0; transform:perspective(760px) rotateX(-8deg) scaleY(.94) translateY(-5px); filter:blur(2px); }
   to { opacity:1; transform:perspective(760px) rotateX(0) scaleY(1) translateY(0); filter:blur(0); }
@@ -1150,7 +1150,7 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
 }
 
 
-/* Login atom repair: fixed tilted orbit tracks, moving electrons, visible nucleus. */
+
 @keyframes electronOrbit { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
 @keyframes electronGlow { 0%,100% { opacity:.72; box-shadow:0 0 7px 2px rgba(223,238,255,.40); } 50% { opacity:1; box-shadow:0 0 14px 5px rgba(223,238,255,.90); } }
 .welcome-art::before { content:none !important; animation:none !important; }
@@ -1201,7 +1201,7 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
 }
 
 
-/* Login artwork: remove the orbital diagram and keep a clear, softly glowing nucleus. */
+
 @keyframes nucleusGlow {
   0%,100% { transform:scale(1); box-shadow:0 0 34px rgba(172,177,255,.32), inset 0 1px 0 rgba(255,255,255,.32); }
   50% { transform:scale(1.035); box-shadow:0 0 48px rgba(201,183,255,.52), inset 0 1px 0 rgba(255,255,255,.42); }
@@ -1231,7 +1231,7 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
 .art-atom::after { content:none !important; animation:none !important; }
 
 
-/* Contrast repair for true/false context, review states, and admin data panels. */
+
 #screen-quiz #quiz-content .card > div[style*="background:#f1f5f9"],
 #review-content .card > div[style*="background:#f1f5f9"] {
   color:#f8f7ff !important;
@@ -1279,7 +1279,7 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
 #screen-admin .admin-table td[style*="color:var(--primary)"] { color:#e3dcff !important; }
 
 
-/* Improve text contrast on the login screen and Admin tabs 2/3. */
+
 #screen-start .field-group label,
 #screen-start .topic-card label,
 #screen-start .card-title-row .eyebrow,
@@ -1313,7 +1313,7 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
 }
 
 
-/* Keep true/false controls aligned when a statement wraps, with a compact mobile layout. */
+
 #screen-quiz .tf-row {
   display:grid;
   grid-template-columns:minmax(0,1fr) auto;
@@ -1347,4 +1347,58 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
     min-width:clamp(66px,22vw,78px);
     padding:9px 12px;
   }
+}
+
+.exam-room-root {
+  color: #f7f6ff;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: radial-gradient(ellipse at 15% 0%, #43318c 0, transparent 40%), radial-gradient(ellipse at 90% 20%, #164e63 0, transparent 32%), #100d2b;
+  border: 1px solid #ffffff24;
+  border-radius: 22px;
+  overflow: hidden;
+  min-height: 70vh;
+  isolation: isolate;
+}
+.exam-room-root, .exam-room-root * { box-sizing: border-box; }
+.exam-room-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px max(18px, calc((100% - 1100px) / 2)); border-bottom: 1px solid #ffffff24; background: #100d2bcc; }
+.exam-room-head strong { font-size: 1.05rem; letter-spacing: .04em; }
+.exam-room-head small { display: block; margin-top: 4px; color: #c6c0f1; }
+.exam-room-back { flex: 0 0 auto; border: 1px solid #ffffff30; border-radius: 11px; padding: 10px 14px; color: #fff; background: #ffffff18; font: inherit; font-weight: 750; cursor: pointer; }
+.exam-room-content { max-width: 1100px; margin: 22px auto; padding: 0 16px 32px; }
+.exam-room-root .exam-room-panel { margin: 14px 0; padding: 22px; border: 1px solid #ffffff24; border-radius: 20px; background: #ffffff0d; box-shadow: 0 18px 50px #0002; }
+.exam-room-root h1 { margin: 0 0 10px; font-size: clamp(1.5rem, 4vw, 2.25rem); }
+.exam-room-root h2 { margin: 0 0 14px; font-size: 1.2rem; }
+.exam-room-root p { color: #d9d5f4; line-height: 1.55; }
+.exam-room-root .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 14px; }
+.exam-room-root label { display: block; margin: 12px 0 6px; color: #e9e5ff; font-size: .9rem; font-weight: 650; }
+.exam-room-root input, .exam-room-root select, .exam-room-root textarea { width: 100%; min-width: 0; padding: 12px 13px; border: 1px solid #ffffff36; border-radius: 11px; background: #171338; color: white; font: inherit; }
+.exam-room-root button { border: 0; border-radius: 11px; padding: 12px 16px; color: white; background: #7359ee; font: inherit; font-weight: 750; cursor: pointer; }
+.exam-room-root button.secondary { border: 1px solid #ffffff30; background: #ffffff18; }
+.exam-room-root button.danger { background: #b92f57; }
+.exam-room-root button:disabled { opacity: .45; cursor: not-allowed; }
+.exam-room-root .actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 14px; }
+.exam-room-root .muted { color: #bdb7e7; font-size: .88rem; }
+.exam-room-root .hidden { display: none !important; }
+.exam-room-root .pill { display: inline-flex; border: 1px solid #ffffff30; border-radius: 999px; padding: 5px 10px; color: #dcd6ff; font-size: .82rem; }
+.exam-room-root .notice { margin: 12px 0; padding: 12px 14px; border: 1px solid #9b89ff55; border-radius: 12px; background: #7259ee22; line-height: 1.5; }
+.exam-room-root .status { font-size: 1.1rem; font-weight: 800; }
+.exam-room-root .timer { font-size: clamp(2rem, 7vw, 3.4rem); font-variant-numeric: tabular-nums; font-weight: 900; letter-spacing: .04em; }
+.exam-room-root .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.exam-room-root .person, .exam-room-root .submission, .exam-room-root .question { margin: 10px 0; padding: 14px; border: 1px solid #ffffff20; border-radius: 14px; background: #ffffff08; }
+.exam-room-root .person small, .exam-room-root .submission small { display: block; margin-top: 4px; color: #c5bee9; }
+.exam-room-root .person .actions { margin-top: 8px; }
+.exam-room-root .qtitle { margin: 0 0 10px; font-weight: 800; line-height: 1.5; }
+.exam-room-root .option { display: flex; align-items: flex-start; gap: 9px; margin: 7px 0; padding: 10px; border: 1px solid #ffffff26; border-radius: 10px; cursor: pointer; }
+.exam-room-root .option input, .exam-room-root .tfline input { width: auto; }
+.exam-room-root .option input { margin-top: 4px; }
+.exam-room-root .option:has(input:checked) { border-color: #a99aff; background: #8d75ff22; }
+.exam-room-root .tfline { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid #ffffff18; }
+.exam-room-root .tfline label { display: inline-flex; align-items: center; gap: 5px; margin: 0 0 0 8px; }
+.exam-room-root .question img { max-width: 100%; }
+@media (max-width: 600px) {
+  .exam-room-head { align-items: flex-start; padding: 16px; }
+  .exam-room-back { padding: 9px 11px; }
+  .exam-room-root .exam-room-panel { padding: 16px; }
+  .exam-room-root .tfline { grid-template-columns: 1fr; }
+  .exam-room-root .tfline > div { display: flex; justify-content: flex-end; }
 }

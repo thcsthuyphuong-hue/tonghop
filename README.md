@@ -41,11 +41,11 @@ Giáo viên có thể tải ngân hàng câu hỏi lên Firebase theo từng chu
 
 ## Thi trực tuyến theo phòng (Host & Client)
 
-Mở trang **[Phòng thi Host & Client](./exam-room.html)** hoặc truy cập `https://thcsthuyphuong-hue.github.io/tonghop/exam-room.html`.
+Mở trang **[Phòng thi Host & Client](./index.html#exam-room)** hoặc truy cập `https://thcsthuyphuong-hue.github.io/tonghop/index.html#exam-room`.
 
 ### Quy trình tổ chức thi
 
-- **Host / giáo viên:** đăng nhập bằng email và mật khẩu Firebase Authentication qua `signInWithEmailAndPassword`. Tài khoản phải thuộc danh sách UID Host được cho phép trong `exam-room.js` và Firestore Rules.
+- **Host / giáo viên:** đăng nhập bằng email và mật khẩu Firebase Authentication qua `signInWithEmailAndPassword`. Tài khoản phải thuộc danh sách UID Host được cho phép trong `script.js` và Firestore Rules.
 - Host chọn chuyên đề hoặc đề tổng hợp. Hệ thống lấy tối đa 12 câu trắc nghiệm, 4 câu đúng/sai và 4 câu trả lời ngắn từ ngân hàng hiện có, sau đó tạo mã phòng 6 ký tự.
 - **Client / học sinh:** nhập mã phòng, họ tên, lớp, SBD và trường. Học sinh đăng nhập Firebase ẩn danh, không cần tài khoản email.
 - Host duyệt danh sách thí sinh. Học sinh được vào muộn khi phòng đang chờ hoặc trong **5 phút đọc đề**; sau khi giai đoạn đọc đề kết thúc thì không nhận người mới.
@@ -56,7 +56,7 @@ Mở trang **[Phòng thi Host & Client](./exam-room.html)** hoặc truy cập `h
 
 1. Trong Firebase Authentication, bật **Email/Password** và **Anonymous**.
 2. Mở file `firestore.rules`. Đây là **file Firestore Rules đầy đủ** cho dự án, bao gồm cả ứng dụng luyện đề và phòng thi Host & Client. Khi thay đổi Rules, cập nhật toàn bộ file này rồi Publish; không ghép thêm đoạn Rules từ file phụ.
-3. Danh sách Host hiện chỉ gồm UID giáo viên đã cấu hình trong `exam-room.js` và `firestore.rules`. Nếu thêm giáo viên, cập nhật đồng thời danh sách cho phép ở cả hai nơi.
+3. Danh sách Host hiện chỉ gồm UID giáo viên đã cấu hình trong `script.js` và `firestore.rules`. Nếu thêm giáo viên, cập nhật đồng thời danh sách cho phép ở cả hai nơi.
 4. Sau khi cấu hình Rules, kiểm thử bằng hai phiên trình duyệt riêng: một tài khoản giáo viên làm Host và một phiên ẩn danh làm Client. Thử cả trường hợp học sinh chưa được duyệt, vào muộn, nộp bài sau giờ và đọc đáp án.
 
 **Bảo mật:** đáp án được lưu riêng trong `exam_rooms/{roomId}/private/answer_key`, không nằm trong dữ liệu câu hỏi mà Client đọc. Rules trong `firestore.rules` phải được Publish thì quyền này mới được thực thi; chỉ ẩn đáp án ở giao diện là không đủ. Không mở quyền đọc/ghi toàn bộ `exam_rooms` cho mọi người dùng.
