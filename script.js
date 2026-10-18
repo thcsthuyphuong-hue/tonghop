@@ -633,13 +633,20 @@ async function syncPublicResultSummaries(results) {
     }
 }
 
+function hasTeacherSession() {
+    const user = auth.currentUser;
+    return Boolean(user && !user.isAnonymous && user.uid === "wg7QT6isC2dryLf8rxc6z9lUjNd2");
+}
+
 async function renderAdmin() {
     const listBody = document.getElementById('admin-list-body'), statsBox = document.getElementById('admin-stats');
     listBody.innerHTML = "<tr><td colspan='11'>Đang tải dữ liệu...</td></tr>";
     try {
-        const snap = await getDocs(collection(db, 'artifacts', appId_fixed, 'public', 'data', collectionName));
+        const teacherSession = hasTeacherSession();
+        const resultCollection = teacherSession ? collectionName : collectionPublicResults;
+        const snap = await getDocs(collection(db, 'artifacts', appId_fixed, 'public', 'data', resultCollection));
         let rawData = []; snap.forEach(d => rawData.push({id: d.id, ...d.data()}));
-        await syncPublicResultSummaries(rawData);
+        if (teacherSession) await syncPublicResultSummaries(rawData);
         const classes = [...new Set(rawData.map(i => i.class))].sort();
         const schools = [...new Set(rawData.map(i => i.school))].filter(s => s).sort();
         const topics = [...new Set(rawData.map(i => i.topic))].filter(t => t).sort();
@@ -657,7 +664,7 @@ async function renderAdmin() {
         let s = { xs: 0, g: 0, k: 0, d: 0, cd: 0 };
         data.forEach(i => { if(i.score >= 9.0) s.xs++; else if(i.score >= 8.0) s.g++; else if(i.score >= 6.5) s.k++; else if(i.score >= 5.0) s.d++; else s.cd++; });
         statsBox.innerHTML = `<div class="stat-box" style="border-bottom-color: #f59e0b"><b>${s.xs}</b><br><small>X.Sắc</small></div><div class="stat-box" style="border-bottom-color: #10b981"><b>${s.g}</b><br><small>Giỏi</small></div><div class="stat-box" style="border-bottom-color: #3b82f6"><b>${s.k}</b><br><small>Khá</small></div><div class="stat-box" style="border-bottom-color: #8b5cf6"><b>${s.d}</b><br><small>Đạt</small></div><div class="stat-box" style="border-bottom-color: #ef4444"><b>${s.cd}</b><br><small>C.Đạt</small></div>`;
-        listBody.innerHTML = data.map((i, idx) => `<tr><td>${idx+1}</td><td>${i.sbd}</td><td>${i.name}</td><td>${i.class}</td><td>${i.school||'-'}</td><td style="font-size:0.75rem; color:var(--primary); font-weight:bold;">${i.topic || 'Đề tổng hợp'}</td><td><span class="badge-mode ${i.mode === 'practice' ? 'badge-practice' : 'badge-test'}">${i.mode === 'practice' ? 'Luyện tập' : 'Kiểm tra'}</span></td><td><b>${Number((i.score||0).toFixed(2))}</b></td><td>${i.duration}s</td><td>${new Date(i.timestamp).toLocaleDateString()}</td><td style="display:flex; gap:5px;"><button style="background:var(--secondary); color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer" class="btn-view" data-id="${i.id}">👁️</button><button style="background:red; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer" class="btn-del" data-id="${i.id}">X</button></td></tr>`).join('');
+        listBody.innerHTML = data.map((i, idx) => `<tr><td>${idx+1}</td><td>${i.sbd}</td><td>${i.name}</td><td>${i.class}</td><td>${i.school||'-'}</td><td style="font-size:0.75rem; color:var(--primary); font-weight:bold;">${i.topic || 'Đề tổng hợp'}</td><td><span class="badge-mode ${i.mode === 'practice' ? 'badge-practice' : 'badge-test'}">${i.mode === 'practice' ? 'Luyện tập' : 'Kiểm tra'}</span></td><td><b>${Number((i.score||0).toFixed(2))}</b></td><td>${i.duration}s</td><td>${new Date(i.timestamp).toLocaleDateString()}</td><td style="display:flex; gap:5px;">${teacherSession ? `<button style="background:var(--secondary); color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer" class="btn-view" data-id="${i.id}">👁️</button><button style="background:red; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer" class="btn-del" data-id="${i.id}">X</button>` : 'Công khai'}</td></tr>`).join('');
         listBody.querySelectorAll('.btn-del').forEach(b => b.onclick = () => deleteEntry(b.dataset.id, 'result'));
         listBody.querySelectorAll('.btn-view').forEach(b => b.onclick = () => viewAdminReview(b.dataset.id)); window.currentFilteredData = data;
     } catch(e) { listBody.innerHTML = "<tr><td colspan='11'>Lỗi kết nối Firebase.</td></tr>"; }
@@ -743,6 +750,10 @@ const adminPanelSections = {
 };
 
 function setAdminPanelTab(activeTab) {
+    if (activeTab === 'students' && !hasTeacherSession()) {
+        showCustomAlert('Danh sách học sinh chỉ dành cho tài khoản giáo viên.');
+        return;
+    }
     Object.entries(adminPanelTabs).forEach(([name, tab]) => tab.classList.toggle('active', name === activeTab));
     Object.entries(adminPanelSections).forEach(([name, section]) => section.style.display = name === activeTab ? 'block' : 'none');
     if (activeTab === 'results') renderAdmin();
