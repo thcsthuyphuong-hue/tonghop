@@ -439,11 +439,23 @@ function renderQuestion() {
     }
     container.innerHTML = html + `</div>`;
     if(q.type === 'mcq') {
-        container.querySelectorAll('.option').forEach(el => el.onclick = () => { userAnswers[q.id] = el.getAttribute('data-ans'); audioPing.play().catch(()=>{}); renderQuestion(); });
+        container.querySelectorAll('.option').forEach(el => el.onclick = () => {
+            userAnswers[q.id] = el.getAttribute('data-ans');
+            container.querySelectorAll('.option').forEach(option => option.classList.toggle('selected', option === el));
+            audioPing.play().catch(()=>{});
+        });
     } else if(q.type === 'tf') {
         container.querySelectorAll('.tf-btn').forEach(el => el.onclick = () => {
             const si = el.getAttribute('data-si'), val = el.getAttribute('data-val') === 'true';
-            if(!userAnswers[q.id]) userAnswers[q.id] = {}; userAnswers[q.id][si] = val; audioPing.play().catch(()=>{}); renderQuestion();
+            if(!userAnswers[q.id]) userAnswers[q.id] = {};
+            userAnswers[q.id][si] = val;
+            const row = el.closest('.tf-row');
+            row.querySelectorAll('.tf-btn').forEach(button => {
+                const selected = button.getAttribute('data-val') === String(val);
+                button.classList.toggle('active-t', selected && val);
+                button.classList.toggle('active-f', selected && !val);
+            });
+            audioPing.play().catch(()=>{});
         });
     } else {
         const slots = container.querySelectorAll('.char-slot');
