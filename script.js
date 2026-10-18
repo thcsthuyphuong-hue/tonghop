@@ -1,7 +1,7 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged, setPersistence, browserSessionPersistence, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, setDoc, getDoc, writeBatch } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyCH-47CWu8DWwTmAT1QH3ua89LghT9TNIA",
@@ -320,25 +320,23 @@ const initGame = async (m) => {
 
     try {
         let activeBank = { mcq: [], tf: [], short: [] };
-        const snap = await getDocs(collection(db, 'artifacts', appId_fixed, 'public', 'data', collectionBanks));
-        let allData = {};
-        snap.forEach(doc => { allData[doc.id] = doc.data(); });
-
-        if (Object.keys(allData).length === 0) {
-            alert("Hệ thống chưa có đề thi nào trên máy chủ! Vui lòng báo Giáo viên Import đề.");
-            document.getElementById('start-buttons').style.display = 'grid';
-            document.getElementById('loading-text').style.display = 'none';
-            return;
-        }
-
         if (topicVal === 'mix') {
-            Object.values(allData).forEach(bank => {
-                if(bank.mcq) activeBank.mcq.push(...bank.mcq);
-                if(bank.tf) activeBank.tf.push(...bank.tf);
-                if(bank.short) activeBank.short.push(...bank.short);
+            const snap = await getDocs(collection(db, 'artifacts', appId_fixed, 'public', 'data', collectionBanks));
+            if (snap.empty) {
+                alert("Hệ thống chưa có đề thi nào trên máy chủ! Vui lòng báo Giáo viên Import đề.");
+                document.getElementById('start-buttons').style.display = 'grid';
+                document.getElementById('loading-text').style.display = 'none';
+                return;
+            }
+            snap.forEach(bankDoc => {
+                const bank = bankDoc.data();
+                if (Array.isArray(bank.mcq)) activeBank.mcq.push(...bank.mcq);
+                if (Array.isArray(bank.tf)) activeBank.tf.push(...bank.tf);
+                if (Array.isArray(bank.short)) activeBank.short.push(...bank.short);
             });
-        } else { 
-            activeBank = allData[topicVal] || { mcq: [], tf: [], short: [] }; 
+        } else {
+            const bankSnap = await getDoc(doc(db, 'artifacts', appId_fixed, 'public', 'data', collectionBanks, topicVal));
+            if (bankSnap.exists()) activeBank = bankSnap.data();
         }
 
         // THUẬT TOÁN BỐC NGẪU NHIÊN 12-4-4
@@ -628,12 +626,12 @@ async function renderAdminStudents() {
         const fSchool = document.getElementById('stu-filter-school'); const oldS = fSchool.value; 
         fSchool.innerHTML = '<option value="all">Tất cả trường</option>' + schools.map(s => `<option value="${s}" ${s===oldS?'selected':''}>${s}</option>`).join('');
         
-        let data = globalStudentList.filter(i => { 
-            return ((fClass.value === 'all') || (i.class === fClass.value)) 
-                && ((fSchool.value === 'all') || (i.school === fSchool.value));
+        let data = globalStudentList.filter(i => {
+            const filters = window.adminStudentFilterState;
+            return (!filters.class.length || filters.class.includes(String(i.class || '')))
+                && (!filters.school.length || filters.school.includes(String(i.school || '')));
         });
-        
-        data = globalStudentList.filter(i => { const filters = window.adminStudentFilterState; return (!filters.class.length || filters.class.includes(String(i.class || ''))) && (!filters.school.length || filters.school.includes(String(i.school || ''))); }); const getVnNameParts = (fullName) => {
+        const getVnNameParts = (fullName) => {
             const parts = (fullName || '').trim().split(/\s+/);
             if (parts.length === 0) return { first: '', rest: '' };
             if (parts.length === 1) return { first: parts[0], rest: '' };
@@ -1806,7 +1804,14 @@ async function executePendingAdminAction() {
     else if (pendingAuthAction === 'import_students' && importedStudentsCache.length > 0) {
         showCustomAlert("Đang tiến hành nhập dữ liệu, vui lòng đợi...");
         try {
-            for(let i=0; i<importedStudentsCache.length; i++) { await addDoc(collection(db, 'artifacts', appId_fixed, 'public', 'data', collectionStudents), importedStudentsCache[i]); }
+            const studentsRef = collection(db, 'artifacts', appId_fixed, 'public', 'data', collectionStudents);
+            for (let offset = 0; offset < importedStudentsCache.length; offset += 500) {
+                const batch = writeBatch(db);
+                importedStudentsCache.slice(offset, offset + 500).forEach(student => {
+                    batch.set(doc(studentsRef), student);
+                });
+                await batch.commit();
+            }
             showCustomAlert(`✅ Đã import thành công ${importedStudentsCache.length} học sinh!`);
             importedStudentsCache = []; renderAdminStudents();
         } catch(e) { showCustomAlert(getFirebaseErrorMessage(e, "APP-STU-001", "Không thể import danh sách học sinh.")); }

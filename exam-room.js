@@ -24,7 +24,7 @@ const READING_MS = 5 * 60 * 1000;
 const $ = id => document.getElementById(id);
 let user = null, role = null, roomId = null, roomData = null, participantData = null;
 let roomUnsub = null, rosterUnsub = null, submissionsUnsub = null, participantUnsub = null, tickTimer = null;
-let roster = [], submissions = [], answers = {}, submitted = false, endTimeWriteInFlight = false, lastRenderedPhase = null;
+let roster = [], submissions = [], answers = {}, submitted = false, endTimeWriteInFlight = false, lastRenderedPhase = null, answerKeyCache = null;
 
 function message(text, error = false) {
   const el = $("global-message");
@@ -159,6 +159,7 @@ async function createRoom() {
       examEndsAt: null, finishedAt: null
     });
     await setDoc(doc(db, ROOT, code, "private", "answer_key"), { keys, createdAt: serverTimestamp() });
+    answerKeyCache = keys;
     roomId = code; role = "host"; submitted = false;
     show("room-panel"); show("host-create", false);
     listenRoom(code);
@@ -374,14 +375,20 @@ function autoScore(questions, keyMap, submittedAnswers) {
   }
   return {mcqScore:Number(mcqScore.toFixed(2)),tfScore:Number(tfScore.toFixed(2)),autoScore:Number((mcqScore+tfScore).toFixed(2)),shortCount};
 }
+async function getAnswerKeyMap() {
+  if (answerKeyCache !== null) return answerKeyCache;
+  const keySnap = await getDoc(doc(db, ROOT, roomId, "private", "answer_key"));
+  if (!keySnap.exists()) throw new Error("Không tìm thấy đáp án của phòng thi.");
+  answerKeyCache = keySnap.data().keys || {};
+  return answerKeyCache;
+}
 async function renderSubmissions() {
   const hostList = $("submissions-list");
   if (!hostList || role!=="host" || !roomData) return;
   if (!submissions.length) { hostList.innerHTML='<p class="muted">Chưa có bài nộp.</p>'; return; }
-  let keyMap={};
+  let keyMap;
   try {
-    const keySnap=await getDoc(doc(db,ROOT,roomId,"private","answer_key"));
-    if(keySnap.exists()) keyMap=keySnap.data().keys||{};
+    keyMap = await getAnswerKeyMap();
   } catch(e) { hostList.innerHTML='<p class="muted">Không đọc được đáp án. Kiểm tra quyền Host trong Firestore Rules.</p>'; return; }
   hostList.innerHTML=submissions.map(sub=>{
     const p=roster.find(x=>x.id===sub.id)||{};
@@ -406,8 +413,7 @@ async function saveManualGrade(uid) {
       const val=Math.max(0,Math.min(max,Number(input?.value)||0));
       scores[q.id]=Number(val.toFixed(2)); total+=val;
     });
-    const keySnap=await getDoc(doc(db,ROOT,roomId,"private","answer_key"));
-    const keyMap=keySnap.exists()?keySnap.data().keys||{}:{};
+    const keyMap = await getAnswerKeyMap();
     const auto=autoScore(roomData.publicQuestions||[],keyMap,sub.answers||{});
     const finalScore=Number(Math.min(10,auto.autoScore+total).toFixed(2));
     await setDoc(doc(db,ROOT,roomId,"grades",uid),{
