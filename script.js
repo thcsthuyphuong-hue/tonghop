@@ -729,33 +729,51 @@ async function renderAdminQuestions() {
 }
 
 
-document.getElementById('tab-results').onclick = () => {
-    document.getElementById('tab-results').classList.add('active');
-    document.getElementById('tab-students').classList.remove('active');
-    document.getElementById('tab-questions').classList.remove('active');
-    document.getElementById('admin-results-section').style.display = 'block';
-    document.getElementById('admin-students-section').style.display = 'none';
-    document.getElementById('admin-questions-section').style.display = 'none';
-    renderAdmin();
+const adminPanelTabs = {
+    results: document.getElementById('tab-results'),
+    students: document.getElementById('tab-students'),
+    questions: document.getElementById('tab-questions'),
+    graphics: document.getElementById('tab-graphics')
 };
-document.getElementById('tab-students').onclick = () => {
-    document.getElementById('tab-students').classList.add('active');
-    document.getElementById('tab-results').classList.remove('active');
-    document.getElementById('tab-questions').classList.remove('active');
-    document.getElementById('admin-students-section').style.display = 'block';
-    document.getElementById('admin-results-section').style.display = 'none';
-    document.getElementById('admin-questions-section').style.display = 'none';
-    renderAdminStudents();
+const adminPanelSections = {
+    results: document.getElementById('admin-results-section'),
+    students: document.getElementById('admin-students-section'),
+    questions: document.getElementById('admin-questions-section'),
+    graphics: document.getElementById('admin-graphics-section')
 };
-document.getElementById('tab-questions').onclick = () => {
-    document.getElementById('tab-questions').classList.add('active');
-    document.getElementById('tab-results').classList.remove('active');
-    document.getElementById('tab-students').classList.remove('active');
-    document.getElementById('admin-questions-section').style.display = 'block';
-    document.getElementById('admin-results-section').style.display = 'none';
-    document.getElementById('admin-students-section').style.display = 'none';
-    renderAdminQuestions();
+
+function setAdminPanelTab(activeTab) {
+    Object.entries(adminPanelTabs).forEach(([name, tab]) => tab.classList.toggle('active', name === activeTab));
+    Object.entries(adminPanelSections).forEach(([name, section]) => section.style.display = name === activeTab ? 'block' : 'none');
+    if (activeTab === 'results') renderAdmin();
+    if (activeTab === 'students') renderAdminStudents();
+    if (activeTab === 'questions') renderAdminQuestions();
+}
+
+Object.entries(adminPanelTabs).forEach(([name, tab]) => {
+    tab.onclick = () => setAdminPanelTab(name);
+    tab.onkeydown = event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            setAdminPanelTab(name);
+        }
+    };
+});
+
+const glassTransparencyInput = document.getElementById('glass-transparency');
+const glassTransparencyValue = document.getElementById('glass-transparency-value');
+const applyGlassTransparency = value => {
+    const transparency = Number(value);
+    document.documentElement.style.setProperty('--glass-opacity', String(1 - transparency / 100));
+    glassTransparencyValue.value = transparency + '%';
+    glassTransparencyValue.textContent = transparency + '%';
 };
+glassTransparencyInput.oninput = () => applyGlassTransparency(glassTransparencyInput.value);
+document.getElementById('glass-transparency-reset').onclick = () => {
+    glassTransparencyInput.value = '82';
+    applyGlassTransparency(glassTransparencyInput.value);
+};
+
 
 document.getElementById('stu-filter-school').onchange = () => renderAdminStudents();
 document.getElementById('stu-filter-class').onchange = () => renderAdminStudents();
