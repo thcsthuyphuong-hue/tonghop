@@ -1,7 +1,7 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged, setPersistence, browserSessionPersistence, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, setDoc, getDoc, writeBatch, updateDoc, onSnapshot, serverTimestamp, Timestamp, runTransaction } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyCH-47CWu8DWwTmAT1QH3ua89LghT9TNIA",
@@ -16,9 +16,13 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-/**
- * Giữ mã Firebase gốc; mã APP-* là mã nghiệp vụ riêng được ghi trong README.md.
- */
+
+const examRoomApp = initializeApp(firebaseConfig, "host-client-exam-room");
+const examRoomAuth = getAuth(examRoomApp);
+const examRoomDb = getFirestore(examRoomApp);
+
+
+
 function getFirebaseErrorMessage(error, appCode, fallback) {
     const code = error?.code || "unknown";
     const messages = {
@@ -41,32 +45,33 @@ function getFirebaseErrorMessage(error, appCode, fallback) {
     return "[" + appCode + "] " + detail + " (Firebase: " + code + ")";
 }
 
-const appId_fixed = 'kham-pha-vat-ly-9'; 
-const collectionName = 'quiz_results'; 
+const appId_fixed = 'kham-pha-vat-ly-9';
+const collectionName = 'quiz_results';
 const collectionReports = 'error_reports';
-const collectionStudents = 'students_list'; 
-const collectionBanks = 'question_banks'; // COLLECTION KHO ĐỀ
+const collectionPublicResults = 'public_quiz_results';
+const collectionStudents = 'students_list';
+const collectionBanks = 'question_banks';
 
 let currentUser = null, quizStartTime = 0, isQuizRunning = false, mode = '', currentIdx = 0, userAnswers = {}, timeLeft = 0, timerInt, currentExam = [];
-let arExamData = [], arUserAnswers = {}; 
-let globalStudentList = []; 
-let importedStudentsCache = []; 
-let importedQuestionsCache = {}; // Cache lưu trữ đề thi khi đọc từ excel
+let arExamData = [], arUserAnswers = {};
+let globalStudentList = [];
+let importedStudentsCache = [];
+let importedQuestionsCache = {};
 let pendingQuestionImport = null;
 
 let practiceTimeLimit = 2700;
 let testTimeLimit = 2700;
-let maxHintsAllowed = 3; 
-let hintsUsed = 0;       
-let unlockedHints = [];  
+let maxHintsAllowed = 3;
+let hintsUsed = 0;
+let unlockedHints = [];
 
 
-let canCheckCheat = false; 
+let canCheckCheat = false;
 let isProcessingCheat = false;
 let wishTimeoutId = null;
 let reportImageBase64 = "";
 let hasSaved = false;
-let pendingAuthAction = null; 
+let pendingAuthAction = null;
 let currentDeleteId = null;
 
 const audioPing = new Audio('https://www.soundjay.com/buttons/sounds/button-16.mp3');
@@ -123,11 +128,11 @@ document.getElementById('topic-select').addEventListener('change', (e) => {
     document.getElementById('banner-topic').innerText = `Chuyên đề: ${topicText}`;
 });
 
-// AUTOCOMPLETE LOGIC
+
 function autocomplete(inp, arr) {
     let currentFocus;
     inp.addEventListener("input", function(e) {
-        let a, b, val = this.value; 
+        let a, b, val = this.value;
         closeAllLists();
         if (!val) { return false;}
         currentFocus = -1;
@@ -135,10 +140,10 @@ function autocomplete(inp, arr) {
         a.setAttribute("id", this.id + "autocomplete-list");
         a.setAttribute("class", "autocomplete-items");
         this.parentNode.appendChild(a);
-        
+
         let count = 0;
         for (let i = 0; i < arr.length; i++) {
-            const student = arr[i]; 
+            const student = arr[i];
             let sName = student.name || "";
             if (sName.toLowerCase().includes(val.toLowerCase())) {
                 b = document.createElement("DIV");
@@ -147,7 +152,7 @@ function autocomplete(inp, arr) {
                 b.innerHTML += "<strong>" + sName.substring(matchIdx, matchIdx + val.length) + "</strong>";
                 b.innerHTML += sName.substring(matchIdx + val.length);
                 b.innerHTML += ` <span style="color:#64748b; font-size:0.8rem;">(Lớp ${student.class} - SBD ${student.sbd})</span>`;
-                
+
                 b.innerHTML += "<input type='hidden' value='" + sName.replace(/'/g, "&#39;") + "'>";
                 b.addEventListener("click", function(e) {
                     inp.value = this.getElementsByTagName("input")[0].value;
@@ -170,7 +175,7 @@ function autocomplete(inp, arr) {
             a.appendChild(b);
         }
     });
-    
+
     inp.addEventListener("keydown", function(e) {
         let x = document.getElementById(this.id + "autocomplete-list");
         if (x) x = x.getElementsByTagName("div");
@@ -178,7 +183,7 @@ function autocomplete(inp, arr) {
         else if (e.keyCode == 38) { currentFocus--; addActive(x); }
         else if (e.keyCode == 13) { e.preventDefault(); if (currentFocus > -1) { if (x) x[currentFocus].click(); } }
     });
-    
+
     function addActive(x) {
         if (!x) return false;
         removeActive(x);
@@ -200,14 +205,14 @@ document.getElementById('guest-mode-toggle').addEventListener('change', function
     const sbdInp = document.getElementById("user_sbd");
     const schoolInp = document.getElementById("user_school");
     const nameInp = document.getElementById("username");
-    
+
     if (isGuest) {
         classInp.removeAttribute("readonly"); classInp.value = ""; classInp.placeholder = "Ví dụ: 9A1";
         sbdInp.removeAttribute("readonly"); sbdInp.value = ""; sbdInp.placeholder = "Ví dụ: 01";
         schoolInp.removeAttribute("readonly"); schoolInp.value = ""; schoolInp.placeholder = "Nhập tên trường";
         nameInp.value = ""; nameInp.placeholder = "Nhập họ và tên...";
         document.getElementById('username-hint').style.display = 'none';
-        
+
         const oldInp = nameInp; const newInp = oldInp.cloneNode(true);
         oldInp.parentNode.replaceChild(newInp, oldInp);
     } else {
@@ -230,9 +235,19 @@ async function loadStudentList() {
 }
 
 const initAuth = async () => { try { await signInAnonymously(auth); } catch (e) {} }; initAuth();
-onAuthStateChanged(auth, async user => { 
-    currentUser = user; 
-    if(user) { await loadTimeConfig(); await loadStudentList(); }
+onAuthStateChanged(auth, async user => {
+    currentUser = user;
+    if (!user) return;
+    await loadTimeConfig();
+    if (user.isAnonymous) {
+        const guestToggle = document.getElementById('guest-mode-toggle');
+        if (!guestToggle.checked) {
+            guestToggle.checked = true;
+            guestToggle.dispatchEvent(new Event('change'));
+        }
+    } else {
+        await loadStudentList();
+    }
 });
 
 let fireRequest;
@@ -296,11 +311,11 @@ async function loadTimeConfig() {
     } catch(e) {}
 }
 
-// LOGIC INIT GAME - FETCH TỪ FIREBASE VÀ BỐC NGẪU NHIÊN
+
 const initGame = async (m) => {
     const getVal = (id) => { const el = document.getElementById(id); return (el && el.value.trim()) ? el.value.trim() : ""; };
     const name = getVal('username'); const sch = getVal('user_school'); const cls = getVal('user_class'); const sbd = getVal('user_sbd');
-    
+
     if (!name || !sch || !cls || !sbd) {
         document.getElementById('start-error').style.display = 'block'; return;
     }
@@ -313,39 +328,37 @@ const initGame = async (m) => {
     document.getElementById('btn-report-open').style.display = 'none'; document.getElementById('btn-admin-open').style.display = 'none';
     document.getElementById('header-user-info').innerText = `${name} | Lớp: ${cls} | ${topicText}`;
     hintsUsed = 0; unlockedHints = []; currentExam = [];
-    
-    // TẠM ẨN NÚT VÀ HIỂN THỊ TRẠNG THÁI LOADING
+
+
     document.getElementById('start-buttons').style.display = 'none';
     document.getElementById('loading-text').style.display = 'block';
 
     try {
         let activeBank = { mcq: [], tf: [], short: [] };
-        const snap = await getDocs(collection(db, 'artifacts', appId_fixed, 'public', 'data', collectionBanks));
-        let allData = {};
-        snap.forEach(doc => { allData[doc.id] = doc.data(); });
-
-        if (Object.keys(allData).length === 0) {
-            alert("Hệ thống chưa có đề thi nào trên máy chủ! Vui lòng báo Giáo viên Import đề.");
-            document.getElementById('start-buttons').style.display = 'grid';
-            document.getElementById('loading-text').style.display = 'none';
-            return;
-        }
-
         if (topicVal === 'mix') {
-            Object.values(allData).forEach(bank => {
-                if(bank.mcq) activeBank.mcq.push(...bank.mcq);
-                if(bank.tf) activeBank.tf.push(...bank.tf);
-                if(bank.short) activeBank.short.push(...bank.short);
+            const snap = await getDocs(collection(db, 'artifacts', appId_fixed, 'public', 'data', collectionBanks));
+            if (snap.empty) {
+                alert("Hệ thống chưa có đề thi nào trên máy chủ! Vui lòng báo Giáo viên Import đề.");
+                document.getElementById('start-buttons').style.display = 'grid';
+                document.getElementById('loading-text').style.display = 'none';
+                return;
+            }
+            snap.forEach(bankDoc => {
+                const bank = bankDoc.data();
+                if (Array.isArray(bank.mcq)) activeBank.mcq.push(...bank.mcq);
+                if (Array.isArray(bank.tf)) activeBank.tf.push(...bank.tf);
+                if (Array.isArray(bank.short)) activeBank.short.push(...bank.short);
             });
-        } else { 
-            activeBank = allData[topicVal] || { mcq: [], tf: [], short: [] }; 
+        } else {
+            const bankSnap = await getDoc(doc(db, 'artifacts', appId_fixed, 'public', 'data', collectionBanks, topicVal));
+            if (bankSnap.exists()) activeBank = bankSnap.data();
         }
 
-        // THUẬT TOÁN BỐC NGẪU NHIÊN 12-4-4
+
         const numMcq = Math.min(12, activeBank.mcq.length);
         const numTf = Math.min(4, activeBank.tf.length);
         const numShort = Math.min(4, activeBank.short.length);
-        
+
         if(numMcq === 0 && numTf === 0 && numShort === 0) {
             alert("Chuyên đề này chưa có dữ liệu câu hỏi trong kho!");
             document.getElementById('start-buttons').style.display = 'grid';
@@ -357,21 +370,21 @@ const initGame = async (m) => {
         shuffle([...activeBank.mcq]).slice(0, numMcq).forEach(q => currentExam.push({...q, id: `q_${qNum}`, type: 'mcq', section: 'Phần I. Trắc nghiệm Đa lựa chọn', displayNum: qNum++}));
         shuffle([...activeBank.tf]).slice(0, numTf).forEach(q => currentExam.push({...q, id: `q_${qNum}`, type: 'tf', section: 'Phần II. Trắc nghiệm Đúng/Sai', displayNum: qNum++}));
         shuffle([...activeBank.short]).slice(0, numShort).forEach(q => currentExam.push({...q, id: `q_${qNum}`, type: 'short', section: 'Phần III. Trắc nghiệm Trả lời ngắn', displayNum: qNum++}));
-        
+
         userAnswers = {}; currentIdx = 0; timeLeft = (mode === 'test') ? testTimeLimit : practiceTimeLimit;
         const elTimer = document.getElementById('timer'); if(elTimer) { elTimer.innerText = `${Math.floor(timeLeft/60)}:${(timeLeft%60).toString().padStart(2,'0')}`; }
         quizStartTime = Date.now();
-        
-        // PHỤC HỒI UI BẮT ĐẦU
+
+
         document.getElementById('start-buttons').style.display = 'grid';
         document.getElementById('loading-text').style.display = 'none';
 
         document.getElementById('wish-overlay').style.display = 'flex'; document.getElementById('wish-cheat-info').style.display = (mode === 'test') ? 'block' : 'none';
         startFire();
         if(mode === 'test') { canCheckCheat = true; window.testInitialWidth = window.innerWidth; }
-        
+
         wishTimeoutId = setTimeout(() => {
-            if(!isQuizRunning) return; 
+            if(!isQuizRunning) return;
             document.getElementById('wish-overlay').style.display = 'none'; cancelAnimationFrame(fireRequest);
             document.getElementById('main-header').style.display = 'flex'; showScreen('screen-quiz'); renderQuestion(); startTimer();
             if(mode === 'practice') canCheckCheat = true;
@@ -440,13 +453,13 @@ function renderQuestion() {
     }
     const hb = document.getElementById('hint-trigger');
     if(hb) {
-        hb.onclick = async () => { 
-            const b = document.getElementById('hint-box'); const isH = b.style.display === 'none'; 
+        hb.onclick = async () => {
+            const b = document.getElementById('hint-box'); const isH = b.style.display === 'none';
             if (isH && !unlockedHints.includes(q.id)) {
                 if (hintsUsed >= maxHintsAllowed) { showCustomAlert("⚠️ Bạn đã hết lượt xem gợi ý!"); return; }
                 hintsUsed++; unlockedHints.push(q.id); hb.innerText = "ĐÃ MỞ GỢI Ý 💡";
             }
-            b.style.display = isH ? 'block' : 'none'; if(isH && window.MathJax) await MathJax.typesetPromise([b]); 
+            b.style.display = isH ? 'block' : 'none'; if(isH && window.MathJax) await MathJax.typesetPromise([b]);
         };
     }
     document.getElementById('btn-prev').style.visibility = currentIdx === 0 ? 'hidden' : 'visible';
@@ -460,7 +473,7 @@ async function calculateResult() {
     if(wishTimeoutId) clearTimeout(wishTimeoutId);
     isQuizRunning = false; canCheckCheat = false; clearInterval(timerInt); audioFinish.play().catch(()=>{});
     document.getElementById('btn-report-open').style.display = 'block'; document.getElementById('btn-admin-open').style.display = 'block';
-    const dur = Math.floor((Date.now() - quizStartTime) / 1000); let score = 0; 
+    const dur = Math.floor((Date.now() - quizStartTime) / 1000); let score = 0;
     const totalMCQ = currentExam.filter(q=>q.type==='mcq').length || 1;
     const totalTF = currentExam.filter(q=>q.type==='tf').length || 1;
     const totalShort = currentExam.filter(q=>q.type==='short').length || 1;
@@ -484,10 +497,18 @@ async function calculateResult() {
     rb.innerText = txt; rb.style.background = col;
     if(fs >= 5.0) confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
     if(currentUser) {
-        try { 
-            await addDoc(collection(db, 'artifacts', appId_fixed, 'public', 'data', collectionName), { 
-                name: u.name, school: u.sch, sbd: u.sbd, class: u.cls, topic: u.topic, score: fs, duration: dur, mode: mode, timestamp: new Date().toISOString(), examData: currentExam, userAnswers: userAnswers 
-            }); 
+        try {
+            const summary = {
+                name: u.name, school: u.sch, sbd: u.sbd, class: u.cls,
+                topic: u.topic, score: fs, duration: dur, mode,
+                timestamp: new Date().toISOString()
+            };
+            const resultRef = doc(collection(db, 'artifacts', appId_fixed, 'public', 'data', collectionName));
+            const publicResultRef = doc(db, 'artifacts', appId_fixed, 'public', 'data', collectionPublicResults, resultRef.id);
+            const batch = writeBatch(db);
+            batch.set(resultRef, { ...summary, examData: currentExam, userAnswers });
+            batch.set(publicResultRef, summary);
+            await batch.commit();
         } catch(e) { hasSaved = false; showCustomAlert(getFirebaseErrorMessage(e, "APP-SUB-001", "Không thể lưu kết quả bài làm.")); }
     }
     fetchRankAndLeaderboard(fs, u.topic);
@@ -495,9 +516,9 @@ async function calculateResult() {
 
 async function fetchRankAndLeaderboard(myScore, myTopic) {
     try {
-        const snap = await getDocs(collection(db, 'artifacts', appId_fixed, 'public', 'data', collectionName));
+        const snap = await getDocs(collection(db, 'artifacts', appId_fixed, 'public', 'data', collectionPublicResults));
         let list = []; snap.forEach(d => list.push(d.data()));
-        list = list.filter(r => (r.mode === 'test' || !r.mode) && r.topic === myTopic); 
+        list = list.filter(r => (r.mode === 'test' || !r.mode) && r.topic === myTopic);
         list.sort((a,b) => b.score - a.score || a.duration - b.duration);
         const myRank = list.findIndex(r => r.name === window.finalUserData.name && r.score === myScore) + 1;
         if(myRank > 0) document.getElementById('my-rank-text').innerText = `HẠNG ${myRank} / ${list.length}`; else document.getElementById('my-rank-text').innerText = `KẾT QUẢ LUYỆN TẬP`;
@@ -585,24 +606,50 @@ function setupAdminSortGlassMenu() {
     });
 }
 
+async function syncPublicResultSummaries(results) {
+    const publicResultsRef = collection(db, 'artifacts', appId_fixed, 'public', 'data', collectionPublicResults);
+    const existing = await getDocs(publicResultsRef);
+    const existingIds = new Set(existing.docs.map(result => result.id));
+    const missing = results.filter(result => !existingIds.has(result.id));
+    for (let offset = 0; offset < missing.length; offset += 500) {
+        const batch = writeBatch(db);
+        missing.slice(offset, offset + 500).forEach(result => {
+            const summary = {
+                name: String(result.name || ''),
+                school: String(result.school || ''),
+                sbd: String(result.sbd || ''),
+                class: String(result.class || ''),
+                topic: String(result.topic || ''),
+                score: Number(result.score) || 0,
+                duration: Number(result.duration) || 0,
+                mode: result.mode === 'practice' ? 'practice' : 'test',
+                timestamp: typeof result.timestamp === 'string' ? result.timestamp : new Date().toISOString()
+            };
+            batch.set(doc(publicResultsRef, result.id), summary);
+        });
+        await batch.commit();
+    }
+}
+
 async function renderAdmin() {
     const listBody = document.getElementById('admin-list-body'), statsBox = document.getElementById('admin-stats');
     listBody.innerHTML = "<tr><td colspan='11'>Đang tải dữ liệu...</td></tr>";
     try {
         const snap = await getDocs(collection(db, 'artifacts', appId_fixed, 'public', 'data', collectionName));
         let rawData = []; snap.forEach(d => rawData.push({id: d.id, ...d.data()}));
-        const classes = [...new Set(rawData.map(i => i.class))].sort(); 
+        await syncPublicResultSummaries(rawData);
+        const classes = [...new Set(rawData.map(i => i.class))].sort();
         const schools = [...new Set(rawData.map(i => i.school))].filter(s => s).sort();
-        const topics = [...new Set(rawData.map(i => i.topic))].filter(t => t).sort(); 
+        const topics = [...new Set(rawData.map(i => i.topic))].filter(t => t).sort();
         const fClass = document.getElementById('admin-filter-class'); const oldC = fClass.value; fClass.innerHTML = '<option value="all">Tất cả lớp</option>' + classes.map(c => `<option value="${c}" ${c===oldC?'selected':''}>Lớp ${c}</option>`).join('');
         const fSchool = document.getElementById('admin-filter-school'); const oldS = fSchool.value; fSchool.innerHTML = '<option value="all">Tất cả trường</option>' + schools.map(s => `<option value="${s}" ${s===oldS?'selected':''}>${s}</option>`).join('');
-        const fTopic = document.getElementById('admin-filter-topic'); const oldT = fTopic.value; fTopic.innerHTML = '<option value="all">Tất cả chuyên đề</option>' + topics.map(t => `<option value="${t}" ${t===oldT?'selected':''}>${t}</option>`).join(''); 
+        const fTopic = document.getElementById('admin-filter-topic'); const oldT = fTopic.value; fTopic.innerHTML = '<option value="all">Tất cả chuyên đề</option>' + topics.map(t => `<option value="${t}" ${t===oldT?'selected':''}>${t}</option>`).join('');
         setupAdminExcelFilters({ class: classes, school: schools, topic: topics }); const filters = window.adminExcelFilterState; const sVal = document.getElementById('admin-sort').value;
-        let data = rawData.filter(i => { 
-            return (!filters.mode.length || filters.mode.includes(String(i.mode || ''))) 
-                && (!filters.class.length || filters.class.includes(String(i.class || ''))) 
+        let data = rawData.filter(i => {
+            return (!filters.mode.length || filters.mode.includes(String(i.mode || '')))
+                && (!filters.class.length || filters.class.includes(String(i.class || '')))
                 && (!filters.school.length || filters.school.includes(String(i.school || '')))
-                && (!filters.topic.length || filters.topic.includes(String(i.topic || ''))); 
+                && (!filters.topic.length || filters.topic.includes(String(i.topic || '')));
         });
         data.sort((a,b) => { if(sVal === 'score_desc') return b.score - a.score || a.duration - b.duration; if(sVal === 'date_new') return new Date(b.timestamp) - new Date(a.timestamp); if(sVal === 'duration_fast') return a.duration - b.duration || b.score - a.score; return 0; });
         let s = { xs: 0, g: 0, k: 0, d: 0, cd: 0 };
@@ -618,22 +665,22 @@ async function renderAdminStudents() {
     const listBody = document.getElementById('student-list-body');
     listBody.innerHTML = "<tr><td colspan='6' style='text-align: center;'>Đang tải danh sách...</td></tr>";
     try {
-        await loadStudentList(); 
-        
-        const classes = [...new Set(globalStudentList.map(i => i.class))].filter(c => c).sort(); 
+        await loadStudentList();
+
+        const classes = [...new Set(globalStudentList.map(i => i.class))].filter(c => c).sort();
         const schools = [...new Set(globalStudentList.map(i => i.school))].filter(s => s).sort();
-        
-        setupAdminStudentsFilters({ class: classes, school: schools }); const fClass = document.getElementById('stu-filter-class'); const oldC = fClass.value; 
+
+        setupAdminStudentsFilters({ class: classes, school: schools }); const fClass = document.getElementById('stu-filter-class'); const oldC = fClass.value;
         fClass.innerHTML = '<option value="all">Tất cả lớp</option>' + classes.map(c => `<option value="${c}" ${c===oldC?'selected':''}>Lớp ${c}</option>`).join('');
-        const fSchool = document.getElementById('stu-filter-school'); const oldS = fSchool.value; 
+        const fSchool = document.getElementById('stu-filter-school'); const oldS = fSchool.value;
         fSchool.innerHTML = '<option value="all">Tất cả trường</option>' + schools.map(s => `<option value="${s}" ${s===oldS?'selected':''}>${s}</option>`).join('');
-        
-        let data = globalStudentList.filter(i => { 
-            return ((fClass.value === 'all') || (i.class === fClass.value)) 
-                && ((fSchool.value === 'all') || (i.school === fSchool.value));
+
+        let data = globalStudentList.filter(i => {
+            const filters = window.adminStudentFilterState;
+            return (!filters.class.length || filters.class.includes(String(i.class || '')))
+                && (!filters.school.length || filters.school.includes(String(i.school || '')));
         });
-        
-        data = globalStudentList.filter(i => { const filters = window.adminStudentFilterState; return (!filters.class.length || filters.class.includes(String(i.class || ''))) && (!filters.school.length || filters.school.includes(String(i.school || ''))); }); const getVnNameParts = (fullName) => {
+        const getVnNameParts = (fullName) => {
             const parts = (fullName || '').trim().split(/\s+/);
             if (parts.length === 0) return { first: '', rest: '' };
             if (parts.length === 1) return { first: parts[0], rest: '' };
@@ -644,7 +691,7 @@ async function renderAdminStudents() {
         data.sort((a,b) => {
             if (a.school !== b.school) return (a.school || '').localeCompare(b.school || '', 'vi', { numeric: true });
             if (a.class !== b.class) return (a.class || '').localeCompare(b.class || '', 'vi', { numeric: true });
-            
+
             const nameA = getVnNameParts(a.name); const nameB = getVnNameParts(b.name);
             const firstCompare = nameA.first.localeCompare(nameB.first, 'vi', { sensitivity: 'base' });
             if (firstCompare !== 0) return firstCompare;
@@ -679,7 +726,7 @@ async function renderAdminQuestions() {
     } catch(e) { listBody.innerHTML = "<tr><td colspan='5' style='text-align: center; color: red;'>Lỗi kết nối Server.</td></tr>"; }
 }
 
-// TAB MANAGEMENT IN ADMIN
+
 document.getElementById('tab-results').onclick = () => {
     document.getElementById('tab-results').classList.add('active');
     document.getElementById('tab-students').classList.remove('active');
@@ -716,7 +763,7 @@ function viewAdminReview(docId) {
     const record = window.currentFilteredData.find(d => d.id === docId); if (!record || !record.examData) { alert("Không có dữ liệu chi tiết!"); return; }
     document.getElementById('ar-name').innerText = `${record.name} - Điểm: ${record.score}`; arExamData = record.examData; arUserAnswers = record.userAnswers || {};
     const content = document.getElementById('ar-content'); let h = '', labels = ['A', 'B', 'C', 'D'];
-    const norm = (s) => (s || "").toString().trim().replace(',','.'); 
+    const norm = (s) => (s || "").toString().trim().replace(',','.');
     const pMCQ = 3.0 / (arExamData.filter(q=>q.type==='mcq').length||1), pTF = 2.0 / (arExamData.filter(q=>q.type==='tf').length||1), pShort = 2.0 / (arExamData.filter(q=>q.type==='short').length||1);
     const tfMapReview = {0:0, 1: pTF*0.1/0.5, 2: pTF*0.25/0.5, 3: pTF*0.35/0.5, 4: pTF};
     arExamData.forEach(q => {
@@ -755,12 +802,12 @@ document.getElementById('btn-ar-retry').onclick = () => {
     if (wrongQuestions.length === 0) { alert("Tuyệt vời! Học sinh này đã làm đúng toàn bộ 100%."); return; }
     document.getElementById('admin-review-modal').style.display = 'none'; document.getElementById('screen-admin').classList.remove('active');
     document.getElementById('btn-report-open').style.display = 'none'; document.getElementById('btn-admin-open').style.display = 'none';
-    currentExam = wrongQuestions; userAnswers = {}; currentIdx = 0; mode = 'practice'; isQuizRunning = true; timeLeft = practiceTimeLimit; hasSaved = false; 
+    currentExam = wrongQuestions; userAnswers = {}; currentIdx = 0; mode = 'practice'; isQuizRunning = true; timeLeft = practiceTimeLimit; hasSaved = false;
     const elTimer = document.getElementById('timer'); if(elTimer) { elTimer.innerText = `${Math.floor(timeLeft/60)}:${(timeLeft%60).toString().padStart(2,'0')}`; }
     quizStartTime = Date.now(); document.getElementById('main-header').style.display = 'flex'; showScreen('screen-quiz'); renderQuestion(); startTimer();
 };
 
-// EXCEL IMPORT CHO DANH SÁCH HỌC SINH
+
 document.getElementById('btn-download-template').onclick = () => {
     const templateData = [{ "STT": 1, "Họ và Tên": "Nguyễn Văn A", "Lớp": "9A1", "SBD": "01", "Trường": "THCS Thuỷ Phương" }, { "STT": 2, "Họ và Tên": "Trần Thị B", "Lớp": "9A2", "SBD": "02", "Trường": "THCS Thuỷ Phương" }];
     const ws = XLSX.utils.json_to_sheet(templateData);
@@ -770,12 +817,12 @@ document.getElementById('btn-download-template').onclick = () => {
 };
 document.getElementById('btn-trigger-import').onclick = () => { document.getElementById('file-import-students').click(); };
 
-document.getElementById('btn-delete-all-students').onclick = () => { 
-    pendingAuthAction = 'delete_all_students'; 
+document.getElementById('btn-delete-all-students').onclick = () => {
+    pendingAuthAction = 'delete_all_students';
     if (auth.currentUser && !auth.currentUser.isAnonymous) { executePendingAdminAction(); return; }
-    document.getElementById('auth-action-title').innerText = "Xác nhận Xóa TOÀN BỘ HS"; 
+    document.getElementById('auth-action-title').innerText = "Xác nhận Xóa TOÀN BỘ HS";
     document.getElementById('delete-pw').value = ''; document.getElementById('delete-email').value = '';
-    document.getElementById('delete-auth-modal').style.display = 'flex'; 
+    document.getElementById('delete-auth-modal').style.display = 'flex';
 };
 
 document.getElementById('file-import-students').onchange = (e) => {
@@ -787,9 +834,9 @@ document.getElementById('file-import-students').onchange = (e) => {
             const workbook = XLSX.read(data, {type: 'array'});
             const worksheet = workbook.Sheets[workbook.SheetNames[0]];
             const json = XLSX.utils.sheet_to_json(worksheet);
-            
+
             importedStudentsCache = []; let duplicateCount = 0;
-            
+
             json.forEach(row => {
                 let name = (row["Họ và Tên"] || row["Họ tên"] || row["Name"] || "").toString().trim();
                 let cls = (row["Lớp"] || row["Class"] || "").toString().trim();
@@ -801,29 +848,29 @@ document.getElementById('file-import-students').onchange = (e) => {
                     if(!isDupDB && !isDupCache) { importedStudentsCache.push({ name: name, class: cls, sbd: sbd, school: sch, timestamp: new Date().toISOString() }); } else { duplicateCount++; }
                 }
             });
-            
+
             if (importedStudentsCache.length > 0) {
-                pendingAuthAction = 'import_students'; 
+                pendingAuthAction = 'import_students';
                 if (auth.currentUser && !auth.currentUser.isAnonymous) { executePendingAdminAction(); return; }
                 let msg = "Xác nhận Import " + importedStudentsCache.length + " HS";
                 if(duplicateCount > 0) msg += " (Bỏ qua " + duplicateCount + " trùng)";
-                document.getElementById('auth-action-title').innerText = msg; 
+                document.getElementById('auth-action-title').innerText = msg;
                 document.getElementById('delete-pw').value = ''; document.getElementById('delete-email').value = '';
-                document.getElementById('delete-auth-modal').style.display = 'flex'; 
+                document.getElementById('delete-auth-modal').style.display = 'flex';
             } else {
                 if(duplicateCount > 0) showCustomAlert(`Đã bỏ qua ${duplicateCount} học sinh do trùng lặp! Không có dữ liệu mới.`); else showCustomAlert("File không có dữ liệu hợp lệ!");
             }
         } catch(error) { showCustomAlert("Lỗi đọc file Excel. Vui lòng dùng file mẫu!"); }
-        document.getElementById('file-import-students').value = ''; 
+        document.getElementById('file-import-students').value = '';
     };
     reader.readAsArrayBuffer(file);
 };
 
-// WORD IMPORT CHO ĐỀ THI LÊN FIREBASE
-// Cấu trúc Word giữ nguyên các trường dữ liệu của mẫu Excel cũ:
-// MCQ: CauHoi, DapAnDung, PhuongAn1-4, GiaiThich
-// TF: NguCanh, Y_A-D, DapAn_A-D, GiaiThich
-// SHORT: CauHoi, DapAn, GiaiThich
+
+
+
+
+
 const WORD_TEMPLATE_VERSION = '1.0';
 
 const wordXmlEscape = (value) => String(value ?? '')
@@ -837,10 +884,10 @@ const downloadBlob = (blob, filename) => {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 
-/* ===================== TẠO FILE WORD MẪU - KHÔNG DÙNG CDN =====================
-   .docx là một ZIP chứa các XML của Word. Phần này tạo ZIP dạng Store (không nén)
-   trực tiếp bằng Web APIs, nên nút TẢI FILE WORD MẪU không phụ thuộc Internet.
-*/
+
+
+
+
 
 
 const wordRunXml = (text, options = {}) => {
@@ -1086,11 +1133,11 @@ document.getElementById('btn-trigger-import-q').onclick = () => {
 };
 
 document.getElementById('btn-delete-all-q').onclick = () => {
-    pendingAuthAction = 'delete_all_questions'; 
+    pendingAuthAction = 'delete_all_questions';
     if (auth.currentUser && !auth.currentUser.isAnonymous) { executePendingAdminAction(); return; }
-    document.getElementById('auth-action-title').innerText = 'Xóa TOÀN BỘ Kho Đề'; 
+    document.getElementById('auth-action-title').innerText = 'Xóa TOÀN BỘ Kho Đề';
     document.getElementById('delete-pw').value = ''; document.getElementById('delete-email').value = '';
-    document.getElementById('delete-auth-modal').style.display = 'flex'; 
+    document.getElementById('delete-auth-modal').style.display = 'flex';
 };
 
 const cleanLine = (value) => String(value ?? '')
@@ -1775,25 +1822,28 @@ document.getElementById('file-import-questions').onchange = async (event) => {
     event.target.value = '';
 };
 
-// ADMIN ACTIONS PIPELINE
-function deleteEntry(id, type) { 
-    pendingAuthAction = type === 'student' ? 'delete_student' : 'delete_result'; 
-    currentDeleteId = id; 
+
+function deleteEntry(id, type) {
+    pendingAuthAction = type === 'student' ? 'delete_student' : 'delete_result';
+    currentDeleteId = id;
     if (auth.currentUser && !auth.currentUser.isAnonymous) { executePendingAdminAction(); return; }
-    document.getElementById('auth-action-title').innerText = "Xác nhận Xoá"; 
+    document.getElementById('auth-action-title').innerText = "Xác nhận Xoá";
     document.getElementById('delete-pw').value = ''; document.getElementById('delete-email').value = '';
-    document.getElementById('delete-auth-modal').style.display = 'flex'; 
+    document.getElementById('delete-auth-modal').style.display = 'flex';
 }
 
 async function executePendingAdminAction() {
-    if (pendingAuthAction === 'delete_result' && currentDeleteId) { 
-        await deleteDoc(doc(db, 'artifacts', appId_fixed, 'public', 'data', collectionName, currentDeleteId)); 
-        renderAdmin(); currentDeleteId = null; 
-    } 
-    else if (pendingAuthAction === 'delete_student' && currentDeleteId) { 
-        await deleteDoc(doc(db, 'artifacts', appId_fixed, 'public', 'data', collectionStudents, currentDeleteId)); 
-        renderAdminStudents(); currentDeleteId = null; 
-    } 
+    if (pendingAuthAction === 'delete_result' && currentDeleteId) {
+        const batch = writeBatch(db);
+        batch.delete(doc(db, 'artifacts', appId_fixed, 'public', 'data', collectionName, currentDeleteId));
+        batch.delete(doc(db, 'artifacts', appId_fixed, 'public', 'data', collectionPublicResults, currentDeleteId));
+        await batch.commit();
+        renderAdmin(); currentDeleteId = null;
+    }
+    else if (pendingAuthAction === 'delete_student' && currentDeleteId) {
+        await deleteDoc(doc(db, 'artifacts', appId_fixed, 'public', 'data', collectionStudents, currentDeleteId));
+        renderAdminStudents(); currentDeleteId = null;
+    }
     else if (pendingAuthAction === 'delete_all_students') {
         showCustomAlert("Đang xóa toàn bộ học sinh, vui lòng đợi...");
         try {
@@ -1806,7 +1856,14 @@ async function executePendingAdminAction() {
     else if (pendingAuthAction === 'import_students' && importedStudentsCache.length > 0) {
         showCustomAlert("Đang tiến hành nhập dữ liệu, vui lòng đợi...");
         try {
-            for(let i=0; i<importedStudentsCache.length; i++) { await addDoc(collection(db, 'artifacts', appId_fixed, 'public', 'data', collectionStudents), importedStudentsCache[i]); }
+            const studentsRef = collection(db, 'artifacts', appId_fixed, 'public', 'data', collectionStudents);
+            for (let offset = 0; offset < importedStudentsCache.length; offset += 500) {
+                const batch = writeBatch(db);
+                importedStudentsCache.slice(offset, offset + 500).forEach(student => {
+                    batch.set(doc(studentsRef), student);
+                });
+                await batch.commit();
+            }
             showCustomAlert(`✅ Đã import thành công ${importedStudentsCache.length} học sinh!`);
             importedStudentsCache = []; renderAdminStudents();
         } catch(e) { showCustomAlert(getFirebaseErrorMessage(e, "APP-STU-001", "Không thể import danh sách học sinh.")); }
@@ -1848,34 +1905,34 @@ async function executePendingAdminAction() {
     pendingAuthAction = null;
 }
 
-document.getElementById('btn-save-config').onclick = () => { 
-    pendingAuthAction = 'config'; 
+document.getElementById('btn-save-config').onclick = () => {
+    pendingAuthAction = 'config';
     if (auth.currentUser && !auth.currentUser.isAnonymous) { executePendingAdminAction(); return; }
-    document.getElementById('auth-action-title').innerText = "Lưu Cấu Hình"; 
+    document.getElementById('auth-action-title').innerText = "Lưu Cấu Hình";
     document.getElementById('delete-pw').value = ''; document.getElementById('delete-email').value = '';
-    document.getElementById('delete-auth-modal').style.display = 'flex'; 
+    document.getElementById('delete-auth-modal').style.display = 'flex';
 };
 
-document.getElementById('btn-admin-inbox').onclick = () => { 
-    pendingAuthAction = 'inbox'; 
+document.getElementById('btn-admin-inbox').onclick = () => {
+    pendingAuthAction = 'inbox';
     if (auth.currentUser && !auth.currentUser.isAnonymous) { executePendingAdminAction(); return; }
-    document.getElementById('auth-action-title').innerText = "Mở Hộp Thư 📩"; 
+    document.getElementById('auth-action-title').innerText = "Mở Hộp Thư 📩";
     document.getElementById('delete-pw').value = ''; document.getElementById('delete-email').value = '';
-    document.getElementById('delete-auth-modal').style.display = 'flex'; 
+    document.getElementById('delete-auth-modal').style.display = 'flex';
 };
 
 document.getElementById('btn-delete-cancel').onclick = () => { document.getElementById('delete-auth-modal').style.display = 'none'; currentDeleteId = null; pendingAuthAction = null; importedStudentsCache = []; importedQuestionsCache = {}; pendingQuestionImport = null;};
 
-document.getElementById('btn-delete-confirm').onclick = async () => { 
+document.getElementById('btn-delete-confirm').onclick = async () => {
     const email = document.getElementById('delete-email').value.trim();
     const pw = document.getElementById('delete-pw').value;
     if (!email || !pw) { showCustomAlert("Vui lòng nhập Email và Mật khẩu!"); return; }
-    
+
     document.getElementById('btn-delete-confirm').innerText = "...";
     try {
         await setPersistence(auth, browserSessionPersistence);
         await signInWithEmailAndPassword(auth, email, pw);
-        document.getElementById('delete-auth-modal').style.display = 'none'; 
+        document.getElementById('delete-auth-modal').style.display = 'none';
         executePendingAdminAction();
     } catch (error) {
         showCustomAlert(getFirebaseErrorMessage(error, "APP-AUTH-001", "Xác thực giáo viên thất bại."));
@@ -1894,28 +1951,28 @@ document.getElementById('btn-finish').onclick = () => { if(!isCurrentQuestionCom
 document.getElementById('btn-modal-cancel').onclick = () => document.getElementById('confirm-finish-modal').style.display = 'none';
 document.getElementById('btn-modal-confirm').onclick = () => { document.getElementById('confirm-finish-modal').style.display = 'none'; calculateResult(); };
 
-document.getElementById('btn-admin-close').onclick = async () => { 
+document.getElementById('btn-admin-close').onclick = async () => {
     if (auth.currentUser && !auth.currentUser.isAnonymous) {
         await signOut(auth);
         await signInAnonymously(auth);
     }
-    document.getElementById('main-header').style.display = 'none'; 
-    showScreen('screen-start'); 
+    document.getElementById('main-header').style.display = 'none';
+    showScreen('screen-start');
     loadStudentList();
 };
 
-document.getElementById('btn-admin-refresh').onclick = () => renderAdmin(); 
+document.getElementById('btn-admin-refresh').onclick = () => renderAdmin();
 document.getElementById('admin-sort').onchange = () => renderAdmin();
-document.getElementById('admin-filter-mode').onchange = () => renderAdmin(); 
-document.getElementById('admin-filter-class').onchange = () => renderAdmin(); 
+document.getElementById('admin-filter-mode').onchange = () => renderAdmin();
+document.getElementById('admin-filter-class').onchange = () => renderAdmin();
 document.getElementById('admin-filter-school').onchange = () => renderAdmin();
-document.getElementById('admin-filter-topic').onchange = () => renderAdmin(); 
+document.getElementById('admin-filter-topic').onchange = () => renderAdmin();
 document.getElementById('btn-cheat-submit').onclick = () => { document.getElementById('cheat-modal').style.display = 'none'; };
 document.getElementById('btn-report-open').onclick = () => { document.getElementById('report-modal').style.display = 'flex'; };
 document.getElementById('btn-report-cancel').onclick = () => { document.getElementById('report-modal').style.display = 'none'; };
 
 function processImageFile(file) {
-    if (!file) return; 
+    if (!file) return;
     const reader = new FileReader();
     reader.onload = function(event) {
         const img = new Image();
@@ -1923,8 +1980,8 @@ function processImageFile(file) {
             const canvas = document.createElement('canvas'); const MAX_WIDTH = 800; const MAX_HEIGHT = 800; let width = img.width; let height = img.height;
             if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } } else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } }
             canvas.width = width; canvas.height = height; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
-            reportImageBase64 = canvas.toDataURL('image/jpeg', 0.7); 
-            document.getElementById('report-img-preview').src = reportImageBase64; 
+            reportImageBase64 = canvas.toDataURL('image/jpeg', 0.7);
+            document.getElementById('report-img-preview').src = reportImageBase64;
             document.getElementById('report-img-preview').style.display = 'block';
         }
         img.src = event.target.result;
@@ -1966,8 +2023,8 @@ document.getElementById('btn-view-review').onclick = () => {
     const tfMapReview = {0:0, 1: pTF*0.1/0.5, 2: pTF*0.25/0.5, 3: pTF*0.35/0.5, 4: pTF};
     currentExam.forEach(q => {
         let qText = q.type === 'tf' ? `Câu ${q.displayNum} (Đúng/Sai)` : `Câu ${q.displayNum}. ${q.q}`; let itemScore = 0, scoreHTML = '';
-        if(q.type === 'mcq') { itemScore = norm(userAnswers[q.id]||'') === norm(q.a) ? pMCQ : 0; scoreHTML = `<span class="score-badge ${itemScore > 0 ? 'score-plus' : 'score-zero'}">${itemScore > 0 ? '+'+itemScore.toFixed(2) : '0'}đ</span>`; } 
-        else if(q.type === 'short') { itemScore = checkShortAns(userAnswers[q.id], q.a) ? pShort : 0; scoreHTML = `<span class="score-badge ${itemScore > 0 ? 'score-plus' : 'score-zero'}">${itemScore > 0 ? '+'+itemScore.toFixed(2) : '0'}đ</span>`; } 
+        if(q.type === 'mcq') { itemScore = norm(userAnswers[q.id]||'') === norm(q.a) ? pMCQ : 0; scoreHTML = `<span class="score-badge ${itemScore > 0 ? 'score-plus' : 'score-zero'}">${itemScore > 0 ? '+'+itemScore.toFixed(2) : '0'}đ</span>`; }
+        else if(q.type === 'short') { itemScore = checkShortAns(userAnswers[q.id], q.a) ? pShort : 0; scoreHTML = `<span class="score-badge ${itemScore > 0 ? 'score-plus' : 'score-zero'}">${itemScore > 0 ? '+'+itemScore.toFixed(2) : '0'}đ</span>`; }
         else if(q.type === 'tf') { let cp = 0; q.sts.forEach((st, si) => { if((userAnswers[q.id]||{})[si] === st.a) cp++; }); itemScore = tfMapReview[cp] || 0; scoreHTML = `<span class="score-badge ${itemScore > 0 ? 'score-plus' : 'score-zero'}">Đúng ${cp}/4 ý (${itemScore > 0 ? '+'+itemScore.toFixed(2) : '0'}đ)</span>`; }
         h += `<div class="card" style="border-left: 8px solid var(--primary)"><h3>${qText} ${scoreHTML}</h3>`;
         if(q.type === 'mcq') {
@@ -2005,8 +2062,8 @@ document.addEventListener('visibilitychange', () => { if(canCheckCheat && isQuiz
 window.addEventListener('blur', () => { setTimeout(() => { if (canCheckCheat && isQuizRunning && mode === 'test' && !document.hasFocus()) { triggerCheat(); } }, 200); });
 window.addEventListener('resize', () => { if (canCheckCheat && isQuizRunning && mode === 'test') { if (Math.abs(window.innerWidth - (window.testInitialWidth || window.innerWidth)) > 150) { triggerCheat(); } } });
 
-window.onload = () => { 
-    document.getElementById('main-header').style.display = 'none'; 
+window.onload = () => {
+    document.getElementById('main-header').style.display = 'none';
 };
 
 
@@ -2240,3 +2297,475 @@ function setupLoginTopicGlassMenu() {
     });
 }
 setupLoginTopicGlassMenu();
+
+const ROOT = "exam_rooms";
+const BANK_PATH = ["artifacts", "kham-pha-vat-ly-9", "public", "data", "question_banks"];
+const HOST_UID_ALLOWLIST = ["wg7QT6isC2dryLf8rxc6z9lUjNd2"];
+const READING_MS = 5 * 60 * 1000;
+const $ = id => document.getElementById(id);
+let user = null, role = null, roomId = null, roomData = null, participantData = null;
+let roomUnsub = null, rosterUnsub = null, submissionsUnsub = null, participantUnsub = null, tickTimer = null;
+let roster = [], submissions = [], answers = {}, submitted = false, endTimeWriteInFlight = false, lastRenderedPhase = null, answerKeyCache = null;
+
+function message(text, error = false) {
+  const el = $("global-message");
+  el.textContent = text;
+  el.classList.remove("hidden");
+  el.style.borderColor = error ? "#fb7185" : "#9b89ff55";
+  el.style.background = error ? "#be123c24" : "#7259ee22";
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+function clearMessage() { $("global-message").classList.add("hidden"); }
+function show(el, yes = true) { $(el).classList.toggle("hidden", !yes); }
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+function roomRef(id = roomId) { return doc(examRoomDb, ROOT, id); }
+function participantRef(uid, id = roomId) { return doc(examRoomDb, ROOT, id, "participants", uid); }
+function submissionsRef(id = roomId) { return collection(examRoomDb, ROOT, id, "submissions"); }
+function phaseOf(data, now = Date.now()) {
+  if (!data) return "waiting";
+  if (data.status === "finished" || data.status === "cancelled") return data.status;
+  const start = data.readingStartedAt?.toMillis?.();
+  if (!start) return "waiting";
+  if (now < start + READING_MS) return "reading";
+  const end = data.examEndsAt?.toMillis?.() ?? (start + READING_MS + (Number(data.durationMinutes) || 45) * 60000);
+  return now < end ? "running" : "grading";
+}
+function formatTime(ms) {
+  const s = Math.max(0, Math.ceil(ms / 1000));
+  return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+}
+function stopListeners() {
+  [roomUnsub, rosterUnsub, submissionsUnsub, participantUnsub].forEach(fn => { if (fn) fn(); });
+  roomUnsub = rosterUnsub = submissionsUnsub = participantUnsub = null;
+  if (tickTimer) clearInterval(tickTimer);
+  tickTimer = null;
+}
+function cleanQuestion(q, type, n) {
+  const base = { ...q, id: "q_" + n, type, displayNum: n };
+  delete base.a; delete base.e;
+  if (type === "tf" && Array.isArray(base.sts)) base.sts = base.sts.map(st => {
+    const item = { ...st }; delete item.a; return item;
+  });
+  return base;
+}
+function answerKey(q) {
+  return q.type === "tf" ? { type: q.type, sts: (q.sts || []).map(st => st.a) } : { type: q.type, a: q.a };
+}
+function shuffleExamRoomItems(items) {
+  const a = [...items];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function getBankTopicLabel(value) {
+  const labels = {mix:"Đề tổng hợp",bai_11:"Bài 11: Điện trở. Định luật Ohm",bai_12:"Bài 12: Đoạn mạch nối tiếp, song song",bai_13:"Bài 13: Năng lượng điện và công suất",bai_14:"Bài 14: Cảm ứng điện từ. Dòng điện XC",bai_15:"Bài 15: Tác dụng của dòng điện XC"};
+  return labels[value] || value;
+}
+async function requireHost() {
+  if (!user || user.isAnonymous || !HOST_UID_ALLOWLIST.includes(user.uid)) {
+    throw new Error("Tài khoản này chưa được cấp quyền Host. Hãy dùng tài khoản giáo viên đã được cấp quyền.");
+  }
+}
+async function ensureAnonymous() {
+  if (user && !user.isAnonymous) await signOut(examRoomAuth);
+  if (!examRoomAuth.currentUser) {
+    const credential = await signInAnonymously(examRoomAuth);
+    user = credential.user;
+  } else user = examRoomAuth.currentUser;
+  if (!user.isAnonymous) throw new Error("Không tạo được phiên học sinh.");
+}
+async function getSelectedQuestions(topic) {
+  const snap = await getDocs(collection(examRoomDb, ...BANK_PATH));
+  const banks = {};
+  snap.forEach(d => banks[d.id] = d.data());
+  if (!Object.keys(banks).length) throw new Error("Kho đề trên Firebase đang trống.");
+  let bank = {mcq:[],tf:[],short:[]};
+  if (topic === "mix") {
+    Object.values(banks).forEach(b => {
+      bank.mcq.push(...(Array.isArray(b.mcq) ? b.mcq : []));
+      bank.tf.push(...(Array.isArray(b.tf) ? b.tf : []));
+      bank.short.push(...(Array.isArray(b.short) ? b.short : []));
+    });
+  } else bank = banks[topic] || bank;
+  const picked = [];
+  shuffleExamRoomItems(bank.mcq || []).slice(0,12).forEach(q => picked.push({...q, type:"mcq"}));
+  shuffleExamRoomItems(bank.tf || []).slice(0,4).forEach(q => picked.push({...q, type:"tf"}));
+  shuffleExamRoomItems(bank.short || []).slice(0,4).forEach(q => picked.push({...q, type:"short"}));
+  if (!picked.length) throw new Error("Chuyên đề này chưa có câu hỏi.");
+  return shuffleExamRoomItems(picked).map((q,i) => ({...q, id:"q_"+(i+1), displayNum:i+1}));
+}
+function makeRoomCode() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = new Uint8Array(6);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, b => chars[b % chars.length]).join("");
+}
+async function createRoom() {
+  clearMessage();
+  await requireHost();
+  $("create-room-btn").disabled = true;
+  try {
+    const topic = $("bank-topic").value;
+    const durationMinutes = Math.max(1, Math.min(180, Number($("duration").value) || 45));
+    const fullQuestions = await getSelectedQuestions(topic);
+    const publicQuestions = fullQuestions.map((q, i) => {
+      const n = i + 1;
+      const type = q.type;
+      return {
+        ...cleanQuestion(q, type, n),
+        section: type === "mcq" ? "Phần I. Trắc nghiệm nhiều lựa chọn" : type === "tf" ? "Phần II. Đúng/Sai" : "Phần III. Trả lời ngắn"
+      };
+    });
+    const keys = Object.fromEntries(fullQuestions.map((q, i) => ["q_"+(i+1), answerKey(q)]));
+    let code = "", ref;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      code = makeRoomCode();
+      ref = roomRef(code);
+      const existing = await getDoc(ref);
+      if (!existing.exists()) break;
+      code = "";
+    }
+    if (!code) throw new Error("Không tạo được mã phòng duy nhất, hãy thử lại.");
+    const title = $("room-title").value.trim() || "Kiểm tra Vật lý 9";
+    await setDoc(ref, {
+      roomCode: code, title, topic, topicLabel: getBankTopicLabel(topic),
+      hostUid: user.uid,
+      status: "waiting", durationMinutes, readingMinutes: 5,
+      publicQuestions, createdAt: serverTimestamp(), readingStartedAt: null,
+      examEndsAt: null, finishedAt: null
+    });
+    await setDoc(doc(examRoomDb, ROOT, code, "private", "answer_key"), { keys, createdAt: serverTimestamp() });
+    answerKeyCache = keys;
+    roomId = code; role = "host"; submitted = false;
+    show("room-panel"); show("host-create", false);
+    listenRoom(code);
+    message("Đã tạo phòng " + code + ". Hãy gửi mã này cho học sinh.");
+  } catch (e) {
+    message(e.message || "Không thể tạo phòng. Kiểm tra kết nối và Firestore Rules.", true);
+  } finally { $("create-room-btn").disabled = false; }
+}
+async function joinRoom() {
+  clearMessage();
+  $("join-room-btn").disabled = true;
+  try {
+    const code = $("join-code").value.trim().toUpperCase();
+    const name = $("student-name").value.trim(), cls = $("student-class").value.trim();
+    const sbd = $("student-sbd").value.trim(), school = $("student-school").value.trim();
+    if (!/^[A-HJ-NP-Z2-9]{6}$/.test(code)) throw new Error("Mã phòng gồm 6 ký tự. Hãy kiểm tra lại.");
+    if (!name || !cls || !sbd || !school) throw new Error("Hãy nhập đủ họ tên, lớp, SBD và trường.");
+    await ensureAnonymous();
+    const ref = roomRef(code), snap = await getDoc(ref);
+    if (!snap.exists()) throw new Error("Không tìm thấy phòng thi.");
+    const data = snap.data(), phase = phaseOf(data);
+    if (!["waiting","reading"].includes(phase)) throw new Error("Phòng đã bắt đầu làm bài hoặc đã kết thúc; không thể tham gia muộn.");
+    const existing = await getDoc(participantRef(user.uid, code));
+    if (!existing.exists()) {
+      await setDoc(participantRef(user.uid, code), {
+        uid:user.uid, name, class:cls, sbd, school,
+        joinedAt:serverTimestamp(), approved:false, submitted:false
+      });
+    } else {
+      await updateDoc(participantRef(user.uid, code), {name, class:cls, sbd, school});
+    }
+    roomId = code; role = "student";
+    participantData = {uid:user.uid,...(existing.exists() ? existing.data() : {name,class:cls,sbd,school,approved:false,submitted:false})};
+    submitted = !!participantData.submitted; answers = {};
+    show("room-panel"); show("host-login", false); show("host-create", false);
+    listenRoom(code);
+    message("Đã gửi yêu cầu vào phòng. Chờ Host duyệt danh sách.");
+  } catch (e) {
+    message(e.message || "Không thể vào phòng. Kiểm tra kết nối và mã phòng.", true);
+  } finally { $("join-room-btn").disabled = false; }
+}
+function listenRoom(code) {
+  stopListeners();
+  roomUnsub = onSnapshot(roomRef(code), snap => {
+    if (!snap.exists()) { message("Phòng thi không còn tồn tại.", true); return; }
+    roomData = snap.data();
+    renderRoom();
+    if (role === "host" && roomData.readingStartedAt?.toMillis?.() && !roomData.examEndsAt && !endTimeWriteInFlight) {
+      endTimeWriteInFlight = true;
+      const computedEnd = Timestamp.fromMillis(roomData.readingStartedAt.toMillis() + READING_MS + (Number(roomData.durationMinutes) || 45) * 60000);
+      updateDoc(roomRef(code), { examEndsAt: computedEnd }).catch(e => message("Không đồng bộ được giờ kết thúc: " + e.message, true)).finally(() => { endTimeWriteInFlight = false; });
+    }
+    if (role === "host") {
+      rosterUnsub = rosterUnsub || onSnapshot(collection(examRoomDb, ROOT, code, "participants"), s => {
+        roster = s.docs.map(d => ({id:d.id,...d.data()})); renderRoster(); renderSubmissions();
+      }, e => message("Không tải được danh sách: " + e.message, true));
+      submissionsUnsub = submissionsUnsub || onSnapshot(submissionsRef(code), s => {
+        submissions = s.docs.map(d => ({id:d.id,...d.data()})); renderSubmissions();
+      }, e => message("Không tải được bài nộp: " + e.message, true));
+    } else {
+
+
+      participantUnsub = participantUnsub || onSnapshot(participantRef(user.uid, code), s => {
+        participantData = s.exists() ? {uid:user.uid,...s.data()} : null;
+        submitted = !!participantData?.submitted;
+        renderRoom();
+      }, e => message("Không cập nhật được trạng thái thí sinh: " + e.message, true));
+    }
+  }, e => message("Mất kết nối phòng thi: " + e.message, true));
+  tickTimer = setInterval(tickCountdown, 500);
+}
+function renderRoom() {
+  if (!roomData) return;
+  const phase = phaseOf(roomData);
+  lastRenderedPhase = phase;
+  $("room-heading").textContent = roomData.title || "Phòng thi";
+  $("room-subtitle").textContent = "Mã phòng: " + roomId + " · " + (roomData.topicLabel || "");
+  $("room-role").textContent = role === "host" ? "HOST / GIÁO VIÊN" : "CLIENT / HỌC SINH";
+  const labels = {waiting:"Đang chờ",reading:"5 phút đọc đề",running:"Đang làm bài",grading:"Hết giờ · Chờ chấm",finished:"Đã kết thúc",cancelled:"Đã hủy"};
+  $("phase-label").textContent = labels[phase] || phase;
+  let remain = null;
+  if (phase === "reading") remain = roomData.readingStartedAt.toMillis() + READING_MS - Date.now();
+  if (phase === "running") remain = (roomData.examEndsAt?.toMillis?.() ?? roomData.readingStartedAt.toMillis()+READING_MS+(roomData.durationMinutes||45)*60000) - Date.now();
+  $("countdown").textContent = remain === null ? (phase === "waiting" ? "CHỜ" : "--:--") : formatTime(remain);
+  const notes = {
+    waiting: role === "host" ? "Đề đã nạp. Kiểm tra và duyệt danh sách thí sinh, rồi bắt đầu 5 phút đọc đề." : "Bạn đã vào phòng. Chờ giáo viên duyệt và bắt đầu thời gian đọc đề.",
+    reading: "Được xem câu hỏi nhưng chưa thể chọn hoặc thay đổi đáp án. Học sinh vào muộn chỉ được tham gia trong giai đoạn này.",
+    running: "Thời gian làm bài đang chạy theo mốc thời gian chung của phòng.",
+    grading: "Đã hết thời gian làm bài. Không thể nộp hoặc sửa câu trả lời.",
+    finished: "Phòng thi đã kết thúc.",
+    cancelled: "Phòng thi đã bị hủy."
+  };
+  $("room-notice").textContent = notes[phase] || "";
+  show("host-room-controls", role === "host" && ["waiting","reading","running","grading"].includes(phase));
+  $("start-reading-btn").disabled = phase !== "waiting" || !roster.some(p=>p.approved);
+  $("start-reading-btn").textContent = phase === "waiting" ? "Bắt đầu 5 phút đọc đề" : phase === "reading" ? "Đang đọc đề…" : "Đã bắt đầu";
+  show("roster-wrap", role === "host");
+  show("exam-wrap", role === "student" && ["reading","running","grading","finished"].includes(phase) && !!participantData?.approved);
+  show("host-submissions-wrap", role === "host" && ["running","grading","finished"].includes(phase));
+  if (role === "student" && !participantData?.approved) $("room-notice").textContent += " Yêu cầu của bạn đang chờ Host duyệt.";
+  if (role === "student" && participantData?.submitted) $("submit-exam-btn").disabled = true;
+  if (role === "student" && participantData?.approved && ["reading","running","grading","finished"].includes(phase)) renderExam(phase);
+}
+function tickCountdown() {
+  if (!roomData) return;
+  const phase = phaseOf(roomData);
+  if (phase !== lastRenderedPhase) {
+    renderRoom();
+    return;
+  }
+  let remain = null;
+  if (phase === "reading") remain = roomData.readingStartedAt.toMillis() + READING_MS - Date.now();
+  if (phase === "running") remain = (roomData.examEndsAt?.toMillis?.() ?? roomData.readingStartedAt.toMillis()+READING_MS+(roomData.durationMinutes||45)*60000) - Date.now();
+  $("countdown").textContent = remain === null ? (phase === "waiting" ? "CHỜ" : "--:--") : formatTime(remain);
+}
+function renderRoster() {
+  $("roster-count").textContent = String(roster.length);
+  $("roster-list").innerHTML = roster.length ? roster.map(p => `
+    <div class="person"><div class="row"><div><b>${escapeHtml(p.name)}</b><small>${escapeHtml(p.school)} · Lớp ${escapeHtml(p.class)} · SBD ${escapeHtml(p.sbd)}</small><small>${p.submitted ? "Đã nộp bài" : p.approved ? "Đã duyệt" : "Chờ duyệt"}</small></div>
+    <button class="${p.approved?'secondary':''}" data-approve="${escapeHtml(p.id)}" ${["running","grading","finished"].includes(phaseOf(roomData))?'disabled':''}>${p.approved?"Đã duyệt ✓":"Duyệt"}</button></div></div>`).join("") : '<p class="muted">Chưa có thí sinh nào vào phòng.</p>';
+  $("roster-list").querySelectorAll("[data-approve]").forEach(btn => btn.onclick = () => approveParticipant(btn.dataset.approve));
+}
+async function approveParticipant(uid) {
+  try {
+    await requireHost();
+    const p = roster.find(x=>x.id===uid);
+    if (!p || !["waiting","reading"].includes(phaseOf(roomData))) return;
+    await updateDoc(participantRef(uid), {approved:!p.approved, approvedAt:!p.approved?serverTimestamp():null});
+  } catch(e) { message(e.message || "Không duyệt được thí sinh.", true); }
+}
+async function approveAll() {
+  try {
+    await requireHost();
+    if (!["waiting","reading"].includes(phaseOf(roomData))) throw new Error("Danh sách đã khóa sau giai đoạn đọc đề.");
+    if (!roster.length) throw new Error("Danh sách đang trống: Host chưa tải được thí sinh từ Firebase. Kiểm tra thông báo quyền đọc danh sách và Firestore Rules.");
+    const pending = roster.filter(p=>!p.approved);
+    if (!pending.length) {
+      message("Không có thí sinh nào đang chờ duyệt.");
+      return;
+    }
+    await Promise.all(pending.map(p=>updateDoc(participantRef(p.id),{approved:true,approvedAt:serverTimestamp()})));
+    message("Đã duyệt " + pending.length + " thí sinh.");
+  } catch(e) { message(e.message || "Không thể duyệt danh sách.", true); }
+}
+async function startReading() {
+  try {
+    await requireHost();
+    if (phaseOf(roomData)!=="waiting") throw new Error("Phòng đã bắt đầu hoặc không còn ở trạng thái chờ.");
+    if (!roster.some(p=>p.approved)) throw new Error("Hãy duyệt ít nhất một thí sinh trước.");
+    await updateDoc(roomRef(), {status:"reading",readingStartedAt:serverTimestamp(),examEndsAt:null});
+    message("Đã bắt đầu 5 phút đọc đề. Mốc thời gian được chia sẻ qua Firebase.");
+  } catch(e) { message(e.message || "Không thể bắt đầu phòng.", true); }
+}
+function renderExam(phase) {
+  const questions = roomData.publicQuestions || [];
+  $("exam-heading").textContent = phase === "reading" ? "Đọc đề (chưa được chọn đáp án)" : "Bài làm";
+  $("questions").innerHTML = questions.map(q => {
+    const answer = answers[q.id];
+    let body = "";
+    if (q.type === "mcq") {
+      body = (q.o || []).map((o,i)=>`<label class="option"><input type="radio" name="${q.id}" value="${escapeHtml(o)}" ${answer===o?'checked':''} ${phase!=="running"||submitted?'disabled':''}><span><b>${"ABCD"[i]||""}.</b> ${escapeHtml(o)}</span></label>`).join("");
+    } else if (q.type === "tf") {
+      body = (q.sts || []).map((st,i)=>`<div class="tfline"><span><b>${escapeHtml(st.l || String.fromCharCode(97+i)+")")}</b> ${escapeHtml(st.t)}</span><div><label><input type="radio" name="${q.id}_${i}" value="true" ${answer?.[i]===true?'checked':''} ${phase!=="running"||submitted?'disabled':''}> Đúng</label><label><input type="radio" name="${q.id}_${i}" value="false" ${answer?.[i]===false?'checked':''} ${phase!=="running"||submitted?'disabled':''}> Sai</label></div></div>`).join("");
+    } else {
+      body = `<label for="ans-${q.id}">Câu trả lời</label><input id="ans-${q.id}" data-short="${q.id}" maxlength="120" value="${escapeHtml(answer||"")}" ${phase!=="running"||submitted?'disabled':''} placeholder="Nhập câu trả lời ngắn">`;
+    }
+    return `<article class="question"><p class="muted">${escapeHtml(q.section || "")}</p><p class="qtitle">Câu ${q.displayNum}. ${escapeHtml(q.q || q.ctx || "")}</p>${q.type==="tf"&&q.ctx?'<p>'+escapeHtml(q.ctx)+'</p>':''}${body}</article>`;
+  }).join("");
+  if (phase === "reading") $("questions").querySelectorAll("input").forEach(el=>el.disabled=true);
+  if (phase === "running" && !submitted) {
+    $("questions").querySelectorAll('input[type="radio"]').forEach(el => el.addEventListener("change", () => {
+      const tfMatch = el.name.match(/^(q_\d+)_(\d+)$/);
+      if (tfMatch) {
+        const v = answers[tfMatch[1]] || {};
+        v[Number(tfMatch[2])] = el.value === "true";
+        answers[tfMatch[1]] = v;
+      } else {
+        answers[el.name] = el.value;
+      }
+    }));
+    $("questions").querySelectorAll("[data-short]").forEach(el=>el.addEventListener("input",()=>{answers[el.dataset.short]=el.value;}));
+  }
+  $("submit-exam-btn").disabled = phase !== "running" || submitted;
+  $("submit-exam-btn").textContent = submitted ? "Đã nộp bài" : "Nộp bài";
+}
+async function submitExam() {
+  try {
+    if (phaseOf(roomData)!=="running") throw new Error("Chỉ được nộp bài trong thời gian làm bài.");
+    if (!participantData?.approved) throw new Error("Bạn chưa được Host duyệt.");
+    if (submitted || participantData?.submitted) throw new Error("Bài thi đã được nộp.");
+    const payload = JSON.parse(JSON.stringify(answers));
+    await setDoc(doc(examRoomDb, ROOT, roomId, "submissions", user.uid), {
+      uid:user.uid, answers:payload, submittedAt:serverTimestamp(), state:"submitted"
+    });
+    await updateDoc(participantRef(user.uid), {submitted:true, submittedAt:serverTimestamp()});
+    submitted = true; participantData.submitted = true; renderExam("grading");
+    message("Đã nộp bài. Hãy chờ giáo viên hoàn tất chấm điểm.");
+  } catch(e) { message(e.message || "Không nộp được bài. Hãy kiểm tra mạng rồi thử lại.", true); }
+}
+function autoScore(questions, keyMap, submittedAnswers) {
+  const mcqs = questions.filter(q=>q.type==="mcq"), tfs=questions.filter(q=>q.type==="tf");
+  const shortCount = questions.filter(q=>q.type==="short").length;
+  let mcqScore=0, tfScore=0;
+  if(mcqs.length) mcqScore = mcqs.reduce((sum,q)=>sum+(String(submittedAnswers[q.id]??"").trim().replace(",",".")===String(keyMap[q.id]?.a??"").trim().replace(",",".")?3/mcqs.length:0),0);
+  if(tfs.length) {
+    const p=2/tfs.length;
+    const factors={0:0,1:.2,2:.5,3:.7,4:1};
+    tfScore=tfs.reduce((sum,q)=>{
+      const selected=submittedAnswers[q.id]||{}, correct=keyMap[q.id]?.sts||[];
+      const count=correct.reduce((n,v,i)=>n+(selected[i]===v?1:0),0);
+      return sum+p*(factors[count]||0);
+    },0);
+  }
+  return {mcqScore:Number(mcqScore.toFixed(2)),tfScore:Number(tfScore.toFixed(2)),autoScore:Number((mcqScore+tfScore).toFixed(2)),shortCount};
+}
+async function getAnswerKeyMap() {
+  if (answerKeyCache !== null) return answerKeyCache;
+  const keySnap = await getDoc(doc(examRoomDb, ROOT, roomId, "private", "answer_key"));
+  if (!keySnap.exists()) throw new Error("Không tìm thấy đáp án của phòng thi.");
+  answerKeyCache = keySnap.data().keys || {};
+  return answerKeyCache;
+}
+async function renderSubmissions() {
+  const hostList = $("submissions-list");
+  if (!hostList || role!=="host" || !roomData) return;
+  if (!submissions.length) { hostList.innerHTML='<p class="muted">Chưa có bài nộp.</p>'; return; }
+  let keyMap;
+  try {
+    keyMap = await getAnswerKeyMap();
+  } catch(e) { hostList.innerHTML='<p class="muted">Không đọc được đáp án. Kiểm tra quyền Host trong Firestore Rules.</p>'; return; }
+  hostList.innerHTML=submissions.map(sub=>{
+    const p=roster.find(x=>x.id===sub.id)||{};
+    const score=autoScore(roomData.publicQuestions||[],keyMap,sub.answers||{});
+    const manual=Number(sub.manualShortScore)||0;
+    const isGraded=sub.gradeState==="graded";
+    const shortQs=(roomData.publicQuestions||[]).filter(q=>q.type==="short");
+    const shortReview=shortQs.map(q=>`<div class="tfline"><span><b>Câu ${q.displayNum}:</b> ${escapeHtml((sub.answers||{})[q.id]||"(bỏ trống)")}</span><div><label>Điểm (tối đa ${(shortQs.length?5/shortQs.length:0).toFixed(2)}) <input style="width:90px" type="number" min="0" max="${(shortQs.length?5/shortQs.length:0).toFixed(2)}" step="0.1" data-manual="${sub.id}" data-qid="${q.id}" value="${escapeHtml(sub.manualScores?.[q.id] ?? "")}" ${isGraded?'disabled':''}></label></div></div>`).join("");
+    return `<div class="submission"><div class="row"><div><b>${escapeHtml(p.name||sub.id)}</b><small>${escapeHtml(p.class||"")} · SBD ${escapeHtml(p.sbd||"")} · ${isGraded?'Đã chấm':'Đã nộp'}</small></div><span class="pill">Tự chấm: ${score.autoScore.toFixed(2)}/5</span></div><p class="muted">MCQ: ${score.mcqScore.toFixed(2)}/3 · Đúng/Sai: ${score.tfScore.toFixed(2)}/2 · Trả lời ngắn: chấm thủ công tối đa 5 điểm.</p>${shortReview}<div class="actions"><button data-grade="${sub.id}" ${isGraded?'disabled':''}>Lưu điểm thủ công</button><span class="pill">${isGraded?'Tổng: '+Number(sub.finalScore||0).toFixed(2)+'/10':'Chưa chấm xong'}</span></div></div>`;
+  }).join("");
+  hostList.querySelectorAll("[data-grade]").forEach(btn=>btn.onclick=()=>saveManualGrade(btn.dataset.grade));
+}
+async function saveManualGrade(uid) {
+  try {
+    await requireHost();
+    const sub=submissions.find(x=>x.id===uid); if(!sub) return;
+    const questions=(roomData.publicQuestions||[]).filter(q=>q.type==="short");
+    const scores={}; let total=0;
+    questions.forEach(q=>{
+      const input=$("submissions-list").querySelector(`[data-manual="${CSS.escape(uid)}"][data-qid="${CSS.escape(q.id)}"]`);
+      const max=questions.length?5/questions.length:0;
+      const val=Math.max(0,Math.min(max,Number(input?.value)||0));
+      scores[q.id]=Number(val.toFixed(2)); total+=val;
+    });
+    const keyMap = await getAnswerKeyMap();
+    const auto=autoScore(roomData.publicQuestions||[],keyMap,sub.answers||{});
+    const finalScore=Number(Math.min(10,auto.autoScore+total).toFixed(2));
+    await setDoc(doc(examRoomDb,ROOT,roomId,"grades",uid),{
+      uid, autoScore:auto.autoScore, mcqScore:auto.mcqScore, tfScore:auto.tfScore,
+      manualShortScore:Number(total.toFixed(2)), manualScores:scores,
+      finalScore, gradedBy:user.uid, gradedAt:serverTimestamp()
+    });
+    await updateDoc(doc(examRoomDb,ROOT,roomId,"submissions",uid),{
+      manualShortScore:Number(total.toFixed(2)),manualScores:scores,gradeState:"graded",finalScore
+    });
+    message("Đã lưu điểm cho " + (roster.find(p=>p.id===uid)?.name||uid) + ": " + finalScore + "/10.");
+  } catch(e) { message(e.message || "Không lưu được điểm. Kiểm tra Firestore Rules.", true); }
+}
+async function finishRoom() {
+  try {
+    await requireHost();
+    if (!confirm("Kết thúc phòng thi? Học sinh sẽ không thể tiếp tục nộp bài.")) return;
+    await updateDoc(roomRef(),{status:"finished",finishedAt:serverTimestamp()});
+    message("Đã kết thúc phòng thi.");
+  } catch(e) { message(e.message || "Không kết thúc được phòng.", true); }
+}
+function leaveRoom() {
+  stopListeners(); roomId=null; role=null; roomData=null; participantData=null; roster=[]; submissions=[]; answers={}; submitted=false;
+  show("room-panel",false); show("host-login",true);
+  if (user && !user.isAnonymous) show("host-create",true);
+}
+$("host-login-btn").addEventListener("click",async()=>{
+  clearMessage(); $("host-login-btn").disabled=true;
+  try {
+    const email=$("host-email").value.trim(), password=$("host-password").value;
+    if(!email||!password) throw new Error("Nhập email và mật khẩu giáo viên.");
+    const credential=await signInWithEmailAndPassword(examRoomAuth,email,password);
+    user=credential.user;
+    await requireHost();
+    show("host-login",false);show("host-create",true);
+    message("Đăng nhập Host thành công.");
+  } catch(e) {
+    if(examRoomAuth.currentUser && !examRoomAuth.currentUser.isAnonymous) await signOut(examRoomAuth).catch(()=>{});
+    user=examRoomAuth.currentUser;
+    message(e.message?.includes("cấp quyền")?e.message:"Đăng nhập Host thất bại. Kiểm tra email, mật khẩu và cấu hình Firebase Auth.",true);
+  } finally { $("host-login-btn").disabled=false; }
+});
+$("host-logout-btn").addEventListener("click",async()=>{try{await signOut(examRoomAuth);user=null;show("host-create",false);show("host-login",true);message("Đã đăng xuất Host.");}catch(e){message(e.message,true);}});
+$("create-room-btn").addEventListener("click",createRoom);
+$("join-room-btn").addEventListener("click",joinRoom);
+$("approve-all-btn").addEventListener("click",approveAll);
+$("start-reading-btn").addEventListener("click",startReading);
+$("finish-room-btn").addEventListener("click",finishRoom);
+$("submit-exam-btn").addEventListener("click",submitExam);
+$("leave-room-btn").addEventListener("click",leaveRoom);
+$("join-code").addEventListener("input",e=>e.target.value=e.target.value.toUpperCase().replace(/[^A-HJ-NP-Z2-9]/g,"").slice(0,6));
+
+function routeExamRoomScreen() {
+  const screen = document.getElementById("screen-exam-room");
+  const header = document.getElementById("main-header");
+  if (location.hash === "#exam-room") {
+    showScreen("screen-exam-room");
+    header.style.display = "none";
+  } else if (screen.classList.contains("active")) {
+    showScreen("screen-start");
+    header.style.display = "flex";
+  }
+}
+document.getElementById("btn-open-exam-room").addEventListener("click", () => {
+  location.hash = "exam-room";
+  if (location.hash === "#exam-room") routeExamRoomScreen();
+});
+document.getElementById("btn-back-from-exam-room").addEventListener("click", () => {
+  history.replaceState(null, "", location.pathname + location.search);
+  showScreen("screen-start");
+  document.getElementById("main-header").style.display = "flex";
+});
+window.addEventListener("hashchange", routeExamRoomScreen);
+if (location.hash === "#exam-room") routeExamRoomScreen();

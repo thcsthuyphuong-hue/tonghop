@@ -21,6 +21,10 @@ service cloud.firestore {
       return /databases/$(database)/documents/exam_rooms/$(roomId)/participants/$(uid);
     }
 
+    function submissionPath(roomId, uid) {
+      return /databases/$(database)/documents/exam_rooms/$(roomId)/submissions/$(uid);
+    }
+
     function roomOwnedByTeacher(roomId) {
       return isTeacher()
         && exists(roomPath(roomId))
@@ -28,23 +32,59 @@ service cloud.firestore {
     }
 
     // Legacy quiz app.
-    // Reading is intentionally public per project requirements.
     match /artifacts/kham-pha-vat-ly-9/public/data/{collection}/{docId} {
-      allow get, list: if true;
+      // Question banks, configuration, student lookup, and result summaries
+      // are read by the student app or the public leaderboard.
+      allow get, list: if collection in [
+        "question_banks", "config", "public_quiz_results"
+      ] && (isStudent() || isTeacher());
 
-      // Editing/deleting app data requires the real teacher Firebase Auth session.
+      // Student roster, detailed attempts, and reports are visible only to
+      // the teacher.
+      allow get, list: if isTeacher()
+        && collection in ["students_list", "quiz_results", "error_reports"];
+
       allow update, delete: if isTeacher()
-        && (collection in [
+        && collection in [
           "question_banks", "config", "students_list",
-          "quiz_results", "error_reports"
-        ]);
+          "quiz_results", "public_quiz_results", "error_reports"
+        ];
 
-      // Teacher can create/import banks, config and student roster.
       allow create: if isTeacher()
         && collection in ["question_banks", "config", "students_list"];
 
-      // Students may submit their own quiz result and report an issue.
-      // Scores are still client-calculated; this is not server-side anti-cheat.
+      // Public summaries intentionally contain only the fields used by the
+      // public results list and leaderboard.
+      allow create: if collection == "public_quiz_results"
+        && (isStudent() || isTeacher())
+        && request.resource.data.keys().hasAll([
+          "name", "school", "sbd", "class", "topic",
+          "score", "duration", "mode", "timestamp"
+        ])
+        && request.resource.data.keys().hasOnly([
+          "name", "school", "sbd", "class", "topic",
+          "score", "duration", "mode", "timestamp"
+        ])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.school is string
+        && request.resource.data.school.size() <= 180
+        && request.resource.data.sbd is string
+        && request.resource.data.sbd.size() <= 40
+        && request.resource.data.class is string
+        && request.resource.data.class.size() <= 40
+        && request.resource.data.topic is string
+        && request.resource.data.topic.size() <= 120
+        && request.resource.data.score is number
+        && request.resource.data.score >= 0
+        && request.resource.data.score <= 10
+        && request.resource.data.duration is number
+        && request.resource.data.duration >= 0
+        && request.resource.data.mode in ["practice", "test"]
+        && request.resource.data.timestamp is string
+        && request.resource.data.timestamp.size() <= 40;
+
+      // Full attempts keep the original data required by teacher review.
       allow create: if isStudent()
         && collection == "quiz_results"
         && request.resource.data.keys().hasAll([
@@ -55,18 +95,34 @@ service cloud.firestore {
           "name", "school", "sbd", "class", "topic", "score",
           "duration", "mode", "timestamp", "examData", "userAnswers"
         ])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.school is string
+        && request.resource.data.school.size() <= 180
+        && request.resource.data.sbd is string
+        && request.resource.data.sbd.size() <= 40
+        && request.resource.data.class is string
+        && request.resource.data.class.size() <= 40
+        && request.resource.data.topic is string
+        && request.resource.data.topic.size() <= 120
         && request.resource.data.score is number
         && request.resource.data.score >= 0
         && request.resource.data.score <= 10
         && request.resource.data.duration is number
         && request.resource.data.duration >= 0
         && request.resource.data.mode in ["practice", "test"]
+        && request.resource.data.timestamp is string
+        && request.resource.data.timestamp.size() <= 40
         && request.resource.data.examData is list
         && request.resource.data.examData.size() <= 100
-        && request.resource.data.userAnswers is map;
+        && request.resource.data.userAnswers is map
+        && request.resource.data.userAnswers.size() <= 100;
 
       allow create: if isStudent()
         && collection == "error_reports"
+        && request.resource.data.keys().hasAll([
+          "name", "question", "detail", "image", "timestamp"
+        ])
         && request.resource.data.keys().hasOnly([
           "name", "question", "detail", "image", "timestamp"
         ])
@@ -82,36 +138,92 @@ service cloud.firestore {
         && request.resource.data.timestamp.size() <= 40;
     }
 
-    // Exam rooms: room metadata and participant/submission views are public by request.
-    // The answer key remains private to the authenticated teacher.
+    // Exam rooms. Clients read one room by code; only its Host can list the
+    // roster and submissions. A student can read only their own participant
+    // record and grade. The answer key is only readable by the room's Host.
     match /exam_rooms/{roomId} {
       function ownsRoom() {
-        return isTeacher() && resource.data.hostUid == request.auth.uid;
+        return roomOwnedByTeacher(roomId);
       }
 
-      allow get, list: if true;
+      allow get: if isStudent() || ownsRoom();
+      allow list: if false;
 
       allow create: if isTeacher()
-        && request.resource.data.hostUid == request.auth.uid
-        && request.resource.data.status == "waiting"
+        && roomId.size() == 6
         && request.resource.data.keys().hasAll([
-          "hostUid", "status", "publicQuestions", "createdAt",
-          "readingStartedAt", "examEndsAt", "finishedAt", "durationMinutes"
+          "roomCode", "title", "topic", "topicLabel", "hostUid",
+          "status", "durationMinutes", "readingMinutes", "publicQuestions",
+          "createdAt", "readingStartedAt", "examEndsAt", "finishedAt"
         ])
         && request.resource.data.keys().hasOnly([
-          "hostUid", "hostEmail", "status", "publicQuestions", "createdAt",
-          "readingStartedAt", "examEndsAt", "finishedAt", "durationMinutes"
+          "roomCode", "title", "topic", "topicLabel", "hostUid",
+          "status", "durationMinutes", "readingMinutes", "publicQuestions",
+          "createdAt", "readingStartedAt", "examEndsAt", "finishedAt"
         ])
-        && request.resource.data.publicQuestions is list
-        && request.resource.data.publicQuestions.size() <= 100
-        && request.resource.data.durationMinutes is number
+        && request.resource.data.roomCode == roomId
+        && request.resource.data.title is string
+        && request.resource.data.title.size() <= 100
+        && request.resource.data.topic is string
+        && request.resource.data.topic.size() <= 60
+        && request.resource.data.topicLabel is string
+        && request.resource.data.topicLabel.size() <= 120
+        && request.resource.data.hostUid == request.auth.uid
+        && request.resource.data.status == "waiting"
+        && request.resource.data.durationMinutes is int
         && request.resource.data.durationMinutes >= 1
-        && request.resource.data.durationMinutes <= 180;
+        && request.resource.data.durationMinutes <= 180
+        && request.resource.data.readingMinutes is int
+        && request.resource.data.readingMinutes == 5
+        && request.resource.data.publicQuestions is list
+        && request.resource.data.publicQuestions.size() <= 20
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.readingStartedAt == null
+        && request.resource.data.examEndsAt == null
+        && request.resource.data.finishedAt == null;
 
       allow update: if ownsRoom()
         && request.resource.data.hostUid == resource.data.hostUid
-        && request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(["status", "readingStartedAt", "examEndsAt", "finishedAt"]);
+        && (
+          (
+            resource.data.status == "waiting"
+            && request.resource.data.status == "reading"
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(["status", "readingStartedAt", "examEndsAt"])
+            && request.resource.data.readingStartedAt == request.time
+            && request.resource.data.examEndsAt == null
+            && resource.data.readingStartedAt == null
+            && resource.data.examEndsAt == null
+          )
+          ||
+          (
+            resource.data.status == "reading"
+            && resource.data.readingStartedAt is timestamp
+            && resource.data.examEndsAt == null
+            && request.resource.data.status == resource.data.status
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(["examEndsAt"])
+            && request.resource.data.examEndsAt is timestamp
+            && request.resource.data.examEndsAt
+              >= resource.data.readingStartedAt
+                + duration.value(resource.data.readingMinutes, "m")
+                + duration.value(resource.data.durationMinutes, "m")
+                - duration.value(1, "s")
+            && request.resource.data.examEndsAt
+              <= resource.data.readingStartedAt
+                + duration.value(resource.data.readingMinutes, "m")
+                + duration.value(resource.data.durationMinutes, "m")
+                + duration.value(1, "s")
+          )
+          ||
+          (
+            resource.data.status in ["waiting", "reading"]
+            && request.resource.data.status == "finished"
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(["status", "finishedAt"])
+            && request.resource.data.finishedAt == request.time
+          )
+        );
 
       allow delete: if false;
 
@@ -121,41 +233,94 @@ service cloud.firestore {
         }
 
         function ownsThisRoom() {
-          return isTeacher() && roomData().hostUid == request.auth.uid;
+          return roomOwnedByTeacher(roomId);
         }
 
-        allow get, list: if true;
+        function joinsAreOpen() {
+          return roomData().status == "waiting"
+            || (
+              roomData().status == "reading"
+              && roomData().readingStartedAt is timestamp
+              && request.time
+                < roomData().readingStartedAt + duration.value(5, "m")
+            );
+        }
+
+        function validProfile() {
+          return request.resource.data.name is string
+            && request.resource.data.name.size() > 0
+            && request.resource.data.name.size() <= 100
+            && request.resource.data.class is string
+            && request.resource.data.class.size() > 0
+            && request.resource.data.class.size() <= 20
+            && request.resource.data.sbd is string
+            && request.resource.data.sbd.size() > 0
+            && request.resource.data.sbd.size() <= 30
+            && request.resource.data.school is string
+            && request.resource.data.school.size() > 0
+            && request.resource.data.school.size() <= 120;
+        }
+
+        function hasSavedSubmission() {
+          let submission = get(submissionPath(roomId, uid)).data;
+          return submission.uid == uid
+            && submission.state == "submitted"
+            && submission.submittedAt is timestamp
+            && submission.submittedAt <= request.time;
+        }
+
+        allow get: if (isStudent() && request.auth.uid == uid) || ownsThisRoom();
+        allow list: if ownsThisRoom();
 
         allow create: if isStudent()
           && request.auth.uid == uid
-          && request.resource.data.uid == uid
-          && request.resource.data.approved == false
-          && request.resource.data.submitted == false
+          && request.resource.data.keys().hasAll([
+            "uid", "name", "class", "sbd", "school",
+            "approved", "submitted", "joinedAt"
+          ])
           && request.resource.data.keys().hasOnly([
             "uid", "name", "class", "sbd", "school",
             "approved", "submitted", "joinedAt"
           ])
-          && (roomData().status == "waiting"
-            || (roomData().status == "reading"
-              && roomData().readingStartedAt != null
-              && request.time < roomData().readingStartedAt + duration.value(5, "m")));
+          && request.resource.data.uid == uid
+          && validProfile()
+          && request.resource.data.approved == false
+          && request.resource.data.submitted == false
+          && request.resource.data.joinedAt == request.time
+          && joinsAreOpen();
 
-        allow update: if (ownsThisRoom()
+        allow update: if (
+            ownsThisRoom()
+            && joinsAreOpen()
             && request.resource.data.diff(resource.data).affectedKeys()
-              .hasOnly(["approved", "approvedAt"]))
-          || (isStudent()
+              .hasOnly(["approved", "approvedAt"])
+            && request.resource.data.approved is bool
+            && (
+              (request.resource.data.approved == true
+                && request.resource.data.approvedAt == request.time)
+              || (request.resource.data.approved == false
+                && request.resource.data.approvedAt == null)
+            )
+          )
+          || (
+            isStudent()
             && request.auth.uid == uid
+            && resource.data.submitted == false
+            && joinsAreOpen()
             && request.resource.data.diff(resource.data).affectedKeys()
-              .hasOnly(["name", "class", "sbd", "school"]))
-          || (isStudent()
+              .hasOnly(["name", "class", "sbd", "school"])
+            && validProfile()
+          )
+          || (
+            isStudent()
             && request.auth.uid == uid
+            && resource.data.submitted == false
             && request.resource.data.submitted == true
+            && request.resource.data.submittedAt == request.time
             && request.resource.data.diff(resource.data).affectedKeys()
               .hasOnly(["submitted", "submittedAt"])
-            && exists(/databases/$(database)/documents/exam_rooms/$(roomId)/submissions/$(uid))
-            && get(/databases/$(database)/documents/exam_rooms/$(roomId)/submissions/$(uid)).data.state == "submitted"
-            && request.resource.data.submittedAt
-              == get(/databases/$(database)/documents/exam_rooms/$(roomId)/submissions/$(uid)).data.submittedAt);
+            && hasSavedSubmission()
+          );
 
         allow delete: if false;
       }
@@ -166,7 +331,7 @@ service cloud.firestore {
         }
 
         function ownsThisRoom() {
-          return isTeacher() && roomData().hostUid == request.auth.uid;
+          return roomOwnedByTeacher(roomId);
         }
 
         function approvedParticipant() {
@@ -174,50 +339,118 @@ service cloud.firestore {
             && get(participantPath(roomId, uid)).data.approved == true;
         }
 
-        allow get, list: if true;
+        function validManualGradeUpdate() {
+          return request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly([
+                "manualShortScore", "manualScores", "gradeState", "finalScore"
+              ])
+            && request.resource.data.uid == resource.data.uid
+            && request.resource.data.state == "submitted"
+            && request.resource.data.manualShortScore is number
+            && request.resource.data.manualShortScore >= 0
+            && request.resource.data.manualShortScore <= 5.01
+            && request.resource.data.manualScores is map
+            && request.resource.data.manualScores.size() <= 20
+            && request.resource.data.gradeState == "graded"
+            && request.resource.data.finalScore is number
+            && request.resource.data.finalScore >= 0
+            && request.resource.data.finalScore <= 10;
+        }
+
+        allow get, list: if ownsThisRoom();
 
         allow create: if isStudent()
           && request.auth.uid == uid
           && approvedParticipant()
           && roomData().status == "reading"
-          && roomData().readingStartedAt != null
-          && roomData().examEndsAt != null
-          && request.time >= roomData().readingStartedAt + duration.value(5, "m")
-          && request.time < roomData().examEndsAt
+          && roomData().readingStartedAt is timestamp
+          && roomData().durationMinutes is int
+          && roomData().readingMinutes == 5
+          && request.time
+            >= roomData().readingStartedAt + duration.value(5, "m")
+          && request.time
+            < roomData().readingStartedAt
+              + duration.value(roomData().readingMinutes, "m")
+              + duration.value(roomData().durationMinutes, "m")
+          && request.resource.data.keys().hasAll([
+            "uid", "answers", "submittedAt", "state"
+          ])
           && request.resource.data.keys().hasOnly([
             "uid", "answers", "submittedAt", "state"
           ])
           && request.resource.data.uid == uid
           && request.resource.data.answers is map
+          && request.resource.data.answers.size() <= 100
           && request.resource.data.state == "submitted"
           && request.resource.data.submittedAt == request.time;
 
-        allow update: if ownsThisRoom()
-          && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(["manualShortScore", "manualScores", "gradeState", "finalScore"]);
+        allow update: if ownsThisRoom() && validManualGradeUpdate();
         allow delete: if false;
       }
 
       match /private/{privateDocId} {
-        allow get: if roomOwnedByTeacher(roomId);
+        allow get: if privateDocId == "answer_key"
+          && roomOwnedByTeacher(roomId);
         allow list: if false;
-        allow create, update: if roomOwnedByTeacher(roomId)
-          && privateDocId == "answer_key";
-        allow delete: if false;
+
+        allow create: if privateDocId == "answer_key"
+          && roomOwnedByTeacher(roomId)
+          && request.resource.data.keys().hasAll(["keys", "createdAt"])
+          && request.resource.data.keys().hasOnly(["keys", "createdAt"])
+          && request.resource.data["keys"] is map
+          && request.resource.data["keys"].size() <= 20
+          && request.resource.data.createdAt == request.time;
+
+        allow update, delete: if false;
       }
 
       match /grades/{uid} {
-        allow get, list: if true;
-        allow create, update: if roomOwnedByTeacher(roomId)
-          && request.resource.data.keys().hasOnly([
-            "uid", "manualShortScore", "manualScores", "gradeState",
-            "finalScore", "updatedAt"
-          ]);
+        function ownsThisRoom() {
+          return roomOwnedByTeacher(roomId);
+        }
+
+        function validGrade() {
+          return request.resource.data.keys().hasAll([
+              "uid", "autoScore", "mcqScore", "tfScore",
+              "manualShortScore", "manualScores", "finalScore",
+              "gradedBy", "gradedAt"
+            ])
+            && request.resource.data.keys().hasOnly([
+              "uid", "autoScore", "mcqScore", "tfScore",
+              "manualShortScore", "manualScores", "finalScore",
+              "gradedBy", "gradedAt"
+            ])
+            && request.resource.data.uid == uid
+            && request.resource.data.autoScore is number
+            && request.resource.data.autoScore >= 0
+            && request.resource.data.autoScore <= 5
+            && request.resource.data.mcqScore is number
+            && request.resource.data.mcqScore >= 0
+            && request.resource.data.mcqScore <= 3
+            && request.resource.data.tfScore is number
+            && request.resource.data.tfScore >= 0
+            && request.resource.data.tfScore <= 2
+            && request.resource.data.manualShortScore is number
+            && request.resource.data.manualShortScore >= 0
+            && request.resource.data.manualShortScore <= 5.01
+            && request.resource.data.manualScores is map
+            && request.resource.data.manualScores.size() <= 20
+            && request.resource.data.finalScore is number
+            && request.resource.data.finalScore >= 0
+            && request.resource.data.finalScore <= 10
+            && request.resource.data.gradedBy == request.auth.uid
+            && request.resource.data.gradedAt == request.time;
+        }
+
+        // Grades are visible only to the Host and the matching student.
+        allow get: if ownsThisRoom() || (isStudent() && request.auth.uid == uid);
+        allow list: if ownsThisRoom();
+        allow create, update: if ownsThisRoom() && validGrade();
         allow delete: if false;
       }
     }
 
-    // All other paths are denied by default.
+    // Everything else is denied by default.
     match /{document=**} {
       allow read, write: if false;
     }
