@@ -36,7 +36,7 @@
         })();
 </script>
     
-    <link rel="stylesheet" href="style.css?v=20261018-room-merge">
+    <link rel="stylesheet" href="style.css?v=20261018-graphics">
 </head>
 
 <body>
@@ -320,6 +320,7 @@
                 <div class="admin-tab active" id="tab-results">📊 QUẢN LÍ KẾT QUẢ</div>
                 <div class="admin-tab" id="tab-students">👥 QUẢN LÍ HỌC SINH</div>
                 <div class="admin-tab" id="tab-questions">📚 QUẢN LÍ ĐỀ THI</div>
+                <div class="admin-tab" id="tab-graphics" role="button" tabindex="0">🎨 ĐỒ HỌA</div>
             </div>
 
             
@@ -490,6 +491,24 @@
                 </div>
             </div>
 
+            <div id="admin-graphics-section" style="display: none;">
+                <div class="card graphics-settings-card">
+                    <h3>🎨 CÀI ĐẶT ĐỒ HỌA</h3>
+                    <p>Chỉnh độ trong suốt của các bề mặt liquid glass trên thiết bị này.</p>
+                    <label class="graphics-slider-label" for="glass-transparency">
+                        <span>Độ trong suốt</span>
+                        <output id="glass-transparency-value" for="glass-transparency">82%</output>
+                    </label>
+                    <input id="glass-transparency" class="graphics-slider" type="range" min="50" max="90" step="1" value="82">
+                    <small>Chỉ áp dụng trong trang đang mở. Tải lại hoặc đóng trang sẽ khôi phục mặc định.</small>
+                    <div class="graphics-preview glass-card">
+                        <strong>Xem trước liquid glass</strong>
+                        <span>Di chuyển thanh để thử độ trong suốt.</span>
+                    </div>
+                    <button id="glass-transparency-reset" type="button" class="btn btn-gray">Khôi phục mặc định</button>
+                </div>
+            </div>
+
         </section>
 
 
@@ -555,6 +574,6 @@
     </div>
 </div>
 
-<script type="module" src="script.js?v=20261018-room-merge"></script>
+<script type="module" src="script.js?v=20261018-graphics"></script>
 </body>
 </html>
