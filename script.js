@@ -883,8 +883,23 @@ document.getElementById('stu-filter-school').onchange = () => renderAdminStudent
 document.getElementById('stu-filter-class').onchange = () => renderAdminStudents();
 document.getElementById('btn-refresh-students').onclick = () => renderAdminStudents();
 
-function viewAdminReview(docId) {
-    const record = window.currentFilteredData.find(d => d.id === docId); if (!record || !record.examData) { alert("Không có dữ liệu chi tiết!"); return; }
+async function viewAdminReview(docId) {
+    let record = window.currentFilteredData.find(d => d.id === docId);
+    if (!record) { alert("Không tìm thấy bài làm!"); return; }
+    if (!record.examData && currentUser?.isAnonymous) {
+        try {
+            const detailRef = doc(db, 'artifacts', appId_fixed, 'public', 'data', collectionName, docId);
+            const detailSnapshot = await getDoc(detailRef);
+            if (!detailSnapshot.exists()) { alert("Không có dữ liệu chi tiết!"); return; }
+            record = { ...record, ...detailSnapshot.data() };
+            window.currentFilteredData = window.currentFilteredData.map(item => item.id === docId ? record : item);
+        } catch (error) {
+            console.error('[APP-REVIEW-001] Không thể tải dữ liệu chi tiết bài làm.', error);
+            showCustomAlert(getFirebaseErrorMessage(error, 'APP-REVIEW-001', 'Không thể tải dữ liệu chi tiết bài làm.'));
+            return;
+        }
+    }
+    if (!record.examData) { alert("Không có dữ liệu chi tiết!"); return; }
     document.getElementById('ar-name').innerText = `${record.name} - Điểm: ${record.score}`; arExamData = record.examData; arUserAnswers = record.userAnswers || {};
     const content = document.getElementById('ar-content'); let h = '', labels = ['A', 'B', 'C', 'D'];
     const norm = (s) => (s || "").toString().trim().replace(',','.');
