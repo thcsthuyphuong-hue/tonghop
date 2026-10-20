@@ -71,8 +71,10 @@ service cloud.firestore {
         && data.keys().hasOnly([
           "name", "school", "sbd", "class", "topic",
           "score", "duration", "mode", "timestamp",
-          "examData", "userAnswers"
+          "examData", "userAnswers", "ownerUid"
         ])
+        && (!data.keys().hasAny(["ownerUid"])
+          || (data.ownerUid is string && data.ownerUid.size() <= 128))
         && data.examData is list
         && data.examData.size() <= 100
         && data.userAnswers is map
@@ -127,9 +129,14 @@ service cloud.firestore {
     }
 
     match /artifacts/kham-pha-vat-ly-9/public/data/quiz_results/{resultId} {
-      allow get, list: if isTeacher();
-      allow create: if (isStudent() || isTeacher())
-        && validFullResult(request.resource.data);
+      allow get, list: if isTeacher()
+        || (isStudent()
+          && resource.data.keys().hasAny(["ownerUid"])
+          && resource.data.ownerUid == request.auth.uid);
+      allow create: if (isTeacher() && validFullResult(request.resource.data))
+        || (isStudent()
+          && validFullResult(request.resource.data)
+          && request.resource.data.ownerUid == request.auth.uid);
       allow update, delete: if isTeacher();
     }
 
