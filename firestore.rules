@@ -31,95 +31,118 @@ service cloud.firestore {
         && get(roomPath(roomId)).data.hostUid == request.auth.uid;
     }
 
-    // Legacy quiz app.
-    match /artifacts/kham-pha-vat-ly-9/public/data/{collection}/{docId} {
-      // Question banks, configuration, student lookup, and result summaries
-      // are read by the student app or the public leaderboard.
-      allow get, list: if collection in [
-        "question_banks", "config", "public_quiz_results"
-      ] && (isStudent() || isTeacher());
-
-      // Student roster, detailed attempts, and reports are visible only to
-      // the teacher.
-      allow get, list: if isTeacher()
-        && collection in ["students_list", "quiz_results", "error_reports"];
-
-      allow update, delete: if isTeacher()
-        && collection in [
-          "question_banks", "config", "students_list",
-          "quiz_results", "public_quiz_results", "error_reports"
-        ];
-
-      allow create: if isTeacher()
-        && collection in ["question_banks", "config", "students_list"];
-
-      // Public summaries intentionally contain only the fields used by the
-      // public results list and leaderboard.
-      allow create: if collection == "public_quiz_results"
-        && (isStudent() || isTeacher())
-        && request.resource.data.keys().hasAll([
+    function validResultFields(data) {
+      return data.keys().hasAll([
           "name", "school", "sbd", "class", "topic",
           "score", "duration", "mode", "timestamp"
         ])
-        && request.resource.data.keys().hasOnly([
+        && data.name is string
+        && data.name.size() <= 120
+        && data.school is string
+        && data.school.size() <= 180
+        && data.sbd is string
+        && data.sbd.size() <= 40
+        && data.class is string
+        && data.class.size() <= 40
+        && data.topic is string
+        && data.topic.size() <= 120
+        && data.score is number
+        && data.score >= 0
+        && data.score <= 10
+        && data.duration is number
+        && data.duration >= 0
+        && data.duration <= 86400
+        && data.mode in ["practice", "test"]
+        && data.timestamp is string
+        && data.timestamp.size() <= 40;
+    }
+
+    function validPublicResult(data) {
+      return validResultFields(data)
+        && data.keys().hasOnly([
           "name", "school", "sbd", "class", "topic",
           "score", "duration", "mode", "timestamp"
-        ])
-        && request.resource.data.name is string
-        && request.resource.data.name.size() <= 120
-        && request.resource.data.school is string
-        && request.resource.data.school.size() <= 180
-        && request.resource.data.sbd is string
-        && request.resource.data.sbd.size() <= 40
-        && request.resource.data.class is string
-        && request.resource.data.class.size() <= 40
-        && request.resource.data.topic is string
-        && request.resource.data.topic.size() <= 120
-        && request.resource.data.score is number
-        && request.resource.data.score >= 0
-        && request.resource.data.score <= 10
-        && request.resource.data.duration is number
-        && request.resource.data.duration >= 0
-        && request.resource.data.mode in ["practice", "test"]
-        && request.resource.data.timestamp is string
-        && request.resource.data.timestamp.size() <= 40;
+        ]);
+    }
 
-      // Full attempts keep the original data required by teacher review.
-      allow create: if isStudent()
-        && collection == "quiz_results"
-        && request.resource.data.keys().hasAll([
-          "name", "school", "sbd", "class", "topic", "score",
-          "duration", "mode", "timestamp", "examData", "userAnswers"
+    function validFullResult(data) {
+      return validResultFields(data)
+        && data.keys().hasAll(["examData", "userAnswers"])
+        && data.keys().hasOnly([
+          "name", "school", "sbd", "class", "topic",
+          "score", "duration", "mode", "timestamp",
+          "examData", "userAnswers"
         ])
-        && request.resource.data.keys().hasOnly([
-          "name", "school", "sbd", "class", "topic", "score",
-          "duration", "mode", "timestamp", "examData", "userAnswers"
-        ])
-        && request.resource.data.name is string
-        && request.resource.data.name.size() <= 120
-        && request.resource.data.school is string
-        && request.resource.data.school.size() <= 180
-        && request.resource.data.sbd is string
-        && request.resource.data.sbd.size() <= 40
-        && request.resource.data.class is string
-        && request.resource.data.class.size() <= 40
-        && request.resource.data.topic is string
-        && request.resource.data.topic.size() <= 120
-        && request.resource.data.score is number
-        && request.resource.data.score >= 0
-        && request.resource.data.score <= 10
-        && request.resource.data.duration is number
-        && request.resource.data.duration >= 0
-        && request.resource.data.mode in ["practice", "test"]
-        && request.resource.data.timestamp is string
-        && request.resource.data.timestamp.size() <= 40
-        && request.resource.data.examData is list
-        && request.resource.data.examData.size() <= 100
-        && request.resource.data.userAnswers is map
-        && request.resource.data.userAnswers.size() <= 100;
+        && data.examData is list
+        && data.examData.size() <= 100
+        && data.userAnswers is map
+        && data.userAnswers.size() <= 100;
+    }
 
+    function validStudentRecord(data) {
+      return data.keys().hasAll(["name", "class", "sbd", "school"])
+        && data.keys().hasOnly(["name", "class", "sbd", "school", "timestamp"])
+        && data.name is string
+        && data.name.size() > 0
+        && data.name.size() <= 120
+        && data.class is string
+        && data.class.size() <= 40
+        && data.sbd is string
+        && data.sbd.size() <= 40
+        && data.school is string
+        && data.school.size() <= 180
+        && (!data.keys().hasAny(["timestamp"])
+          || (data.timestamp is string && data.timestamp.size() <= 40));
+    }
+
+    match /artifacts/kham-pha-vat-ly-9/public/data/question_banks/{bankId} {
+      allow read: if true;
+      allow create, update, delete: if isTeacher();
+    }
+
+    match /artifacts/kham-pha-vat-ly-9/public/data/config/{configId} {
+      allow read: if true;
+      allow create, update: if isTeacher()
+        && request.resource.data.keys().hasAll(["practice", "test", "maxHints", "lastUpdated"])
+        && request.resource.data.keys().hasOnly(["practice", "test", "maxHints", "lastUpdated"])
+        && request.resource.data.practice is int
+        && request.resource.data.practice >= 1
+        && request.resource.data.practice <= 600
+        && request.resource.data.test is int
+        && request.resource.data.test >= 1
+        && request.resource.data.test <= 600
+        && request.resource.data.maxHints is int
+        && request.resource.data.maxHints >= 0
+        && request.resource.data.maxHints <= 100
+        && request.resource.data.lastUpdated is string
+        && request.resource.data.lastUpdated.size() <= 40;
+      allow delete: if false;
+    }
+
+    match /artifacts/kham-pha-vat-ly-9/public/data/public_quiz_results/{resultId} {
+      allow read: if true;
+      allow create: if (isStudent() || isTeacher())
+        && validPublicResult(request.resource.data);
+      allow update, delete: if isTeacher();
+    }
+
+    match /artifacts/kham-pha-vat-ly-9/public/data/quiz_results/{resultId} {
+      allow get, list: if isTeacher();
+      allow create: if (isStudent() || isTeacher())
+        && validFullResult(request.resource.data);
+      allow update, delete: if isTeacher();
+    }
+
+    match /artifacts/kham-pha-vat-ly-9/public/data/students_list/{studentId} {
+      allow get, list: if isTeacher();
+      allow create, update: if isTeacher()
+        && validStudentRecord(request.resource.data);
+      allow delete: if isTeacher();
+    }
+
+    match /artifacts/kham-pha-vat-ly-9/public/data/error_reports/{reportId} {
+      allow get, list: if isTeacher();
       allow create: if isStudent()
-        && collection == "error_reports"
         && request.resource.data.keys().hasAll([
           "name", "question", "detail", "image", "timestamp"
         ])
@@ -136,11 +159,10 @@ service cloud.firestore {
         && request.resource.data.image.size() <= 700000
         && request.resource.data.timestamp is string
         && request.resource.data.timestamp.size() <= 40;
+      allow update: if false;
+      allow delete: if isTeacher();
     }
 
-    // Exam rooms. Clients read one room by code; only its Host can list the
-    // roster and submissions. A student can read only their own participant
-    // record and grade. The answer key is only readable by the room's Host.
     match /exam_rooms/{roomId} {
       function ownsRoom() {
         return roomOwnedByTeacher(roomId);
@@ -441,8 +463,6 @@ service cloud.firestore {
             && request.resource.data.gradedBy == request.auth.uid
             && request.resource.data.gradedAt == request.time;
         }
-
-        // Grades are visible only to the Host and the matching student.
         allow get: if ownsThisRoom() || (isStudent() && request.auth.uid == uid);
         allow list: if ownsThisRoom();
         allow create, update: if ownsThisRoom() && validGrade();
@@ -450,7 +470,6 @@ service cloud.firestore {
       }
     }
 
-    // Everything else is denied by default.
     match /{document=**} {
       allow read, write: if false;
     }

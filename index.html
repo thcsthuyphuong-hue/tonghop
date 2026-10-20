@@ -36,7 +36,7 @@
         })();
 </script>
     
-    <link rel="stylesheet" href="style.css?v=20261018-room-merge">
+    <link rel="stylesheet" href="style.css?v=20261018-themes">
 </head>
 
 <body>
@@ -126,11 +126,13 @@
 
 <div id="admin-auth-modal" class="modal-overlay" style="z-index:20000;">
     <div class="card" style="width:100%; max-width:400px; text-align:center; padding: 30px 20px; margin: auto;">
-        <h2 style="color: var(--primary); margin-top:0;">Xác minh Quản trị</h2>
-        <input type="password" id="admin-pw" placeholder="Nhập mật khẩu..." style="margin-bottom:20px; text-align:center;">
+        <h2 style="color: var(--primary); margin-top:0;">Đăng nhập giáo viên</h2>
+        <p style="margin-bottom:15px; color:#64748b;">Đăng nhập tài khoản được cấp quyền quản trị.</p>
+        <input type="email" id="admin-email" placeholder="Email giáo viên" autocomplete="username" style="margin-bottom:10px; text-align:center;">
+        <input type="password" id="admin-pw" placeholder="Mật khẩu" autocomplete="current-password" style="margin-bottom:20px; text-align:center;">
         <div class="grid-2-col">
             <button class="btn btn-gray" id="btn-auth-cancel">HỦY</button>
-            <button class="btn btn-fire" id="btn-auth-confirm">XÁC NHẬN</button>
+            <button class="btn btn-fire" id="btn-auth-confirm">ĐĂNG NHẬP</button>
         </div>
     </div>
 </div>
@@ -313,13 +315,17 @@
         <section id="screen-admin" class="screen">
             <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
                 <h2 class="fire-text" style="margin:0; font-size: 1.5rem;">BẢNG QUẢN TRỊ CAO CẤP</h2>
-                <button id="btn-admin-close" class="btn btn-gray" style="padding: 8px 15px; font-size: 0.8rem;">ĐÓNG ✖</button>
+                <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+                    <button id="btn-teacher-auth" class="btn btn-fire" style="padding: 8px 15px; font-size: 0.8rem;">🔐 ĐĂNG NHẬP GIÁO VIÊN</button>
+                    <button id="btn-admin-close" class="btn btn-gray" style="padding: 8px 15px; font-size: 0.8rem;">ĐÓNG ✖</button>
+                </div>
             </div>
 
             <div class="admin-tabs">
                 <div class="admin-tab active" id="tab-results">📊 QUẢN LÍ KẾT QUẢ</div>
                 <div class="admin-tab" id="tab-students">👥 QUẢN LÍ HỌC SINH</div>
                 <div class="admin-tab" id="tab-questions">📚 QUẢN LÍ ĐỀ THI</div>
+                <div class="admin-tab" id="tab-graphics" role="button" tabindex="0">🎨 ĐỒ HỌA</div>
             </div>
 
             
@@ -490,6 +496,45 @@
                 </div>
             </div>
 
+            <div id="admin-graphics-section" style="display: none;">
+                <div class="card graphics-settings-card">
+                    <h3>🎨 CÀI ĐẶT ĐỒ HỌA</h3>
+                    <p>Chọn giao diện và chỉnh liquid glass cho thiết bị này.</p>
+                    <div class="graphics-theme-group">
+                        <strong>Giao diện</strong>
+                        <div id="graphics-theme-options" class="graphics-theme-options" role="radiogroup" aria-label="Chọn giao diện">
+                            <button type="button" class="graphics-theme-option is-selected" data-theme="aurora" role="radio" aria-checked="true">
+                                <span class="graphics-theme-swatch theme-swatch-aurora"></span>
+                                <span><b>Cực quang</b><small>Tím xanh hiện tại</small></span>
+                            </button>
+                            <button type="button" class="graphics-theme-option" data-theme="ocean" role="radio" aria-checked="false">
+                                <span class="graphics-theme-swatch theme-swatch-ocean"></span>
+                                <span><b>Đại dương</b><small>Xanh biển mát</small></span>
+                            </button>
+                            <button type="button" class="graphics-theme-option" data-theme="sunset" role="radio" aria-checked="false">
+                                <span class="graphics-theme-swatch theme-swatch-sunset"></span>
+                                <span><b>Hoàng hôn</b><small>Hồng cam ấm</small></span>
+                            </button>
+                            <button type="button" class="graphics-theme-option" data-theme="night" role="radio" aria-checked="false">
+                                <span class="graphics-theme-swatch theme-swatch-night"></span>
+                                <span><b>Tối dịu</b><small>Nền tối ít chói</small></span>
+                            </button>
+                        </div>
+                    </div>
+                    <label class="graphics-slider-label" for="glass-transparency">
+                        <span>Độ trong suốt</span>
+                        <output id="glass-transparency-value" for="glass-transparency">82%</output>
+                    </label>
+                    <input id="glass-transparency" class="graphics-slider" type="range" min="50" max="90" step="1" value="82">
+                    <small>Chỉ áp dụng trong trang đang mở. Tải lại hoặc đóng trang sẽ khôi phục mặc định.</small>
+                    <div class="graphics-preview glass-card">
+                        <strong>Xem trước liquid glass</strong>
+                        <span>Di chuyển thanh để thử độ trong suốt.</span>
+                    </div>
+                    <button id="glass-transparency-reset" type="button" class="btn btn-gray">Khôi phục mặc định</button>
+                </div>
+            </div>
+
         </section>
 
 
@@ -555,6 +600,6 @@
     </div>
 </div>
 
-<script type="module" src="script.js?v=20261018-room-merge"></script>
+<script type="module" src="script.js?v=20261018-graphics"></script>
 </body>
 </html>

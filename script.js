@@ -53,6 +53,7 @@ const collectionStudents = 'students_list';
 const collectionBanks = 'question_banks';
 
 let currentUser = null, quizStartTime = 0, isQuizRunning = false, mode = '', currentIdx = 0, userAnswers = {}, timeLeft = 0, timerInt, currentExam = [];
+let pendingAdminTab = null;
 let arExamData = [], arUserAnswers = {};
 let globalStudentList = [];
 let importedStudentsCache = [];
@@ -81,7 +82,7 @@ const closeOverlay = (modal) => {
     modal.style.display = 'none';
     if (modal.id === 'question-import-preview-modal') pendingQuestionImport = null;
     if (modal.id === 'delete-auth-modal') { pendingAuthAction = null; currentDeleteId = null; importedStudentsCache = []; importedQuestionsCache = {}; document.getElementById('delete-pw').value = ''; document.getElementById('delete-email').value = ''; document.getElementById('file-import-students').value = ''; document.getElementById('file-import-questions').value = '';}
-    if (modal.id === 'admin-auth-modal') { document.getElementById('admin-pw').value = ''; }
+    if (modal.id === 'admin-auth-modal') { document.getElementById('admin-email').value = ''; document.getElementById('admin-pw').value = ''; pendingAdminTab = null; }
 };
 
 document.addEventListener('keydown', (e) => {
@@ -237,6 +238,7 @@ async function loadStudentList() {
 const initAuth = async () => { try { await signInAnonymously(auth); } catch (e) {} }; initAuth();
 onAuthStateChanged(auth, async user => {
     currentUser = user;
+    syncTeacherAuthButton();
     if (!user) return;
     await loadTimeConfig();
     if (user.isAnonymous) {
@@ -262,6 +264,8 @@ function startFire() {
         update() { this.x += this.vx + Math.sin(this.life * 10) * 1.5; this.y += this.vy; this.life -= this.decay; this.size *= 0.992; }
         draw() {
             if (this.life <= 0) return;
+            const halfWidth = this.size / 2.5;
+            if (this.x + halfWidth < 0 || this.x - halfWidth > canvas.width || this.y + this.size < 0 || this.y - this.size * 1.3 > canvas.height) return;
             ctx.save(); ctx.translate(this.x, this.y); ctx.beginPath(); ctx.moveTo(0, 0);
             ctx.bezierCurveTo(-this.size/2.5, -this.size/2, -this.size/3, -this.size*0.8, 0, -this.size * 1.3);
             ctx.bezierCurveTo(this.size/3, -this.size*0.8, this.size/2.5, -this.size/2, 0, 0);
@@ -435,11 +439,23 @@ function renderQuestion() {
     }
     container.innerHTML = html + `</div>`;
     if(q.type === 'mcq') {
-        container.querySelectorAll('.option').forEach(el => el.onclick = () => { userAnswers[q.id] = el.getAttribute('data-ans'); audioPing.play().catch(()=>{}); renderQuestion(); });
+        container.querySelectorAll('.option').forEach(el => el.onclick = () => {
+            userAnswers[q.id] = el.getAttribute('data-ans');
+            container.querySelectorAll('.option').forEach(option => option.classList.toggle('selected', option === el));
+            audioPing.play().catch(()=>{});
+        });
     } else if(q.type === 'tf') {
         container.querySelectorAll('.tf-btn').forEach(el => el.onclick = () => {
             const si = el.getAttribute('data-si'), val = el.getAttribute('data-val') === 'true';
-            if(!userAnswers[q.id]) userAnswers[q.id] = {}; userAnswers[q.id][si] = val; audioPing.play().catch(()=>{}); renderQuestion();
+            if(!userAnswers[q.id]) userAnswers[q.id] = {};
+            userAnswers[q.id][si] = val;
+            const row = el.closest('.tf-row');
+            row.querySelectorAll('.tf-btn').forEach(button => {
+                const selected = button.getAttribute('data-val') === String(val);
+                button.classList.toggle('active-t', selected && val);
+                button.classList.toggle('active-f', selected && !val);
+            });
+            audioPing.play().catch(()=>{});
         });
     } else {
         const slots = container.querySelectorAll('.char-slot');
@@ -631,13 +647,20 @@ async function syncPublicResultSummaries(results) {
     }
 }
 
+function hasTeacherSession() {
+    const user = auth.currentUser;
+    return Boolean(user && !user.isAnonymous && user.uid === "wg7QT6isC2dryLf8rxc6z9lUjNd2");
+}
+
 async function renderAdmin() {
     const listBody = document.getElementById('admin-list-body'), statsBox = document.getElementById('admin-stats');
     listBody.innerHTML = "<tr><td colspan='11'>Đang tải dữ liệu...</td></tr>";
     try {
-        const snap = await getDocs(collection(db, 'artifacts', appId_fixed, 'public', 'data', collectionName));
+        const teacherSession = hasTeacherSession();
+        const resultCollection = teacherSession ? collectionName : collectionPublicResults;
+        const snap = await getDocs(collection(db, 'artifacts', appId_fixed, 'public', 'data', resultCollection));
         let rawData = []; snap.forEach(d => rawData.push({id: d.id, ...d.data()}));
-        await syncPublicResultSummaries(rawData);
+        if (teacherSession) await syncPublicResultSummaries(rawData);
         const classes = [...new Set(rawData.map(i => i.class))].sort();
         const schools = [...new Set(rawData.map(i => i.school))].filter(s => s).sort();
         const topics = [...new Set(rawData.map(i => i.topic))].filter(t => t).sort();
@@ -655,7 +678,7 @@ async function renderAdmin() {
         let s = { xs: 0, g: 0, k: 0, d: 0, cd: 0 };
         data.forEach(i => { if(i.score >= 9.0) s.xs++; else if(i.score >= 8.0) s.g++; else if(i.score >= 6.5) s.k++; else if(i.score >= 5.0) s.d++; else s.cd++; });
         statsBox.innerHTML = `<div class="stat-box" style="border-bottom-color: #f59e0b"><b>${s.xs}</b><br><small>X.Sắc</small></div><div class="stat-box" style="border-bottom-color: #10b981"><b>${s.g}</b><br><small>Giỏi</small></div><div class="stat-box" style="border-bottom-color: #3b82f6"><b>${s.k}</b><br><small>Khá</small></div><div class="stat-box" style="border-bottom-color: #8b5cf6"><b>${s.d}</b><br><small>Đạt</small></div><div class="stat-box" style="border-bottom-color: #ef4444"><b>${s.cd}</b><br><small>C.Đạt</small></div>`;
-        listBody.innerHTML = data.map((i, idx) => `<tr><td>${idx+1}</td><td>${i.sbd}</td><td>${i.name}</td><td>${i.class}</td><td>${i.school||'-'}</td><td style="font-size:0.75rem; color:var(--primary); font-weight:bold;">${i.topic || 'Đề tổng hợp'}</td><td><span class="badge-mode ${i.mode === 'practice' ? 'badge-practice' : 'badge-test'}">${i.mode === 'practice' ? 'Luyện tập' : 'Kiểm tra'}</span></td><td><b>${Number((i.score||0).toFixed(2))}</b></td><td>${i.duration}s</td><td>${new Date(i.timestamp).toLocaleDateString()}</td><td style="display:flex; gap:5px;"><button style="background:var(--secondary); color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer" class="btn-view" data-id="${i.id}">👁️</button><button style="background:red; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer" class="btn-del" data-id="${i.id}">X</button></td></tr>`).join('');
+        listBody.innerHTML = data.map((i, idx) => `<tr><td>${idx+1}</td><td>${i.sbd}</td><td>${i.name}</td><td>${i.class}</td><td>${i.school||'-'}</td><td style="font-size:0.75rem; color:var(--primary); font-weight:bold;">${i.topic || 'Đề tổng hợp'}</td><td><span class="badge-mode ${i.mode === 'practice' ? 'badge-practice' : 'badge-test'}">${i.mode === 'practice' ? 'Luyện tập' : 'Kiểm tra'}</span></td><td><b>${Number((i.score||0).toFixed(2))}</b></td><td>${i.duration}s</td><td>${new Date(i.timestamp).toLocaleDateString()}</td><td style="display:flex; gap:5px;">${teacherSession ? `<button style="background:var(--secondary); color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer" class="btn-view" data-id="${i.id}">👁️</button><button style="background:red; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer" class="btn-del" data-id="${i.id}">X</button>` : 'Công khai'}</td></tr>`).join('');
         listBody.querySelectorAll('.btn-del').forEach(b => b.onclick = () => deleteEntry(b.dataset.id, 'result'));
         listBody.querySelectorAll('.btn-view').forEach(b => b.onclick = () => viewAdminReview(b.dataset.id)); window.currentFilteredData = data;
     } catch(e) { listBody.innerHTML = "<tr><td colspan='11'>Lỗi kết nối Firebase.</td></tr>"; }
@@ -727,33 +750,70 @@ async function renderAdminQuestions() {
 }
 
 
-document.getElementById('tab-results').onclick = () => {
-    document.getElementById('tab-results').classList.add('active');
-    document.getElementById('tab-students').classList.remove('active');
-    document.getElementById('tab-questions').classList.remove('active');
-    document.getElementById('admin-results-section').style.display = 'block';
-    document.getElementById('admin-students-section').style.display = 'none';
-    document.getElementById('admin-questions-section').style.display = 'none';
-    renderAdmin();
+const adminPanelTabs = {
+    results: document.getElementById('tab-results'),
+    students: document.getElementById('tab-students'),
+    questions: document.getElementById('tab-questions'),
+    graphics: document.getElementById('tab-graphics')
 };
-document.getElementById('tab-students').onclick = () => {
-    document.getElementById('tab-students').classList.add('active');
-    document.getElementById('tab-results').classList.remove('active');
-    document.getElementById('tab-questions').classList.remove('active');
-    document.getElementById('admin-students-section').style.display = 'block';
-    document.getElementById('admin-results-section').style.display = 'none';
-    document.getElementById('admin-questions-section').style.display = 'none';
-    renderAdminStudents();
+const adminPanelSections = {
+    results: document.getElementById('admin-results-section'),
+    students: document.getElementById('admin-students-section'),
+    questions: document.getElementById('admin-questions-section'),
+    graphics: document.getElementById('admin-graphics-section')
 };
-document.getElementById('tab-questions').onclick = () => {
-    document.getElementById('tab-questions').classList.add('active');
-    document.getElementById('tab-results').classList.remove('active');
-    document.getElementById('tab-students').classList.remove('active');
-    document.getElementById('admin-questions-section').style.display = 'block';
-    document.getElementById('admin-results-section').style.display = 'none';
-    document.getElementById('admin-students-section').style.display = 'none';
-    renderAdminQuestions();
+
+function setAdminPanelTab(activeTab) {
+    if (['students', 'questions'].includes(activeTab) && !hasTeacherSession()) {
+        pendingAdminTab = activeTab;
+        document.getElementById('admin-auth-modal').style.display = 'flex';
+        return;
+    }
+    Object.entries(adminPanelTabs).forEach(([name, tab]) => tab.classList.toggle('active', name === activeTab));
+    Object.entries(adminPanelSections).forEach(([name, section]) => section.style.display = name === activeTab ? 'block' : 'none');
+    if (activeTab === 'results') renderAdmin();
+    if (activeTab === 'students') renderAdminStudents();
+    if (activeTab === 'questions') renderAdminQuestions();
+}
+
+Object.entries(adminPanelTabs).forEach(([name, tab]) => {
+    tab.onclick = () => setAdminPanelTab(name);
+    tab.onkeydown = event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            setAdminPanelTab(name);
+        }
+    };
+});
+
+const graphicsThemeOptions = [...document.querySelectorAll('.graphics-theme-option')];
+const applyGraphicsTheme = theme => {
+    document.documentElement.dataset.theme = theme;
+    graphicsThemeOptions.forEach(option => {
+        const selected = option.dataset.theme === theme;
+        option.classList.toggle('is-selected', selected);
+        option.setAttribute('aria-checked', String(selected));
+    });
 };
+graphicsThemeOptions.forEach(option => {
+    option.onclick = () => applyGraphicsTheme(option.dataset.theme);
+});
+applyGraphicsTheme('aurora');
+
+const glassTransparencyInput = document.getElementById('glass-transparency');
+const glassTransparencyValue = document.getElementById('glass-transparency-value');
+const applyGlassTransparency = value => {
+    const transparency = Number(value);
+    document.documentElement.style.setProperty('--glass-opacity', String(1 - transparency / 100));
+    glassTransparencyValue.value = transparency + '%';
+    glassTransparencyValue.textContent = transparency + '%';
+};
+glassTransparencyInput.oninput = () => applyGlassTransparency(glassTransparencyInput.value);
+document.getElementById('glass-transparency-reset').onclick = () => {
+    glassTransparencyInput.value = '82';
+    applyGlassTransparency(glassTransparencyInput.value);
+};
+
 
 document.getElementById('stu-filter-school').onchange = () => renderAdminStudents();
 document.getElementById('stu-filter-class').onchange = () => renderAdminStudents();
@@ -1930,8 +1990,7 @@ document.getElementById('btn-delete-confirm').onclick = async () => {
 
     document.getElementById('btn-delete-confirm').innerText = "...";
     try {
-        await setPersistence(auth, browserSessionPersistence);
-        await signInWithEmailAndPassword(auth, email, pw);
+        await signInTeacherAccount(email, pw);
         document.getElementById('delete-auth-modal').style.display = 'none';
         executePendingAdminAction();
     } catch (error) {
@@ -1940,9 +1999,60 @@ document.getElementById('btn-delete-confirm').onclick = async () => {
     document.getElementById('btn-delete-confirm').innerText = "XÁC NHẬN";
 };
 
-document.getElementById('btn-admin-open').onclick = () => document.getElementById('admin-auth-modal').style.display = 'flex';
-document.getElementById('btn-auth-cancel').onclick = () => document.getElementById('admin-auth-modal').style.display = 'none';
-document.getElementById('btn-auth-confirm').onclick = () => { if(document.getElementById('admin-pw').value === "112233@@") { document.getElementById('admin-auth-modal').style.display='none'; showScreen('screen-admin'); renderAdmin(); } else showCustomAlert("Sai mật khẩu!"); };
+function syncTeacherAuthButton() {
+    const button = document.getElementById('btn-teacher-auth');
+    if (!button) return;
+    button.textContent = hasTeacherSession() ? '🚪 ĐĂNG XUẤT GIÁO VIÊN' : '🔐 ĐĂNG NHẬP GIÁO VIÊN';
+}
+
+async function signInTeacherAccount(email, password) {
+    await setPersistence(auth, browserSessionPersistence);
+    await signInWithEmailAndPassword(auth, email, password);
+    if (!hasTeacherSession()) {
+        await signOut(auth);
+        await signInAnonymously(auth);
+        throw new Error('Tài khoản này chưa được cấp quyền giáo viên.');
+    }
+}
+
+document.getElementById('btn-admin-open').onclick = () => {
+    showScreen('screen-admin');
+    setAdminPanelTab('results');
+};
+document.getElementById('btn-auth-cancel').onclick = () => closeOverlay(document.getElementById('admin-auth-modal'));
+document.getElementById('btn-auth-confirm').onclick = async () => {
+    const email = document.getElementById('admin-email').value.trim();
+    const password = document.getElementById('admin-pw').value;
+    if (!email || !password) { showCustomAlert('Vui lòng nhập email và mật khẩu giáo viên.'); return; }
+    const button = document.getElementById('btn-auth-confirm');
+    button.disabled = true;
+    button.textContent = 'ĐANG ĐĂNG NHẬP...';
+    try {
+        await signInTeacherAccount(email, password);
+        const tab = pendingAdminTab || 'results';
+        pendingAdminTab = null;
+        closeOverlay(document.getElementById('admin-auth-modal'));
+        syncTeacherAuthButton();
+        setAdminPanelTab(tab);
+    } catch (error) {
+        showCustomAlert(getFirebaseErrorMessage(error, 'APP-AUTH-001', 'Đăng nhập giáo viên thất bại.'));
+    } finally {
+        button.disabled = false;
+        button.textContent = 'ĐĂNG NHẬP';
+    }
+};
+document.getElementById('btn-teacher-auth').onclick = async () => {
+    if (!hasTeacherSession()) {
+        pendingAdminTab = null;
+        document.getElementById('admin-auth-modal').style.display = 'flex';
+        return;
+    }
+    await signOut(auth);
+    await signInAnonymously(auth);
+    setAdminPanelTab('results');
+    renderAdmin();
+    syncTeacherAuthButton();
+};
 
 document.getElementById('btn-init-practice').onclick = () => initGame('practice'); document.getElementById('btn-init-test').onclick = () => initGame('test');
 document.getElementById('btn-prev').onclick = () => { if(currentIdx > 0) { currentIdx--; renderQuestion(); window.scrollTo(0,0); } };
@@ -2246,6 +2356,7 @@ function setupLoginTopicGlassMenu() {
     select.hidden = true;
     trigger.textContent = select.options[select.selectedIndex].textContent + '  ▾';
 
+    let positionFrame = 0;
     const positionMenu = () => {
         if (menu.hidden) return;
         const rect = trigger.getBoundingClientRect();
@@ -2271,11 +2382,23 @@ function setupLoginTopicGlassMenu() {
         menu.dataset.openDirection = openBelow ? 'down' : 'up';
     };
 
+    const scheduleMenuPosition = () => {
+        if (menu.hidden || positionFrame) return;
+        positionFrame = requestAnimationFrame(() => {
+            positionFrame = 0;
+            positionMenu();
+        });
+    };
+
     const closeMenu = () => {
         setLiquidGlassMenu(menu, false, menu.dataset.openDirection);
         trigger.setAttribute('aria-expanded', 'false');
-        window.removeEventListener('resize', positionMenu);
-        window.removeEventListener('scroll', positionMenu, true);
+        if (positionFrame) {
+            cancelAnimationFrame(positionFrame);
+            positionFrame = 0;
+        }
+        window.removeEventListener('resize', scheduleMenuPosition);
+        window.removeEventListener('scroll', scheduleMenuPosition, true);
     };
 
     const openMenu = () => {
@@ -2284,8 +2407,8 @@ function setupLoginTopicGlassMenu() {
         trigger.setAttribute('aria-expanded', 'true');
         positionMenu();
         setLiquidGlassMenu(menu, true, menu.dataset.openDirection);
-        window.addEventListener('resize', positionMenu);
-        window.addEventListener('scroll', positionMenu, true);
+        window.addEventListener('resize', scheduleMenuPosition);
+        window.addEventListener('scroll', scheduleMenuPosition, true);
     };
 
     trigger.onclick = () => {
