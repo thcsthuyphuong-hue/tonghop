@@ -253,6 +253,67 @@ onAuthStateChanged(auth, async user => {
 });
 
 let fireRequest;
+const adaptiveGraphics = (() => {
+    const root = document.documentElement;
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches || false;
+    const hardwareCores = Number(navigator.hardwareConcurrency) || 0;
+    const deviceMemory = Number(navigator.deviceMemory) || 0;
+    const lowPowerDevice = (hardwareCores > 0 && hardwareCores <= 4) || (deviceMemory > 0 && deviceMemory <= 4);
+    let frameCount = 0;
+    let sampleStartedAt = 0;
+    let lastWindowAt = 0;
+    let slowWindows = 0;
+    let smoothWindows = 0;
+    let requestId = 0;
+    let stopAt = 0;
+
+    const updateQuality = () => {
+        root.classList.toggle('performance-lite', lowPowerDevice || slowWindows >= 2 || reducedMotion);
+    };
+
+    const sampleFrame = timestamp => {
+        if (!sampleStartedAt) {
+            sampleStartedAt = timestamp;
+            lastWindowAt = timestamp;
+        }
+        frameCount++;
+        if (timestamp - lastWindowAt >= 1200) {
+            const fps = frameCount * 1000 / (timestamp - lastWindowAt);
+            if (fps < 48) {
+                slowWindows++;
+                smoothWindows = 0;
+            } else if (fps >= 54) {
+                smoothWindows++;
+                slowWindows = 0;
+                if (smoothWindows >= 3 && !lowPowerDevice && !reducedMotion) {
+                    root.classList.remove('performance-lite');
+                }
+            }
+            frameCount = 0;
+            lastWindowAt = timestamp;
+            updateQuality();
+        }
+        if (timestamp < stopAt) {
+            requestId = requestAnimationFrame(sampleFrame);
+        } else {
+            requestId = 0;
+            sampleStartedAt = 0;
+        }
+    };
+
+    const sample = () => {
+        if (document.visibilityState === 'hidden') return;
+        stopAt = Math.max(stopAt, performance.now() + 7000);
+        if (!requestId) requestId = requestAnimationFrame(sampleFrame);
+    };
+
+    updateQuality();
+    window.addEventListener('scroll', sample, { passive: true });
+    document.addEventListener('animationstart', sample, true);
+    document.addEventListener('transitionrun', sample, true);
+    return { sample };
+})();
+
 function startFire() {
     const canvas = document.getElementById('fire-canvas'); const ctx = canvas.getContext('2d');
     canvas.width = window.innerWidth; canvas.height = window.innerHeight; let flames = [];
@@ -276,10 +337,13 @@ function startFire() {
     function animate() {
         if (document.getElementById('wish-overlay').style.display === 'none') return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        if (flames.length < 55) flames.push(new Flame());
+        const flameLimit = document.documentElement.classList.contains('performance-lite') ? 26 : 55;
+        while (flames.length > flameLimit) flames.pop();
+        if (flames.length < flameLimit) flames.push(new Flame());
         for (let i = 0; i < flames.length; i++) { flames[i].update(); flames[i].draw(); if (flames[i].life <= 0) { flames.splice(i, 1); i--; } }
         fireRequest = requestAnimationFrame(animate);
     }
+    adaptiveGraphics.sample();
     animate();
 }
 

@@ -1547,3 +1547,36 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
 @media (max-width: 460px) {
   .graphics-theme-options { grid-template-columns: 1fr; }
 }
+
+
+/* Adaptive graphics quality: retain the glass look while reducing expensive blur on slower devices. */
+:root.performance-lite body {
+  background-attachment: scroll !important;
+}
+:root.performance-lite header#main-header,
+:root.performance-lite .glass-nav,
+:root.performance-lite .glass-card,
+:root.performance-lite .card,
+:root.performance-lite .card-start,
+:root.performance-lite #screen-quiz .card,
+:root.performance-lite #screen-result .card,
+:root.performance-lite #screen-admin .card,
+:root.performance-lite .modal-box,
+:root.performance-lite #admin-inbox-modal .card,
+:root.performance-lite #admin-review-modal .card {
+  backdrop-filter: blur(10px) saturate(125%) !important;
+  -webkit-backdrop-filter: blur(10px) saturate(125%) !important;
+}
+:root.performance-lite .modal-overlay,
+:root.performance-lite .btn-admin-float,
+:root.performance-lite .btn-report-float,
+:root.performance-lite #screen-admin .admin-filter-menu,
+:root.performance-lite .topic-select-glass-menu,
+:root.performance-lite #screen-start .autocomplete-items {
+  backdrop-filter: blur(7px) saturate(120%) !important;
+  -webkit-backdrop-filter: blur(7px) saturate(120%) !important;
+}
+:root.performance-lite body::before,
+:root.performance-lite body::after {
+  filter: blur(1px);
+}
