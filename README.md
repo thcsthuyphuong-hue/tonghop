@@ -108,8 +108,7 @@ Danh sách Firebase trên chỉ gồm một số mã thường gặp, không ph�
 Văn Hùng Nguyễn
 ## Đồng sở hữu
 
-ChatGPT
-CodexCLI
+ChatGPT và CodexCLI
 ## Luư ý về bản quyền
 
 Tác giả là người nắm toàn bộ bản quyền về những file code của dự án này nhưng không bao gồm các câu hỏi xuất hiện trong phần mềm.) là người nắm toàn bộ bản quyền về những file code của dự án này nhưng không bao gồm các câu hỏi xuất hiện trong phần mềm.
