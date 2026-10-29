@@ -127,7 +127,8 @@ service cloud.firestore {
     }
 
     match /artifacts/kham-pha-vat-ly-9/public/data/quiz_results/{resultId} {
-      allow get, list: if isTeacher();
+      allow get: if isTeacher() || isStudent();
+      allow list: if isTeacher();
       allow create: if (isStudent() || isTeacher())
         && validFullResult(request.resource.data);
       allow update, delete: if isTeacher();
