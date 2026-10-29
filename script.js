@@ -607,14 +607,24 @@ async function fetchRankAndLeaderboard(myScore, myTopic) {
 
 function setupAdminExcelFilters(options) {
  const controls=document.querySelector('#admin-results-section > .admin-controls'); if(!controls)return;
- const state=window.adminExcelFilterState||(window.adminExcelFilterState={school:[],class:[],topic:[],mode:[]});
- const defs=[{key:'school',label:'Trường',values:options.school.map(String)},{key:'class',label:'Lớp',values:options.class.map(String)},{key:'topic',label:'Chuyên đề',values:options.topic.map(String)},{key:'mode',label:'Chế độ',values:['test','practice']}];
+ const state=window.adminExcelFilterState||(window.adminExcelFilterState={grade:[],school:[],class:[],topic:[],mode:[]});
+ if(!Array.isArray(state.grade))state.grade=[];
+ const selectedGrades=state.grade.map(String);
+ const classesForGrades=options.class.map(String).filter(c=>!selectedGrades.length||selectedGrades.includes(getClassGrade(c)||'unknown'));
+ const defs=[
+  {key:'grade',label:'Khối',values:options.grade.map(String)},
+  {key:'class',label:'Lớp',values:classesForGrades},
+  {key:'school',label:'Trường',values:options.school.map(String)},
+  {key:'topic',label:'Chuyên đề',values:options.topic.map(String)},
+  {key:'mode',label:'Chế độ',values:['test','practice']}
+ ];
  const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  defs.forEach(d=>{state[d.key]=(state[d.key]||[]).filter(v=>d.values.includes(String(v)));const e=document.getElementById('admin-filter-'+d.key);if(e)e.parentElement.hidden=true;});
  let root=controls.querySelector('.admin-excel-filters');if(!root){root=document.createElement('div');root.className='admin-excel-filters';controls.insertBefore(root,controls.querySelector('.grid-2-col'));}
  const sortControl=document.getElementById('admin-sort')?.parentElement;
  if(sortControl&&sortControl.parentElement===root)sortControl.remove();
- root.innerHTML=defs.map(d=>{const sel=state[d.key],title=sel.length?d.label+' ('+sel.length+')':d.label+': Tất cả',items=d.values.map(v=>'<label class="admin-filter-option"><input type="checkbox" data-filter-check="'+d.key+'" value="'+esc(v)+'"'+(sel.includes(String(v))?' checked':'')+'><span>'+esc(v==='test'?'Kiểm tra':v==='practice'?'Luyện tập':v)+'</span></label>').join('');return '<div class="admin-filter-group" data-filter-group="'+d.key+'"><button type="button" class="admin-filter-trigger" aria-expanded="false">'+esc(title)+' ▾</button><div class="admin-filter-menu" hidden><input class="admin-filter-search" type="search" placeholder="Tìm '+esc(d.label.toLowerCase())+'..."><div class="admin-filter-options">'+(items||'<small>Chưa có dữ liệu</small>')+'</div><div class="admin-filter-menu-actions"><button type="button" data-filter-action="all">Chọn tất cả</button><button type="button" data-filter-action="clear">Bỏ lọc</button></div><button type="button" class="admin-filter-apply">Áp dụng</button></div></div>';}).join('');
+ const displayValue=(key,v)=>key==='grade'?(v==='unknown'?'Chưa phân loại':'Khối '+v):key==='class'?'Lớp '+v:v==='test'?'Kiểm tra':v==='practice'?'Luyện tập':v;
+ root.innerHTML=defs.map(d=>{const sel=state[d.key],title=sel.length?d.label+' ('+sel.length+')':d.label+': Tất cả',items=d.values.map(v=>'<label class="admin-filter-option"><input type="checkbox" data-filter-check="'+d.key+'" value="'+esc(v)+'"'+(sel.includes(String(v))?' checked':'')+'><span>'+esc(displayValue(d.key,v))+'</span></label>').join('');return '<div class="admin-filter-group" data-filter-group="'+d.key+'"><button type="button" class="admin-filter-trigger" aria-expanded="false">'+esc(title)+' ▾</button><div class="admin-filter-menu" hidden><input class="admin-filter-search" type="search" placeholder="Tìm '+esc(d.label.toLowerCase())+'..."><div class="admin-filter-options">'+(items||'<small>Chưa có dữ liệu</small>')+'</div><div class="admin-filter-menu-actions"><button type="button" data-filter-action="all">Chọn tất cả</button><button type="button" data-filter-action="clear">Bỏ lọc</button></div><button type="button" class="admin-filter-apply">Áp dụng</button></div></div>';}).join('');
  root.querySelectorAll('.admin-filter-trigger').forEach(b=>b.onclick=()=>{const g=b.closest('.admin-filter-group'),m=g.querySelector('.admin-filter-menu'),open=m.hidden||m.dataset.rollState==='closing';root.querySelectorAll('.admin-filter-menu').forEach(x=>setLiquidGlassMenu(x,false,'down'));root.querySelectorAll('.admin-filter-trigger').forEach(x=>x.setAttribute('aria-expanded','false'));if(open)setLiquidGlassMenu(m,true,'down');b.setAttribute('aria-expanded',String(open));});
  root.querySelectorAll('.admin-filter-search').forEach(i=>i.oninput=()=>{const q=i.value.trim().toLocaleLowerCase('vi');i.closest('.admin-filter-menu').querySelectorAll('.admin-filter-option').forEach(x=>x.hidden=!x.innerText.toLocaleLowerCase('vi').includes(q));});
  root.querySelectorAll('.admin-filter-group').forEach(g=>{const k=g.dataset.filterGroup,d=defs.find(x=>x.key===k),b=g.querySelector('.admin-filter-trigger'),update=()=>{state[k]=[...g.querySelectorAll('[data-filter-check]:checked')].map(x=>x.value);b.firstChild.textContent=state[k].length?d.label+' ('+state[k].length+') ▾':d.label+': Tất cả ▾';};g.querySelectorAll('[data-filter-check]').forEach(x=>x.onchange=update);g.querySelector('[data-filter-action="all"]').onclick=()=>{g.querySelectorAll('[data-filter-check]').forEach(x=>x.checked=true);update();};g.querySelector('[data-filter-action="clear"]').onclick=()=>{g.querySelectorAll('[data-filter-check]').forEach(x=>x.checked=false);update();};g.querySelector('.admin-filter-apply').onclick=()=>renderAdmin();});
@@ -716,6 +726,32 @@ function hasTeacherSession() {
     return Boolean(user && !user.isAnonymous && user.uid === "wg7QT6isC2dryLf8rxc6z9lUjNd2");
 }
 
+// Nhận diện khối từ các định dạng lớp thường gặp: 6/1, 6A1, Lớp 6/1...
+function getClassGrade(className) {
+    let value = String(className ?? '').trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd');
+    value = value.replace(/^lop\s*/i, '');
+    const match = value.match(/^([6-9])(?=\s*(?:\/|-|[A-Z]|\d|$))/i);
+    return match ? match[1] : '';
+}
+
+function compareClassNames(a, b) {
+    const left = String(a ?? '').trim();
+    const right = String(b ?? '').trim();
+    const gradeLeft = Number(getClassGrade(left)) || 99;
+    const gradeRight = Number(getClassGrade(right)) || 99;
+    if (gradeLeft !== gradeRight) return gradeLeft - gradeRight;
+
+    const sectionNumber = value => {
+        const normalized = String(value).trim().replace(/^lop\s*/i, '');
+        const match = normalized.match(/^[6-9]\s*(?:\/|-|[A-Z]\s*)?(\d+)/i);
+        return match ? Number(match[1]) : Number.MAX_SAFE_INTEGER;
+    };
+    const sectionLeft = sectionNumber(left);
+    const sectionRight = sectionNumber(right);
+    if (sectionLeft !== sectionRight) return sectionLeft - sectionRight;
+    return left.localeCompare(right, 'vi', { numeric: true, sensitivity: 'base' });
+}
+
 async function renderAdmin() {
     const listBody = document.getElementById('admin-list-body'), statsBox = document.getElementById('admin-stats');
     listBody.innerHTML = "<tr><td colspan='11'>Đang tải dữ liệu...</td></tr>";
@@ -725,16 +761,20 @@ async function renderAdmin() {
         const snap = await getDocs(collection(db, 'artifacts', appId_fixed, 'public', 'data', resultCollection));
         let rawData = []; snap.forEach(d => rawData.push({id: d.id, ...d.data()}));
         if (teacherSession) await syncPublicResultSummaries(rawData);
-        const classes = [...new Set(rawData.map(i => i.class))].sort();
+        const classes = [...new Set(rawData.map(i => String(i.class || '').trim()).filter(Boolean))].sort(compareClassNames);
+        const grades = [...new Set(rawData.map(i => getClassGrade(i.class) || 'unknown'))]
+            .sort((a, b) => a === 'unknown' ? 1 : b === 'unknown' ? -1 : Number(a) - Number(b));
         const schools = [...new Set(rawData.map(i => i.school))].filter(s => s).sort();
         const topics = [...new Set(rawData.map(i => i.topic))].filter(t => t).sort();
         const fClass = document.getElementById('admin-filter-class'); const oldC = fClass.value; fClass.innerHTML = '<option value="all">Tất cả lớp</option>' + classes.map(c => `<option value="${c}" ${c===oldC?'selected':''}>Lớp ${c}</option>`).join('');
         const fSchool = document.getElementById('admin-filter-school'); const oldS = fSchool.value; fSchool.innerHTML = '<option value="all">Tất cả trường</option>' + schools.map(s => `<option value="${s}" ${s===oldS?'selected':''}>${s}</option>`).join('');
         const fTopic = document.getElementById('admin-filter-topic'); const oldT = fTopic.value; fTopic.innerHTML = '<option value="all">Tất cả chuyên đề</option>' + topics.map(t => `<option value="${t}" ${t===oldT?'selected':''}>${t}</option>`).join('');
-        setupAdminExcelFilters({ class: classes, school: schools, topic: topics }); const filters = window.adminExcelFilterState; const sVal = document.getElementById('admin-sort').value;
+        setupAdminExcelFilters({ grade: grades, class: classes, school: schools, topic: topics }); const filters = window.adminExcelFilterState; const sVal = document.getElementById('admin-sort').value;
         let data = rawData.filter(i => {
-            return (!filters.mode.length || filters.mode.includes(String(i.mode || '')))
-                && (!filters.class.length || filters.class.includes(String(i.class || '')))
+            const rowGrade = getClassGrade(i.class) || 'unknown';
+            return (!filters.grade.length || filters.grade.includes(rowGrade))
+                && (!filters.mode.length || filters.mode.includes(String(i.mode || '')))
+                && (!filters.class.length || filters.class.includes(String(i.class || '').trim()))
                 && (!filters.school.length || filters.school.includes(String(i.school || '')))
                 && (!filters.topic.length || filters.topic.includes(String(i.topic || '')));
         });
@@ -742,7 +782,7 @@ async function renderAdmin() {
         let s = { xs: 0, g: 0, k: 0, d: 0, cd: 0 };
         data.forEach(i => { if(i.score >= 9.0) s.xs++; else if(i.score >= 8.0) s.g++; else if(i.score >= 6.5) s.k++; else if(i.score >= 5.0) s.d++; else s.cd++; });
         statsBox.innerHTML = `<div class="stat-box" style="border-bottom-color: #f59e0b"><b>${s.xs}</b><br><small>X.Sắc</small></div><div class="stat-box" style="border-bottom-color: #10b981"><b>${s.g}</b><br><small>Giỏi</small></div><div class="stat-box" style="border-bottom-color: #3b82f6"><b>${s.k}</b><br><small>Khá</small></div><div class="stat-box" style="border-bottom-color: #8b5cf6"><b>${s.d}</b><br><small>Đạt</small></div><div class="stat-box" style="border-bottom-color: #ef4444"><b>${s.cd}</b><br><small>C.Đạt</small></div>`;
-        listBody.innerHTML = data.map((i, idx) => `<tr><td>${idx+1}</td><td>${i.sbd}</td><td>${i.name}</td><td>${i.class}</td><td>${i.school||'-'}</td><td style="font-size:0.75rem; color:var(--primary); font-weight:bold;">${i.topic || 'Đề tổng hợp'}</td><td><span class="badge-mode ${i.mode === 'practice' ? 'badge-practice' : 'badge-test'}">${i.mode === 'practice' ? 'Luyện tập' : 'Kiểm tra'}</span></td><td><b>${Number((i.score||0).toFixed(2))}</b></td><td>${i.duration}s</td><td>${new Date(i.timestamp).toLocaleDateString()}</td><td style="display:flex; gap:5px;">${teacherSession ? `<button style="background:var(--secondary); color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer" class="btn-view" data-id="${i.id}">👁️</button><button style="background:red; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer" class="btn-del" data-id="${i.id}">X</button>` : (currentUser?.isAnonymous ? '<button style="background:var(--secondary); color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer" class="btn-view" data-id="' + i.id + '" title="Xem lại bài làm">👁️</button>' : 'Công khai')}</td></tr>`).join('');
+        listBody.innerHTML = data.map((i, idx) => `<tr><td>${idx+1}</td><td>${i.sbd || '-'}</td><td>${i.name || '-'}</td><td>${i.class || 'Chưa phân loại'}</td><td>${i.school||'-'}</td><td style="font-size:0.75rem; color:var(--primary); font-weight:bold;">${i.topic || 'Đề tổng hợp'}</td><td><span class="badge-mode ${i.mode === 'practice' ? 'badge-practice' : 'badge-test'}">${i.mode === 'practice' ? 'Luyện tập' : 'Kiểm tra'}</span></td><td><b>${Number((i.score||0).toFixed(2))}</b></td><td>${i.duration}s</td><td>${new Date(i.timestamp).toLocaleDateString()}</td><td style="display:flex; gap:5px;">${teacherSession ? `<button style="background:var(--secondary); color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer" class="btn-view" data-id="${i.id}">👁️</button><button style="background:red; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer" class="btn-del" data-id="${i.id}">X</button>` : (currentUser?.isAnonymous ? '<button style="background:var(--secondary); color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer" class="btn-view" data-id="' + i.id + '" title="Xem lại bài làm">👁️</button>' : 'Công khai')}</td></tr>`).join('');
         listBody.querySelectorAll('.btn-del').forEach(b => b.onclick = () => deleteEntry(b.dataset.id, 'result'));
         listBody.querySelectorAll('.btn-view').forEach(b => b.onclick = () => viewAdminReview(b.dataset.id)); window.currentFilteredData = data;
     } catch(e) { listBody.innerHTML = "<tr><td colspan='11'>Lỗi kết nối Firebase.</td></tr>"; }
