@@ -19,6 +19,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <script id="mammoth-lib" src="https://cdn.jsdelivr.net/npm/mammoth@1.10.0/mammoth.browser.min.js"></script>
+    <script id="pdfjs-lib" src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
         (() => {
             const mark = (id, loaded) => {
@@ -475,7 +476,7 @@
                         <button id="btn-download-q-template" class="btn btn-gray" style="background: #e2e8f0; color: #1e293b;"><span style="font-size: 1.2rem; margin-right: 5px;">⬇️</span> 2. TẢI FILE WORD MẪU</button>
                         <button id="btn-trigger-import-q" class="btn btn-fire" style="background: var(--primary);"><span style="font-size: 1.2rem; margin-right: 5px;">📤</span> 3. IMPORT ĐỀ LÊN ĐÁM MÂY</button>
                         <button id="btn-delete-all-q" class="btn btn-fire" style="background: var(--danger); grid-column: span 2;"><span style="font-size: 1.2rem; margin-right: 5px;">🗑️</span> XÓA TOÀN BỘ NGÂN HÀNG ĐỀ (TẤT CẢ CÁC BÀI)</button>
-                        <input type="file" id="file-import-questions" accept=".docx" style="display: none;">
+                        <input type="file" id="file-import-questions" accept=".docx,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display: none;">
                     </div>
                 </div>
                 <div class="admin-table-container">
