@@ -1406,15 +1406,8 @@ const parseTruthValue = (value) => {
     return null;
 };
 
-const parseWordQuestionBank = async (arrayBuffer) => {
-    if (!window.mammoth) throw new Error('Thư viện đọc Word chưa tải xong.');
-    const result = await window.mammoth.convertToHtml({ arrayBuffer }, {
-        styleMap: [
-            "p[style-name='Heading 1'] => h1:fresh",
-            "p[style-name='Heading 2'] => h2:fresh"
-        ]
-    });
-    const blocks = getWordParagraphs(result.value);
+const parseQuestionBankFromHtml = (html, sourceType = 'DOCX', libraryMessages = []) => {
+    const blocks = getWordParagraphs(html);
     const sections = { mcq: [], tf: [], short: [] };
     const pendingQuestions = { mcq: [], tf: [], short: [] };
     const rejected = [];
@@ -1894,10 +1887,10 @@ const parseWordQuestionBank = async (arrayBuffer) => {
             warnings.push('Có thể thiếu số câu ở phần ' + type.toUpperCase() + ': ' + missing.slice(0, 12).join(', ') + (missing.length > 12 ? '…' : '') + '.');
         }
     });
-    if (imageCount) warnings.push('DOCX có ' + imageCount + ' hình/công thức; các hình được nhúng vào nội dung. Kiểm tra kỹ preview và dung lượng trước khi tải.');
-    const unsupportedMessages = (result.messages || []).filter(message => /unsupported|unrecognized|ignored/i.test((message.message || '') + ' ' + (message.type || '')));
+    if (imageCount) warnings.push(sourceType + ' có ' + imageCount + ' hình/công thức được nhúng vào nội dung. Kiểm tra kỹ preview và dung lượng trước khi tải.');
+    const unsupportedMessages = (libraryMessages || []).filter(message => /unsupported|unrecognized|ignored/i.test((message.message || '') + ' ' + (message.type || '')));
     unsupportedCount = unsupportedMessages.length;
-    if (unsupportedCount) warnings.push('Bộ đọc Word báo ' + unsupportedCount + ' thành phần không hỗ trợ; hãy dùng bản DOCX đã chuyển công thức sang ảnh chuẩn trước khi tải.');
+    if (unsupportedCount) warnings.push('Bộ đọc ' + sourceType + ' báo ' + unsupportedCount + ' thành phần không hỗ trợ; hãy kiểm tra lại công thức, hình và ký hiệu trong bản xem trước.');
     const estimatedBytes = new Blob([JSON.stringify(sections)]).size;
     if (estimatedBytes > 850 * 1024) warnings.push('Dữ liệu có hình/công thức nhúng khá lớn (' + Math.ceil(estimatedBytes / 1024) + ' KB); Firestore có giới hạn kích thước tài liệu.');
     const importReady = total > 0
@@ -1907,6 +1900,70 @@ const parseWordQuestionBank = async (arrayBuffer) => {
         && unsupportedCount === 0;
     const hasBlockingErrors = !importReady;
     return { sections, total, candidateCount, expectedCount, rejected, warnings, estimatedBytes, imageCount, unsupportedCount, hasBlockingErrors, importReady };
+};
+
+const parseWordQuestionBank = async (arrayBuffer) => {
+    if (!window.mammoth) throw new Error('Thư viện đọc Word chưa tải xong.');
+    const result = await window.mammoth.convertToHtml({ arrayBuffer }, {
+        styleMap: [
+            "p[style-name='Heading 1'] => h1:fresh",
+            "p[style-name='Heading 2'] => h2:fresh"
+        ]
+    });
+    return parseQuestionBankFromHtml(result.value, 'DOCX', result.messages || []);
+};
+
+const parsePdfQuestionBank = async (arrayBuffer) => {
+    if (!window.pdfjsLib) throw new Error('Thư viện đọc PDF chưa tải xong. Hãy tải lại trang và thử lại.');
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const pdf = await window.pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
+    const htmlPages = [];
+    let extractedCharacters = 0;
+    for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+        const page = await pdf.getPage(pageNumber);
+        const content = await page.getTextContent();
+        const items = (content.items || [])
+            .filter(item => typeof item.str === 'string' && item.str.trim())
+            .map(item => ({
+                text: item.str,
+                x: item.transform ? item.transform[4] : 0,
+                y: item.transform ? item.transform[5] : 0
+            }))
+            .sort((a, b) => Math.abs(b.y - a.y) > 2.5 ? b.y - a.y : a.x - b.x);
+        const lines = [];
+        items.forEach(item => {
+            let line = lines.find(candidate => Math.abs(candidate.y - item.y) <= 2.5);
+            if (!line) {
+                line = { y: item.y, items: [] };
+                lines.push(line);
+            }
+            line.items.push(item);
+        });
+        lines.sort((a, b) => b.y - a.y);
+        const paragraphs = lines.map(line => {
+            line.items.sort((a, b) => a.x - b.x);
+            const text = line.items.map(item => item.text).join(' ').replace(/\s+/g, ' ').trim();
+            extractedCharacters += text.length;
+            return text ? '<p>' + escapeQuestionHtml(text) + '</p>' : '';
+        }).filter(Boolean);
+        if (paragraphs.length) htmlPages.push(paragraphs.join(''));
+        if (pageNumber < pdf.numPages) htmlPages.push('<p> </p>');
+    }
+    if (!extractedCharacters) {
+        throw new Error('PDF không có lớp văn bản đọc được. Có thể đây là PDF scan; cần OCR/AI đọc ảnh để xử lý.');
+    }
+    const parsed = parseQuestionBankFromHtml(htmlPages.join(''), 'PDF', []);
+    parsed.sourceType = 'PDF';
+    parsed.pageCount = pdf.numPages;
+    if (extractedCharacters < 80) {
+        parsed.warnings.unshift('PDF chỉ trích xuất được rất ít văn bản; có thể là bản scan hoặc nội dung nằm trong ảnh. Cần OCR/AI và kiểm tra thủ công.');
+        parsed.importReady = false;
+        parsed.hasBlockingErrors = true;
+    } else {
+        parsed.warnings.unshift('Đã trích xuất văn bản từ ' + pdf.numPages + ' trang PDF. PDF scan, công thức dạng ảnh, cột hoặc sơ đồ có thể chưa được đọc đầy đủ; hãy kiểm tra bản xem trước.');
+    }
+    return parsed;
 };
 
 const renderQuestionImportPreview = (topic, result) => {
@@ -2040,12 +2097,23 @@ document.getElementById('file-import-questions').onchange = async (event) => {
         event.target.value = '';
         return;
     }
+    const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+    const isDocx = /\.docx$/i.test(file.name) ||
+        file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    if (!isPdf && !isDocx) {
+        showCustomAlert('Chỉ hỗ trợ file Word .docx hoặc PDF .pdf.');
+        event.target.value = '';
+        return;
+    }
     try {
-        const result = await parseWordQuestionBank(await file.arrayBuffer());
+        const buffer = await file.arrayBuffer();
+        const result = isPdf
+            ? await parsePdfQuestionBank(buffer)
+            : await parseWordQuestionBank(buffer);
         renderQuestionImportPreview(selectedTopic, result);
     } catch (error) {
-        console.error('Lỗi đọc Word:', error);
-        showCustomAlert('Lỗi đọc file Word. Vui lòng kiểm tra file .docx và kết nối thư viện Mammoth.');
+        console.error('Lỗi đọc đề:', error);
+        showCustomAlert(error?.message || 'Không đọc được file. Hãy kiểm tra định dạng và thử lại.');
     }
     event.target.value = '';
 };
