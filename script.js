@@ -1840,9 +1840,8 @@ const parseQuestionBankFromHtml = (html, sourceType = 'DOCX', libraryMessages = 
     const total = sections.mcq.length + sections.tf.length + sections.short.length;
     const expectedMatch = blocks.slice(0, 8).map(block => block.text).join(' ').match(/\b(\d+)\s+câu(?:\s+hỏi)?\b/i);
     const expectedCount = expectedMatch ? Number(expectedMatch[1]) : 0;
-    if (expectedCount && candidateCount !== expectedCount) warnings.push('Tài liệu ghi ' + expectedCount + ' câu nhưng parser mới nhận dạng ' + candidateCount + ' dấu câu hỏi. Không tải khi số này chưa khớp.');
-    if (expectedCount && total !== expectedCount) warnings.push('Chỉ có ' + total + '/' + expectedCount + ' câu hợp lệ sau khi kiểm tra đáp án.');
-    else if (total !== candidateCount) warnings.push('Có ' + (candidateCount - total) + ' câu nhận diện được nhưng chưa đủ dữ liệu để nhập.');
+    if (total !== candidateCount) warnings.push('Có ' + (candidateCount - total) + ' câu nhận diện được nhưng chưa đủ dữ liệu để nhập.');
+    if (total > 0 && total < 40) warnings.push('Đề hiện có ' + total + ' câu hợp lệ, ít hơn mức khuyến nghị 40 câu. Chọn “Tôi biết mình đang làm gì” nếu vẫn muốn tải lên.');
     if (expectedCount && allQuestionNumbers.length === expectedCount
         && allQuestionNumbers.every(number => /^\d+$/.test(number))
         && new Set(allQuestionNumbers).size === allQuestionNumbers.length) {
@@ -1895,7 +1894,6 @@ const parseQuestionBankFromHtml = (html, sourceType = 'DOCX', libraryMessages = 
     if (estimatedBytes > 850 * 1024) warnings.push('Dữ liệu có hình/công thức nhúng khá lớn (' + Math.ceil(estimatedBytes / 1024) + ' KB); Firestore có giới hạn kích thước tài liệu.');
     const importReady = total > 0
         && total === candidateCount
-        && (!expectedCount || total === expectedCount)
         && numberingIssueCount === 0
         && unsupportedCount === 0;
     const hasBlockingErrors = !importReady;
@@ -2055,9 +2053,11 @@ const renderQuestionImportPreview = (topic, result) => {
     modal.querySelector('#question-import-count-errors').textContent = result.rejected.length;
     modal.querySelector('#question-import-count-total').textContent = result.total;
     const status = modal.querySelector('#question-import-preview-status');
-    status.textContent = 'Tìm thấy ' + result.candidateCount + (result.expectedCount ? '/' + result.expectedCount : '') + ' câu; hợp lệ ' + result.total +
+    status.textContent = 'Tìm thấy ' + result.candidateCount + ' câu; hợp lệ ' + result.total +
         (result.rejected.length ? '; lỗi ' + result.rejected.length + ' câu.' : '') +
-        (!result.importReady ? ' Chưa đạt đủ số câu hợp lệ; hệ thống chưa cho tải lên để tránh lưu đề thiếu câu.' : (result.warnings.length ? ' Hãy đọc cảnh báo trước khi xác nhận.' : ' Đủ điều kiện tải lên.'));
+        (!result.importReady ? ' Có lỗi cấu trúc cần sửa trước khi tải lên.' :
+            (result.total < 40 ? ' Đề dưới 40 câu; hãy chọn ô xác nhận bên dưới để tiếp tục.' :
+                (result.warnings.length ? ' Hãy đọc cảnh báo trước khi xác nhận.' : ' Đủ điều kiện tải lên.')));
     status.classList.toggle('has-warning', !!(result.rejected.length || result.warnings.length));
     const details = modal.querySelector('#question-import-preview-details');
     details.replaceChildren();
@@ -2082,7 +2082,10 @@ const renderQuestionImportPreview = (topic, result) => {
     ack.checked = false;
     ackWrap.hidden = !pendingQuestionImport.needsAcknowledgement || result.total === 0 || !result.importReady;
     modal.querySelector('#question-import-preview-ack-text').textContent =
-        'Tôi biết mình đang làm gì — chấp nhận tải lên ' + result.total + ' câu hợp lệ và thay thế ngân hàng đề hiện tại của chuyên đề này.';
+        (result.total < 40
+            ? 'Tôi biết mình đang làm gì — đề dưới 40 câu, vẫn tải lên ' + result.total + ' câu hợp lệ.'
+            : 'Tôi biết mình đang làm gì — chấp nhận các cảnh báo và tải lên ' + result.total + ' câu hợp lệ.') +
+        ' Ngân hàng đề hiện tại của chuyên đề này sẽ bị thay thế.';
     const confirm = modal.querySelector('#question-import-preview-confirm');
     confirm.disabled = !result.importReady || result.estimatedBytes > 900 * 1024 || pendingQuestionImport.needsAcknowledgement;
     modal.style.display = 'flex';
