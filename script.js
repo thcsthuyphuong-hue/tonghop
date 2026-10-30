@@ -1838,26 +1838,6 @@ const parseQuestionBankFromHtml = (html, sourceType = 'DOCX', libraryMessages = 
         sections[type].forEach(question => { delete question._importNumber; });
     }
     const total = sections.mcq.length + sections.tf.length + sections.short.length;
-    const expectedMatch = blocks.slice(0, 8).map(block => block.text).join(' ').match(/\b(\d+)\s+câu(?:\s+hỏi)?\b/i);
-    const expectedCount = expectedMatch ? Number(expectedMatch[1]) : 0;
-    if (total !== candidateCount) warnings.push('Có ' + (candidateCount - total) + ' câu nhận diện được nhưng chưa đủ dữ liệu để nhập.');
-    if (total > 0 && total < 40) warnings.push('Đề hiện có ' + total + ' câu hợp lệ, ít hơn mức khuyến nghị 40 câu. Chọn “Tôi biết mình đang làm gì” nếu vẫn muốn tải lên.');
-    if (expectedCount && allQuestionNumbers.length === expectedCount
-        && allQuestionNumbers.every(number => /^\d+$/.test(number))
-        && new Set(allQuestionNumbers).size === allQuestionNumbers.length) {
-        const importedNumbers = new Set(allQuestionNumbers.map(Number));
-        const missing = [];
-        for (let number = 1; number <= expectedCount; number++) {
-            if (!importedNumbers.has(number)) missing.push(number);
-        }
-        const outOfRange = [...importedNumbers].filter(number => number < 1 || number > expectedCount);
-        if (missing.length || outOfRange.length) {
-            numberingIssueCount++;
-            warnings.push('Dãy số câu không liên tục 1–' + expectedCount +
-                (missing.length ? '; thiếu ' + missing.slice(0, 12).join(', ') : '') +
-                (outOfRange.length ? '; ngoài phạm vi: ' + outOfRange.slice(0, 12).join(', ') : '') + '.');
-        }
-    }
     if (!section) warnings.push('Không nhận diện được tiêu đề phần; hãy dùng PHẦN I, PHẦN II hoặc PHẦN III.');
     if (!candidateCount) warnings.push('Không nhận diện được câu hỏi. Hãy kiểm tra cách ghi số câu và tiêu đề PHẦN.');
     if (rejected.length) warnings.push('Có ' + rejected.length + ' câu bị loại vì thiếu trường bắt buộc hoặc dữ liệu mơ hồ.');
@@ -1896,7 +1876,7 @@ const parseQuestionBankFromHtml = (html, sourceType = 'DOCX', libraryMessages = 
     // Rejected questions and parser warnings stay visible in preview but do not block a valid bank.
     const importReady = total > 0;
     const hasBlockingErrors = !importReady;
-    return { sections, total, candidateCount, expectedCount, rejected, warnings, estimatedBytes, imageCount, unsupportedCount, hasBlockingErrors, importReady };
+    return { sections, total, candidateCount, rejected, warnings, estimatedBytes, imageCount, unsupportedCount, hasBlockingErrors, importReady };
 };
 
 const parseWordQuestionBank = async (arrayBuffer) => {
