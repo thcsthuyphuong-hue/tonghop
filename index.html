@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, ">
-    <title> HỆ THỐNG ÔN TẬP KHTN 9</title>
+    <title>Hệ Thống Ôn Tập Vật Lý 9</title>
     
     <script>
         window.MathJax = {
@@ -19,6 +19,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <script id="mammoth-lib" src="https://cdn.jsdelivr.net/npm/mammoth@1.10.0/mammoth.browser.min.js"></script>
+    <script id="pdfjs-lib" src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
         (() => {
             const mark = (id, loaded) => {
@@ -475,7 +476,7 @@
                         <button id="btn-download-q-template" class="btn btn-gray" style="background: #e2e8f0; color: #1e293b;"><span style="font-size: 1.2rem; margin-right: 5px;">⬇️</span> 2. TẢI FILE WORD MẪU</button>
                         <button id="btn-trigger-import-q" class="btn btn-fire" style="background: var(--primary);"><span style="font-size: 1.2rem; margin-right: 5px;">📤</span> 3. IMPORT ĐỀ LÊN ĐÁM MÂY</button>
                         <button id="btn-delete-all-q" class="btn btn-fire" style="background: var(--danger); grid-column: span 2;"><span style="font-size: 1.2rem; margin-right: 5px;">🗑️</span> XÓA TOÀN BỘ NGÂN HÀNG ĐỀ (TẤT CẢ CÁC BÀI)</button>
-                        <input type="file" id="file-import-questions" accept=".docx" style="display: none;">
+                        <input type="file" id="file-import-questions" accept=".docx,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display: none;">
                     </div>
                 </div>
                 <div class="admin-table-container">
@@ -573,7 +574,7 @@
 <div><label for="student-class">Lớp</label><input id="student-class" maxlength="20" placeholder="9A1"></div>
 <div><label for="student-sbd">Số báo danh</label><input id="student-sbd" maxlength="30" placeholder="01"></div>
 </div>
-<label for="student-school">Trường</label><input id="student-school" maxlength="120" placeholder="THCS Thanh Thuỷ ">
+<label for="student-school">Trường</label><input id="student-school" maxlength="120" placeholder="THCS Thuỷ Phương">
 <div class="actions"><button id="join-room-btn">Vào phòng thi</button></div>
 <p class="muted">Không cần tài khoản email. Mỗi thiết bị dùng phiên Firebase riêng.</p>
 </div>
@@ -594,12 +595,12 @@
 </section>
 
         <footer>
-            <div style="font-weight: 800; color: #cbd5e0; margin-bottom: 5px;">HỆ THỐNG LUYỆN TẬP, KIỂM TRA TRỰC TUYẾN KHOA HỌC TỰ NHIÊN 9</div>
-            <div style="font-size: 0.85rem;">Bản quyền thuộc về Trường THCS Thanh Thuỷ, Thành phố Huế</div>
+            <div style="font-weight: 800; color: #cbd5e0; margin-bottom: 5px;">HỆ THỐNG LUYỆN TẬP VẬT LÝ 9</div>
+            <div style="font-size: 0.85rem;">Bản quyền thuộc về Trường THCS Thuỷ Phương, Thành phố Huế</div>
         </footer>
     </div>
 </div>
 
-<script type="module" src="script.js?v=20261020-import-40x40"></script>
+<script type="module" src="script.js?v=20261030-ack-visible"></script>
 </body>
 </html>
