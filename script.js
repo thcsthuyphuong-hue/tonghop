@@ -1892,10 +1892,9 @@ const parseQuestionBankFromHtml = (html, sourceType = 'DOCX', libraryMessages = 
     if (unsupportedCount) warnings.push('Bộ đọc ' + sourceType + ' báo ' + unsupportedCount + ' thành phần không hỗ trợ; hãy kiểm tra lại công thức, hình và ký hiệu trong bản xem trước.');
     const estimatedBytes = new Blob([JSON.stringify(sections)]).size;
     if (estimatedBytes > 850 * 1024) warnings.push('Dữ liệu có hình/công thức nhúng khá lớn (' + Math.ceil(estimatedBytes / 1024) + ' KB); Firestore có giới hạn kích thước tài liệu.');
-    const importReady = total > 0
-        && total === candidateCount
-        && numberingIssueCount === 0
-        && unsupportedCount === 0;
+    // Only valid parsed questions count toward the 40-question threshold.
+    // Rejected questions and parser warnings stay visible in preview but do not block a valid bank.
+    const importReady = total > 0;
     const hasBlockingErrors = !importReady;
     return { sections, total, candidateCount, expectedCount, rejected, warnings, estimatedBytes, imageCount, unsupportedCount, hasBlockingErrors, importReady };
 };
@@ -2002,7 +2001,7 @@ const renderQuestionImportPreview = (topic, result) => {
                 !pendingQuestionImport || pendingQuestionImport.result.total === 0 ||
                 !pendingQuestionImport.result.importReady ||
                 pendingQuestionImport.result.estimatedBytes > 900 * 1024 ||
-                (pendingQuestionImport.needsAcknowledgement && !modal.querySelector('#question-import-preview-ack').checked);
+                (pendingQuestionImport.result.total < 40 && !modal.querySelector('#question-import-preview-ack').checked);
         };
         modal.querySelector('#question-import-preview-confirm').onclick = () => {
             const staged = pendingQuestionImport;
@@ -2011,14 +2010,14 @@ const renderQuestionImportPreview = (topic, result) => {
                 return;
             }
             if (!staged.result.importReady) {
-                showCustomAlert('Đề chưa đủ câu hợp lệ để nhập. Hãy kiểm tra số câu và các lỗi trong phần xem trước.');
+                showCustomAlert('Không tìm thấy câu hợp lệ để nhập. Hãy kiểm tra phần xem trước.');
                 return;
             }
             if (staged.result.estimatedBytes > 900 * 1024) {
                 showCustomAlert('Dữ liệu đề quá lớn để ghi an toàn vào một tài liệu Firebase. Hãy giảm kích thước ảnh.');
                 return;
             }
-            if (staged.needsAcknowledgement && !modal.querySelector('#question-import-preview-ack').checked) {
+            if (staged.result.total < 40 && !modal.querySelector('#question-import-preview-ack').checked) {
                 showCustomAlert('Hãy xác nhận đã xem các cảnh báo trước khi tải lên.');
                 return;
             }
@@ -2042,7 +2041,7 @@ const renderQuestionImportPreview = (topic, result) => {
     pendingQuestionImport = {
         topic,
         result,
-        needsAcknowledgement: !!result.warnings.length
+        needsAcknowledgement: result.total > 0 && result.total < 40
     };
     const counts = result.sections;
     const topicOption = document.getElementById('import-q-topic').selectedOptions[0];
@@ -2080,14 +2079,15 @@ const renderQuestionImportPreview = (topic, result) => {
     const ackWrap = modal.querySelector('#question-import-preview-ack-wrap');
     const ack = modal.querySelector('#question-import-preview-ack');
     ack.checked = false;
-    ackWrap.hidden = !pendingQuestionImport.needsAcknowledgement || result.total === 0 || !result.importReady;
+    ackWrap.hidden = result.total === 0 || result.total >= 40;
     modal.querySelector('#question-import-preview-ack-text').textContent =
         (result.total < 40
             ? 'Tôi biết mình đang làm gì — đề dưới 40 câu, vẫn tải lên ' + result.total + ' câu hợp lệ.'
             : 'Tôi biết mình đang làm gì — chấp nhận các cảnh báo và tải lên ' + result.total + ' câu hợp lệ.') +
         ' Ngân hàng đề hiện tại của chuyên đề này sẽ bị thay thế.';
     const confirm = modal.querySelector('#question-import-preview-confirm');
-    confirm.disabled = !result.importReady || result.estimatedBytes > 900 * 1024 || pendingQuestionImport.needsAcknowledgement;
+    confirm.disabled = !result.importReady || result.estimatedBytes > 900 * 1024 ||
+        (result.total < 40 && pendingQuestionImport.needsAcknowledgement);
     modal.style.display = 'flex';
 };
 
