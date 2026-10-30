@@ -449,15 +449,7 @@
 
             
             <div id="admin-questions-section" style="display: none;">
-<div class="card" style="padding:20px;margin-bottom:20px">
-<h4>🗂️ QUẢN LÝ CHUYÊN ĐỀ</h4>
-<p>Thêm, sửa tên hoặc xóa chuyên đề. Xóa chuyên đề sẽ xóa luôn ngân hàng câu hỏi tương ứng.</p>
-<div style="display:flex;gap:10px;flex-wrap:wrap">
-<input id="topic-name-input" maxlength="100" placeholder="Tên chuyên đề mới" style="flex:1;min-width:220px">
-<button id="btn-topic-add" class="btn btn-fire">➕ Thêm chuyên đề</button>
-</div>
-<div id="topic-manager-list" style="margin-top:14px"></div>
-</div>
+<section class="topic-manager-card"><div class="topic-manager-heading"><div><span class="topic-manager-eyebrow">NGÂN HÀNG ĐỀ</span><h4>🗂️ Quản lý chuyên đề</h4><p>Thêm, đổi tên hoặc xóa chuyên đề và ngân hàng câu hỏi đi kèm.</p></div><span id="topic-manager-count" class="topic-manager-count">0 chuyên đề</span></div><div class="topic-manager-toolbar"><input id="topic-name-input" maxlength="100" placeholder="Nhập tên chuyên đề mới…"><button id="btn-topic-add" type="button" class="topic-action-primary">＋ Thêm chuyên đề</button><button id="btn-topic-refresh" type="button" class="topic-action-refresh">↻ Làm mới</button></div><div id="topic-manager-status" class="topic-manager-status" aria-live="polite"></div><div id="topic-manager-list" class="topic-manager-list"></div></section>
                 <div class="card" style="padding: 20px; margin-bottom: 20px; background: #eff6ff; border: 2px solid #bfdbfe;">
                     <h4 style="margin: 0 0 15px 0; color: #1e40af; text-transform: uppercase;">📥 Import Ngân Hàng Đề Theo Từng Bài</h4>
                     <p style="font-size: 0.85rem; color: #1d4ed8; margin-bottom: 15px;">*Tải file mẫu, soạn câu hỏi cho <b>1 bài cụ thể</b>. Chọn bài tương ứng ở menu bên dưới rồi tải file lên. Lưu ý: Dữ liệu mới sẽ <b>GHI ĐÈ</b> lên dữ liệu cũ của bài đó trên hệ thống.</p>
