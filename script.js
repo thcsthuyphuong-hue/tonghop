@@ -2039,7 +2039,7 @@ const renderQuestionImportPreview = (topic, result) => {
                 !pendingQuestionImport || pendingQuestionImport.result.total === 0 ||
                 !pendingQuestionImport.result.importReady ||
                 pendingQuestionImport.result.estimatedBytes > 900 * 1024 ||
-                (pendingQuestionImport.result.total < 40 && !modal.querySelector('#question-import-preview-ack').checked);
+                (pendingQuestionImport.needsAcknowledgement && !modal.querySelector('#question-import-preview-ack').checked);
         };
         modal.querySelector('#question-import-preview-confirm').onclick = () => {
             const staged = pendingQuestionImport;
@@ -2055,7 +2055,7 @@ const renderQuestionImportPreview = (topic, result) => {
                 showCustomAlert('Dữ liệu đề quá lớn để ghi an toàn vào một tài liệu Firebase. Hãy giảm kích thước ảnh.');
                 return;
             }
-            if (staged.result.total < 40 && !modal.querySelector('#question-import-preview-ack').checked) {
+            if (staged.needsAcknowledgement && !modal.querySelector('#question-import-preview-ack').checked) {
                 showCustomAlert('Hãy xác nhận đã xem các cảnh báo trước khi tải lên.');
                 return;
             }
@@ -2079,7 +2079,7 @@ const renderQuestionImportPreview = (topic, result) => {
     pendingQuestionImport = {
         topic,
         result,
-        needsAcknowledgement: result.total > 0 && result.total < 40
+        needsAcknowledgement: result.rejected.length > 0 || result.warnings.length > 0
     };
     const counts = result.sections;
     const topicOption = document.getElementById('import-q-topic').selectedOptions[0];
@@ -2093,8 +2093,7 @@ const renderQuestionImportPreview = (topic, result) => {
     status.textContent = 'Tìm thấy ' + result.candidateCount + ' câu; hợp lệ ' + result.total +
         (result.rejected.length ? '; lỗi ' + result.rejected.length + ' câu.' : '') +
         (!result.importReady ? ' Có lỗi cấu trúc cần sửa trước khi tải lên.' :
-            (result.total < 40 ? ' Đề dưới 40 câu; hãy chọn ô xác nhận bên dưới để tiếp tục.' :
-                (result.warnings.length ? ' Hãy đọc cảnh báo trước khi xác nhận.' : ' Đủ điều kiện tải lên.')));
+            (result.warnings.length || result.rejected.length ? ' Hãy đọc cảnh báo và xác nhận trước khi tải lên.' : ' Đủ điều kiện tải lên; số lượng câu không bị giới hạn ở 40.'));
     status.classList.toggle('has-warning', !!(result.rejected.length || result.warnings.length));
     const details = modal.querySelector('#question-import-preview-details');
     details.replaceChildren();
@@ -2117,15 +2116,12 @@ const renderQuestionImportPreview = (topic, result) => {
     const ackWrap = modal.querySelector('#question-import-preview-ack-wrap');
     const ack = modal.querySelector('#question-import-preview-ack');
     ack.checked = false;
-    ackWrap.hidden = false;
+    ackWrap.hidden = !pendingQuestionImport.needsAcknowledgement;
     modal.querySelector('#question-import-preview-ack-text').textContent =
-        (result.total < 40
-            ? 'Tôi biết mình đang làm gì — đề dưới 40 câu, vẫn tải lên ' + result.total + ' câu hợp lệ.'
-            : 'Tôi biết mình đang làm gì — chấp nhận các cảnh báo và tải lên ' + result.total + ' câu hợp lệ.') +
-        ' Ngân hàng đề hiện tại của chuyên đề này sẽ bị thay thế.';
+        'Tôi đã xem cảnh báo và xác nhận tải lên ' + result.total + ' câu hợp lệ. Ngân hàng đề hiện tại của chuyên đề này sẽ bị thay thế.';
     const confirm = modal.querySelector('#question-import-preview-confirm');
     confirm.disabled = !result.importReady || result.estimatedBytes > 900 * 1024 ||
-        (result.total < 40 && pendingQuestionImport.needsAcknowledgement);
+        (pendingQuestionImport.needsAcknowledgement && !modal.querySelector('#question-import-preview-ack').checked);
     modal.style.display = 'flex';
 };
 
