@@ -250,14 +250,7 @@
 
                 <div class="topic-card">
                     <label for="topic-select">🎯 Chọn chuyên đề ôn tập</label>
-                    <select id="topic-select">
-                        <option value="mix">🔥 ĐỀ TỔNG HỢP (Tất cả các bài)</option>
-                        <option value="bai_11">Bài 11: Điện trở. Định luật Ohm</option>
-                        <option value="bai_12">Bài 12: Đoạn mạch nối tiếp, song song</option>
-                        <option value="bai_13">Bài 13: Năng lượng điện và công suất</option>
-                        <option value="bai_14">Bài 14: Cảm ứng điện từ. Dòng điện XC</option>
-                        <option value="bai_15">Bài 15: Tác dụng của dòng điện XC</option>
-                    </select>
+                    <select id="topic-select"><option value="mix">🔥 ĐỀ TỔNG HỢP (Tất cả các bài)</option></select>
                 </div>
 
                 <p id="start-error">⚠️ Vui lòng điền đầy đủ các thông tin!</p>
@@ -456,20 +449,22 @@
 
             
             <div id="admin-questions-section" style="display: none;">
+<div class="card" style="padding:20px;margin-bottom:20px">
+<h4>🗂️ QUẢN LÝ CHUYÊN ĐỀ</h4>
+<p>Thêm, sửa tên hoặc xóa chuyên đề. Xóa chuyên đề sẽ xóa luôn ngân hàng câu hỏi tương ứng.</p>
+<div style="display:flex;gap:10px;flex-wrap:wrap">
+<input id="topic-name-input" maxlength="100" placeholder="Tên chuyên đề mới" style="flex:1;min-width:220px">
+<button id="btn-topic-add" class="btn btn-fire">➕ Thêm chuyên đề</button>
+</div>
+<div id="topic-manager-list" style="margin-top:14px"></div>
+</div>
                 <div class="card" style="padding: 20px; margin-bottom: 20px; background: #eff6ff; border: 2px solid #bfdbfe;">
                     <h4 style="margin: 0 0 15px 0; color: #1e40af; text-transform: uppercase;">📥 Import Ngân Hàng Đề Theo Từng Bài</h4>
                     <p style="font-size: 0.85rem; color: #1d4ed8; margin-bottom: 15px;">*Tải file mẫu, soạn câu hỏi cho <b>1 bài cụ thể</b>. Chọn bài tương ứng ở menu bên dưới rồi tải file lên. Lưu ý: Dữ liệu mới sẽ <b>GHI ĐÈ</b> lên dữ liệu cũ của bài đó trên hệ thống.</p>
                     
                     <div style="margin-bottom: 15px;">
                         <label style="font-size: 0.85rem; font-weight: bold; color: #1e40af; display:block; margin-bottom:5px;">1. CHỌN CHUYÊN ĐỀ ĐỂ IMPORT:</label>
-                        <select id="import-q-topic" style="width: 100%; border-color: #bfdbfe; color: #1e40af; font-weight: bold; padding: 12px;">
-                            <option value="">-- Vui lòng chọn chuyên đề trước khi thao tác --</option>
-                            <option value="bai_11">Bài 11: Điện trở. Định luật Ohm</option>
-                            <option value="bai_12">Bài 12: Đoạn mạch nối tiếp, song song</option>
-                            <option value="bai_13">Bài 13: Năng lượng điện và công suất</option>
-                            <option value="bai_14">Bài 14: Cảm ứng điện từ. Dòng điện XC</option>
-                            <option value="bai_15">Bài 15: Tác dụng của dòng điện XC</option>
-                        </select>
+                        <select id="import-q-topic" style="width: 100%; border-color: #bfdbfe; color: #1e40af; font-weight: bold; padding: 12px;"><option value="">-- Vui lòng chọn chuyên đề trước khi thao tác --</option></select>
                     </div>
 
                     <div class="grid-2-col">
