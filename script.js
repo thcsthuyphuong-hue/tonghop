@@ -2059,7 +2059,7 @@ const renderQuestionImportPreview = (topic, result) => {
     const ackWrap = modal.querySelector('#question-import-preview-ack-wrap');
     const ack = modal.querySelector('#question-import-preview-ack');
     ack.checked = false;
-    ackWrap.hidden = result.total === 0 || result.total >= 40;
+    ackWrap.hidden = false;
     modal.querySelector('#question-import-preview-ack-text').textContent =
         (result.total < 40
             ? 'Tôi biết mình đang làm gì — đề dưới 40 câu, vẫn tải lên ' + result.total + ' câu hợp lệ.'
