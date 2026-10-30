@@ -240,6 +240,7 @@ onAuthStateChanged(auth, async user => {
     currentUser = user;
     syncTeacherAuthButton();
     if (!user) return;
+    await loadTopicCatalog().catch(e => console.error('Lỗi tải chuyên đề:', e));
     await loadTimeConfig();
     if (user.isAnonymous) {
         const guestToggle = document.getElementById('guest-mode-toggle');
@@ -835,8 +836,55 @@ async function renderAdminStudents() {
     } catch(e) { listBody.innerHTML = "<tr><td colspan='6' style='text-align: center; color: red;'>Lỗi kết nối CSDL.</td></tr>"; }
 }
 
+
+const topicCollection = 'question_topics';
+const defaultTopics = [
+ {id:'bai_11',name:'Bài 11: Điện trở. Định luật Ohm',order:11},
+ {id:'bai_12',name:'Bài 12: Đoạn mạch nối tiếp, song song',order:12},
+ {id:'bai_13',name:'Bài 13: Năng lượng điện và công suất',order:13},
+ {id:'bai_14',name:'Bài 14: Cảm ứng điện từ. Dòng điện XC',order:14},
+ {id:'bai_15',name:'Bài 15: Tác dụng của dòng điện XC',order:15}
+];
+let topicCatalog = [...defaultTopics];
+const topicRoot = () => collection(db,'artifacts',appId_fixed,'public','data',topicCollection);
+const safeTopicId = name => name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/đ/g,'d').replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'').slice(0,50);
+async function loadTopicCatalog() {
+ const snap = await getDocs(topicRoot());
+ if (snap.empty) {
+   topicCatalog = [...defaultTopics];
+   if (currentUser && !currentUser.isAnonymous) {
+     for (const t of defaultTopics) await setDoc(doc(topicRoot(),t.id),{name:t.name,order:t.order});
+   }
+ } else {
+   topicCatalog = snap.docs.map(d=>({id:d.id,...d.data()})).filter(t=>typeof t.name==='string').sort((a,b)=>(a.order||0)-(b.order||0)||a.name.localeCompare(b.name,'vi'));
+ }
+ refreshTopicSelects();
+ renderTopicManager();
+}
+function refreshTopicSelects() {
+ const specs=[['topic-select',true],['import-q-topic',false]];
+ for (const [id,includeMix] of specs) {
+   const select=document.getElementById(id); if(!select) continue;
+   const previous=select.value;
+   select.innerHTML=(includeMix?'<option value="mix">🔥 ĐỀ TỔNG HỢP (Tất cả các bài)</option>':'<option value="">-- Vui lòng chọn chuyên đề trước khi thao tác --</option>')+
+     topicCatalog.map(t=>'<option value="'+escapeHtml(t.id)+'">'+escapeHtml(t.name)+'</option>').join('');
+   if([...select.options].some(o=>o.value===previous)) select.value=previous;
+   const wrapper=select.previousElementSibling;
+   if(wrapper && (wrapper.classList.contains('topic-select-glass')||wrapper.classList.contains('admin-single-filter'))) wrapper.remove();
+   select.hidden=false; delete select.dataset.glassMenuReady;
+   if(id==='topic-select') setupLoginTopicGlassMenu(); else setupAdminQuestionTopicMenu();
+ }
+}
+function renderTopicManager() {
+ const root=document.getElementById('topic-manager-list'); if(!root)return;
+ root.innerHTML=topicCatalog.map(t=>'<div style="display:flex;gap:8px;align-items:center;margin:8px 0"><span style="flex:1">'+escapeHtml(t.name)+'</span><button type="button" class="btn-topic-rename" data-id="'+escapeHtml(t.id)+'">✏️ Sửa</button><button type="button" class="btn-topic-delete" data-id="'+escapeHtml(t.id)+'">🗑️ Xóa</button></div>').join('')||'<p>Chưa có chuyên đề.</p>';
+ root.querySelectorAll('.btn-topic-rename').forEach(b=>b.onclick=async()=>{const item=topicCatalog.find(t=>t.id===b.dataset.id);const name=prompt('Tên chuyên đề mới:',item?.name||'');if(!name?.trim())return;try{await updateDoc(doc(topicRoot(),item.id),{name:name.trim()});await loadTopicCatalog();}catch(e){showCustomAlert(getFirebaseErrorMessage(e,'APP-TOPIC-002','Không sửa được chuyên đề.'));}});
+ root.querySelectorAll('.btn-topic-delete').forEach(b=>b.onclick=async()=>{const item=topicCatalog.find(t=>t.id===b.dataset.id);if(!item||!confirm('Xóa "'+item.name+'" và toàn bộ ngân hàng câu hỏi của chuyên đề này?'))return;try{await deleteDoc(doc(db,'artifacts',appId_fixed,'public','data',collectionBanks,item.id));await deleteDoc(doc(topicRoot(),item.id));await loadTopicCatalog();}catch(e){showCustomAlert(getFirebaseErrorMessage(e,'APP-TOPIC-003','Không xóa được chuyên đề.'));}});
+}
+document.getElementById('btn-topic-add')?.addEventListener('click',async()=>{const input=document.getElementById('topic-name-input');const name=input.value.trim();if(!name){showCustomAlert('Nhập tên chuyên đề trước.');return;}let id=safeTopicId(name);if(!id){showCustomAlert('Tên chuyên đề chưa tạo được mã hợp lệ.');return;}if(topicCatalog.some(t=>t.id===id)){showCustomAlert('Chuyên đề này đã tồn tại.');return;}try{let suffix=2,base=id;while(topicCatalog.some(t=>t.id===id))id=base+'_'+suffix++;await setDoc(doc(topicRoot(),id),{name,order:Date.now()});input.value='';await loadTopicCatalog();showCustomAlert('✅ Đã thêm chuyên đề.');}catch(e){showCustomAlert(getFirebaseErrorMessage(e,'APP-TOPIC-001','Không thêm được chuyên đề.'));}});
+
 async function renderAdminQuestions() {
-    setupAdminQuestionTopicMenu(); const listBody = document.getElementById('question-bank-body');
+    await loadTopicCatalog(); const listBody = document.getElementById('question-bank-body');
     listBody.innerHTML = "<tr><td colspan='5' style='text-align: center;'>Đang tải dữ liệu...</td></tr>";
     try {
         const snap = await getDocs(collection(db, 'artifacts', appId_fixed, 'public', 'data', collectionBanks));
