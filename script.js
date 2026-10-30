@@ -1824,6 +1824,13 @@ const parseQuestionBankFromHtml = (html, sourceType = 'DOCX', libraryMessages = 
             } else saveKeyBlock(text);
             return;
         }
+        if (!section && marker) {
+            const rest = cleanLine(text.slice(marker.length));
+            const hasMcqOptions = /(?:^|\\s)A\\s*[.)\\-:]\\s*.+(?:^|\\s)B\\s*[.)\\-:]\\s*.+(?:^|\\s)C\\s*[.)\\-:]\\s*/i.test(rest);
+            const hasTfItems = /(?:^|\\s)a\\s*[.)\\-:]\\s*.+(?:^|\\s)b\\s*[.)\\-:]\\s*.+(?:^|\\s)c\\s*[.)\\-:]\\s*/i.test(rest);
+            section = hasTfItems ? 'tf' : hasMcqOptions ? 'mcq' : 'short';
+            warnings.push('Không thấy tiêu đề phần; tự nhận dạng dạng câu từ cấu trúc nội dung (' + (section === 'tf' ? 'Đúng/Sai' : section === 'mcq' ? 'Trắc nghiệm' : 'Trả lời ngắn') + '). Hãy kiểm tra kỹ bản xem trước.');
+        }
         if (!section) return;
         if (marker) {
             const rest = cleanLine(text.slice(marker.length));
