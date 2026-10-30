@@ -95,6 +95,18 @@ service cloud.firestore {
           || (data.timestamp is string && data.timestamp.size() <= 40));
     }
 
+    match /artifacts/kham-pha-vat-ly-9/public/data/question_topics/{topicId} {
+      allow read: if true;
+      allow create, update: if isTeacher()
+        && request.resource.data.keys().hasAll(["name", "order"])
+        && request.resource.data.keys().hasOnly(["name", "order"])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 100
+        && request.resource.data.order is number;
+      allow delete: if isTeacher();
+    }
+
     match /artifacts/kham-pha-vat-ly-9/public/data/question_banks/{bankId} {
       allow read: if true;
       allow create, update, delete: if isTeacher();
