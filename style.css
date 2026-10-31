@@ -1586,3 +1586,59 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
 
 /* Ensure the topic manager matches the active glass theme. */
 .topic-manager-card{color:#fff!important;background:radial-gradient(circle at 12% 0%,rgba(255,255,255,.18),transparent 42%),linear-gradient(135deg,rgba(73,64,161,.78),rgba(185,76,183,.58))!important;border:1px solid rgba(255,255,255,.42)!important;border-radius:22px!important;box-shadow:0 20px 52px rgba(18,12,65,.26),inset 0 1px 0 rgba(255,255,255,.28)!important;backdrop-filter:blur(24px) saturate(145%)!important;-webkit-backdrop-filter:blur(24px) saturate(145%)!important}.topic-manager-toolbar input{background:rgba(20,16,58,.50)!important;border:1px solid rgba(255,255,255,.34)!important;color:#fff!important}.topic-manager-toolbar button,.topic-manager-actions button{border-radius:11px!important}.topic-manager-row{background:rgba(20,16,58,.26)!important;border-color:rgba(255,255,255,.2)!important}.topic-manager-actions .btn-topic-delete{background:rgba(239,68,98,.30)!important}
+
+
+/* Theme-aware Liquid Glass progress dialog for long-running admin operations. */
+:root {
+  --import-progress-start: #5b5ce2;
+  --import-progress-mid: #9a62df;
+  --import-progress-end: #d968c7;
+  --import-progress-glow: rgba(88,184,245,.22);
+}
+:root[data-theme="ocean"] {
+  --import-progress-start: #087d9d;
+  --import-progress-mid: #268fe0;
+  --import-progress-end: #61e1e9;
+  --import-progress-glow: rgba(97,225,233,.24);
+}
+:root[data-theme="sunset"] {
+  --import-progress-start: #a94482;
+  --import-progress-mid: #ed5e91;
+  --import-progress-end: #ffad62;
+  --import-progress-glow: rgba(255,194,122,.22);
+}
+:root[data-theme="night"] {
+  --import-progress-start: #4c4a91;
+  --import-progress-mid: #7773d6;
+  --import-progress-end: #b1b5ff;
+  --import-progress-glow: rgba(177,181,255,.18);
+}
+.import-progress-overlay {
+  position: fixed; inset: 0; z-index: 100001; display: grid; place-items: center; padding: 18px;
+  background: rgba(13,11,39,.58); backdrop-filter: blur(15px) saturate(135%);
+  -webkit-backdrop-filter: blur(15px) saturate(135%); animation: importProgressFade .18s ease-out;
+}
+.import-progress-panel {
+  width: min(460px,100%); padding: 25px; color: #fff; border: 1px solid rgba(255,255,255,.34);
+  border-radius: 26px;
+  background: radial-gradient(circle at 8% 0%,var(--import-progress-glow),transparent 44%),linear-gradient(145deg,rgba(43,38,101,.91),rgba(26,23,66,.94));
+  box-shadow: 0 28px 85px rgba(7,5,30,.48),inset 0 1px 0 rgba(255,255,255,.24);
+  backdrop-filter: blur(28px) saturate(155%); -webkit-backdrop-filter: blur(28px) saturate(155%);
+}
+.import-progress-eyebrow { margin-bottom: 9px; color: rgba(255,255,255,.68); font-size: .68rem; font-weight: 900; letter-spacing: .13em; }
+.import-progress-title { margin: 0 0 8px; color: #fff; font-size: 1.22rem; font-weight: 900; }
+.import-progress-detail { min-height: 42px; margin: 0 0 17px; color: rgba(255,255,255,.78); font-size: .86rem; line-height: 1.5; overflow-wrap: anywhere; }
+.import-progress-numbers { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 9px; color: rgba(255,255,255,.88); font-size: .82rem; font-variant-numeric: tabular-nums; }
+.import-progress-numbers strong { color: #fff; font-size: 1rem; font-weight: 900; }
+.import-progress-numbers span { color: #e6d8ff; font-weight: 900; }
+.import-progress-track { height: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,.24); border-radius: 999px; background: rgba(8,7,31,.48); box-shadow: inset 0 2px 5px rgba(0,0,0,.24); }
+.import-progress-fill { width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg,var(--import-progress-start),var(--import-progress-mid),var(--import-progress-end)); box-shadow: 0 0 20px var(--import-progress-glow); transition: width .22s ease; }
+.import-progress-footer { margin-top: 14px; color: rgba(255,255,255,.58); font-size: .72rem; line-height: 1.45; }
+.import-progress-close, .import-progress-retry { display: inline-block; margin: 17px 0 0 8px; padding: 9px 17px; border: 1px solid rgba(255,255,255,.30); border-radius: 999px; color: #fff; font-size: .76rem; font-weight: 900; cursor: pointer; }
+.import-progress-close { background: linear-gradient(110deg,var(--import-progress-start),var(--import-progress-end)); }
+.import-progress-retry { margin-left: 0; border-color: rgba(255,255,255,.38); background: rgba(255,255,255,.13); }
+.import-progress-close[hidden] { display: none; }
+.import-progress-overlay.is-complete .import-progress-fill { background: linear-gradient(90deg,#16a67a,#58d6ad); }
+.import-progress-overlay.is-error .import-progress-fill { background: linear-gradient(90deg,#ef5b78,#ff9b9b); }
+@keyframes importProgressFade { from { opacity: 0; } to { opacity: 1; } }
+@media (max-width: 480px) { .import-progress-panel { padding: 21px; border-radius: 22px; } }
