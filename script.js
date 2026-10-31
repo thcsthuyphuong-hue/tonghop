@@ -1015,16 +1015,23 @@ document.getElementById('file-import-students').onchange = (e) => {
             const json = XLSX.utils.sheet_to_json(worksheet);
 
             importedStudentsCache = []; let duplicateCount = 0;
+            const existingStudentKeys = new Set(globalStudentList.map(student => JSON.stringify([
+                student.name || '', student.class || '', student.school || ''
+            ])));
 
             json.forEach(row => {
                 let name = (row["Họ và Tên"] || row["Họ tên"] || row["Name"] || "").toString().trim();
                 let cls = (row["Lớp"] || row["Class"] || "").toString().trim();
                 let sbd = (row["SBD"] || row["Số báo danh"] || "").toString().trim();
                 let sch = (row["Trường"] || row["School"] || "THCS Thuỷ Phương").toString().trim();
-                if(name) {
-                    let isDupDB = globalStudentList.some(s => s.name === name && s.class === cls && s.school === sch);
-                    let isDupCache = importedStudentsCache.some(s => s.name === name && s.class === cls && s.school === sch);
-                    if(!isDupDB && !isDupCache) { importedStudentsCache.push({ name: name, class: cls, sbd: sbd, school: sch, timestamp: new Date().toISOString() }); } else { duplicateCount++; }
+                if (name) {
+                    const studentKey = JSON.stringify([name, cls, sch]);
+                    if (!existingStudentKeys.has(studentKey)) {
+                        existingStudentKeys.add(studentKey);
+                        importedStudentsCache.push({ name, class: cls, sbd, school: sch, timestamp: new Date().toISOString() });
+                    } else {
+                        duplicateCount++;
+                    }
                 }
             });
 
@@ -2111,7 +2118,93 @@ function deleteEntry(id, type) {
     document.getElementById('delete-auth-modal').style.display = 'flex';
 }
 
-async function executePendingAdminAction() {
+const STUDENT_IMPORT_BATCH_SIZE = 400;
+
+function createImportProgress(title, total, unit = 'học sinh') {
+    const overlay = document.createElement('div');
+    overlay.className = 'import-progress-overlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-live', 'polite');
+
+    const panel = document.createElement('div');
+    panel.className = 'import-progress-panel';
+    const eyebrow = document.createElement('div');
+    eyebrow.className = 'import-progress-eyebrow';
+    eyebrow.textContent = 'HUE SMART TEST 7991 · ĐANG XỬ LÝ';
+    const heading = document.createElement('h3');
+    heading.className = 'import-progress-title';
+    heading.textContent = title;
+    const detail = document.createElement('p');
+    detail.className = 'import-progress-detail';
+    detail.textContent = 'Đang chuẩn bị dữ liệu...';
+    const numbers = document.createElement('div');
+    numbers.className = 'import-progress-numbers';
+    const count = document.createElement('strong');
+    count.textContent = '0 / ' + total;
+    const percent = document.createElement('span');
+    percent.textContent = '0%';
+    numbers.append(count, percent);
+    const track = document.createElement('div');
+    track.className = 'import-progress-track';
+    track.setAttribute('role', 'progressbar');
+    track.setAttribute('aria-valuemin', '0');
+    track.setAttribute('aria-valuemax', String(total));
+    track.setAttribute('aria-valuenow', '0');
+    const fill = document.createElement('div');
+    fill.className = 'import-progress-fill';
+    track.appendChild(fill);
+    const footer = document.createElement('div');
+    footer.className = 'import-progress-footer';
+    footer.textContent = 'Vui lòng giữ trang mở cho đến khi hoàn tất.';
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'import-progress-close';
+    close.textContent = 'ĐÓNG';
+    close.hidden = true;
+    close.onclick = () => overlay.remove();
+
+    panel.append(eyebrow, heading, detail, numbers, track, footer, close);
+    overlay.appendChild(panel);
+    document.body.appendChild(overlay);
+
+    const update = (done, message) => {
+        const safeDone = Math.max(0, Math.min(total, done));
+        const ratio = total > 0 ? Math.round(safeDone / total * 100) : 100;
+        count.textContent = safeDone.toLocaleString('vi-VN') + ' / ' + total.toLocaleString('vi-VN') + ' ' + unit;
+        percent.textContent = ratio + '%';
+        fill.style.width = ratio + '%';
+        track.setAttribute('aria-valuenow', String(safeDone));
+        if (message) detail.textContent = message;
+    };
+    const finish = message => {
+        update(total, message || 'Đã hoàn tất!');
+        overlay.classList.add('is-complete');
+        footer.textContent = 'Dữ liệu đã được xử lý thành công.';
+        close.hidden = false;
+        setTimeout(() => overlay.remove(), 1300);
+    };
+    const fail = (message, retryAction) => {
+        overlay.classList.add('is-error');
+        detail.textContent = message || 'Đã xảy ra lỗi. Dữ liệu chưa hoàn tất.';
+        footer.textContent = 'Dữ liệu đã ghi thành công trước lỗi vẫn được giữ nguyên.';
+        close.hidden = false;
+        if (retryAction) {
+            const retry = document.createElement('button');
+            retry.type = 'button';
+            retry.className = 'import-progress-retry';
+            retry.textContent = 'THỬ LẠI';
+            retry.onclick = () => {
+                overlay.remove();
+                retryAction();
+            };
+            close.before(retry);
+        }
+    };
+    return { update, finish, fail };
+}
+
+async function executePendingAdminAction() {\n    let preservePendingAction = false;
     if (pendingAuthAction === 'delete_result' && currentDeleteId) {
         const batch = writeBatch(db);
         batch.delete(doc(db, 'artifacts', appId_fixed, 'public', 'data', collectionName, currentDeleteId));
@@ -2124,28 +2217,61 @@ async function executePendingAdminAction() {
         renderAdminStudents(); currentDeleteId = null;
     }
     else if (pendingAuthAction === 'delete_all_students') {
-        showCustomAlert("Đang xóa toàn bộ học sinh, vui lòng đợi...");
+        let progress = null;
         try {
             const snap = await getDocs(collection(db, 'artifacts', appId_fixed, 'public', 'data', collectionStudents));
-            const deletePromises = []; snap.forEach(docSnap => { deletePromises.push(deleteDoc(doc(db, 'artifacts', appId_fixed, 'public', 'data', collectionStudents, docSnap.id))); });
-            await Promise.all(deletePromises);
-            showCustomAlert("✅ Đã làm sạch toàn bộ danh sách học sinh!"); renderAdminStudents();
-        } catch(e) { showCustomAlert(getFirebaseErrorMessage(e, "APP-STU-002", "Không thể xóa dữ liệu học sinh.")); }
+            const total = snap.size;
+            progress = createImportProgress('Đang xóa danh sách học sinh', total, 'học sinh');
+            if (!total) {
+                progress.finish('Danh sách học sinh hiện đang trống.');
+            } else {
+                let deleted = 0;
+                for (let offset = 0; offset < snap.docs.length; offset += STUDENT_IMPORT_BATCH_SIZE) {
+                    const batch = writeBatch(db);
+                    const chunk = snap.docs.slice(offset, offset + STUDENT_IMPORT_BATCH_SIZE);
+                    chunk.forEach(studentDoc => batch.delete(studentDoc.ref));
+                    await batch.commit();
+                    deleted += chunk.length;
+                    progress.update(deleted, 'Đã xóa ' + deleted.toLocaleString('vi-VN') + ' / ' + total.toLocaleString('vi-VN') + ' học sinh');
+                }
+                progress.finish('Đã xóa sạch ' + total.toLocaleString('vi-VN') + ' học sinh!');
+                globalStudentList = [];
+                renderAdminStudents();
+            }
+        } catch(e) {
+            const message = getFirebaseErrorMessage(e, "APP-STU-002", "Không thể xóa dữ liệu học sinh.");
+            if (progress) progress.fail(message); else showCustomAlert(message);
+        }
     }
     else if (pendingAuthAction === 'import_students' && importedStudentsCache.length > 0) {
-        showCustomAlert("Đang tiến hành nhập dữ liệu, vui lòng đợi...");
+        let progress = null;
         try {
             const studentsRef = collection(db, 'artifacts', appId_fixed, 'public', 'data', collectionStudents);
-            for (let offset = 0; offset < importedStudentsCache.length; offset += 500) {
+            const total = importedStudentsCache.length;
+            importedStudentsCache.forEach(student => {
+                if (!student._importDocId) student._importDocId = doc(studentsRef).id;
+            });
+            progress = createImportProgress('Đang nhập danh sách học sinh', total, 'học sinh');
+            let imported = 0;
+            for (let offset = 0; offset < total; offset += STUDENT_IMPORT_BATCH_SIZE) {
                 const batch = writeBatch(db);
-                importedStudentsCache.slice(offset, offset + 500).forEach(student => {
-                    batch.set(doc(studentsRef), student);
+                const chunk = importedStudentsCache.slice(offset, offset + STUDENT_IMPORT_BATCH_SIZE);
+                chunk.forEach(student => {
+                    const { _importDocId, ...studentData } = student;
+                    batch.set(doc(studentsRef, _importDocId), studentData);
                 });
                 await batch.commit();
+                imported += chunk.length;
+                progress.update(imported, 'Đã ghi thành công ' + imported.toLocaleString('vi-VN') + ' / ' + total.toLocaleString('vi-VN') + ' học sinh');
             }
-            showCustomAlert(`✅ Đã import thành công ${importedStudentsCache.length} học sinh!`);
-            importedStudentsCache = []; renderAdminStudents();
-        } catch(e) { showCustomAlert(getFirebaseErrorMessage(e, "APP-STU-001", "Không thể import danh sách học sinh.")); }
+            progress.finish('Đã import thành công ' + total.toLocaleString('vi-VN') + ' học sinh!');
+            importedStudentsCache = [];
+            await renderAdminStudents();
+        } catch(e) {
+            const message = getFirebaseErrorMessage(e, "APP-STU-001", "Không thể import danh sách học sinh.");
+            preservePendingAction = true;
+            if (progress) progress.fail(message, () => executePendingAdminAction()); else showCustomAlert(message);
+        }
     }
     else if (pendingAuthAction === 'import_questions' && Object.keys(importedQuestionsCache).length > 0) {
         const invalidBank = Object.values(importedQuestionsCache).some(bank => !bank || !['mcq','tf','short'].some(key => Array.isArray(bank[key]) && bank[key].length));
@@ -2156,16 +2282,22 @@ async function executePendingAdminAction() {
             pendingAuthAction = null;
             return;
         }
-        showCustomAlert("Đang tiến hành đẩy kho đề lên Đám mây, vui lòng đợi...");
+        let progress = null;
         try {
             const topics = Object.keys(importedQuestionsCache);
-            for(let i = 0; i < topics.length; i++) {
+            progress = createImportProgress('Đang đẩy ngân hàng đề', topics.length, 'chuyên đề');
+            for (let i = 0; i < topics.length; i++) {
                 const tCode = topics[i];
                 await setDoc(doc(db, 'artifacts', appId_fixed, 'public', 'data', collectionBanks, tCode), importedQuestionsCache[tCode], { merge: false });
+                progress.update(i + 1, 'Đã lưu ' + (i + 1) + ' / ' + topics.length + ' chuyên đề');
             }
-            showCustomAlert(`✅ Đã đẩy thành công dữ liệu của ${topics.length} chuyên đề!`);
-            importedQuestionsCache = {}; renderAdminQuestions();
-        } catch(e) { showCustomAlert(getFirebaseErrorMessage(e, "APP-BANK-001", "Không thể import ngân hàng đề.")); }
+            progress.finish('Đã đẩy thành công ' + topics.length + ' chuyên đề!');
+            importedQuestionsCache = {};
+            renderAdminQuestions();
+        } catch(e) {
+            const message = getFirebaseErrorMessage(e, "APP-BANK-001", "Không thể import ngân hàng đề.");
+            if (progress) progress.fail(message); else showCustomAlert(message);
+        }
     }
     else if (pendingAuthAction === 'delete_all_questions') {
         showCustomAlert("Đang xóa toàn bộ Ngân hàng đề, vui lòng đợi...");
@@ -2181,7 +2313,7 @@ async function executePendingAdminAction() {
         if(isNaN(pTime) || isNaN(tTime) || isNaN(mHints) || pTime <= 0 || tTime <= 0 || mHints < 0) { showCustomAlert("⚠️ Vui lòng nhập số hợp lệ!"); return; }
         try { await setDoc(doc(db, 'artifacts', appId_fixed, 'public', 'data', 'config', 'timer_settings'), { practice: pTime, test: tTime, maxHints: mHints, lastUpdated: new Date().toISOString() }, { merge: true }); practiceTimeLimit = pTime * 60; testTimeLimit = tTime * 60; maxHintsAllowed = mHints; showCustomAlert("Đã cập nhật cấu hình thành công!"); } catch(e) { showCustomAlert(getFirebaseErrorMessage(e, "APP-CFG-001", "Không thể lưu cấu hình.")); }
     } else if (pendingAuthAction === 'inbox') { renderAdminInbox(); }
-    pendingAuthAction = null;
+    if (!preservePendingAction) pendingAuthAction = null;
 }
 
 document.getElementById('btn-save-config').onclick = () => {
