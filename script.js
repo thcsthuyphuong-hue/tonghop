@@ -37,7 +37,9 @@ function getFirebaseErrorMessage(error, appCode, fallback) {
         "auth/wrong-password": "Email hoặc mật khẩu không hợp lệ.",
         "auth/user-not-found": "Không tìm thấy tài khoản.",
         "auth/user-disabled": "Tài khoản đã bị vô hiệu hóa.",
-        "auth/too-many-requests": "Có quá nhiều lần thử. Hãy chờ rồi thử lại.",
+        "auth/too-many-requests": "Firebase tạm khóa yêu cầu do thử quá nhiều lần. Hãy chờ rồi thử lại.",
+        "app/auth-rate-limited": "Bạn vừa thử đăng nhập thất bại nhiều lần. Vui lòng chờ trước khi thử tiếp.",
+        "app/auth-request-in-progress": "Đang xử lý một yêu cầu đăng nhập. Vui lòng chờ.",
         "auth/network-request-failed": "Không thể kết nối dịch vụ xác thực. Kiểm tra mạng."
     };
     const detail = messages[code] || fallback || "Đã xảy ra lỗi không xác định.";
@@ -2274,15 +2276,19 @@ document.getElementById('btn-delete-confirm').onclick = async () => {
     const pw = document.getElementById('delete-pw').value;
     if (!email || !pw) { showCustomAlert("Vui lòng nhập Email và Mật khẩu!"); return; }
 
-    document.getElementById('btn-delete-confirm').innerText = "...";
+    const button = document.getElementById('btn-delete-confirm');
+    button.disabled = true;
+    button.innerText = "ĐANG XÁC THỰC...";
     try {
         await signInTeacherAccount(email, pw);
         document.getElementById('delete-auth-modal').style.display = 'none';
         executePendingAdminAction();
     } catch (error) {
         showCustomAlert(getFirebaseErrorMessage(error, "APP-AUTH-001", "Xác thực giáo viên thất bại."));
+    } finally {
+        button.disabled = false;
+        button.innerText = "XÁC NHẬN";
     }
-    document.getElementById('btn-delete-confirm').innerText = "XÁC NHẬN";
 };
 
 function syncTeacherAuthButton() {
@@ -2291,13 +2297,80 @@ function syncTeacherAuthButton() {
     button.textContent = hasTeacherSession() ? '🚪 ĐĂNG XUẤT GIÁO VIÊN' : '🔐 ĐĂNG NHẬP GIÁO VIÊN';
 }
 
+// Client-side retry backoff is only a usability layer.
+// Firebase Authentication throttling remains the actual server-side protection.
+const teacherLoginThrottle = {
+    failures: 0,
+    blockedUntil: 0,
+    inFlight: false
+};
+
+const TEACHER_LOGIN_MAX_BACKOFF_MS = 60 * 1000;
+const TEACHER_LOGIN_BACKOFF_STEPS_MS = [0, 0, 0, 2000, 5000, 15000, 30000, 60000];
+
+function isTeacherCredentialFailure(error) {
+    return [
+        "auth/invalid-credential",
+        "auth/invalid-login-credentials",
+        "auth/wrong-password",
+        "auth/user-not-found"
+    ].includes(error?.code);
+}
+
+function getTeacherLoginWaitMs() {
+    return Math.max(0, teacherLoginThrottle.blockedUntil - Date.now());
+}
+
+function registerTeacherLoginFailure(error) {
+    if (error?.code === "auth/too-many-requests") {
+        teacherLoginThrottle.blockedUntil = Date.now() + TEACHER_LOGIN_MAX_BACKOFF_MS;
+        return;
+    }
+    if (!isTeacherCredentialFailure(error)) return;
+
+    teacherLoginThrottle.failures += 1;
+    const step = Math.min(
+        teacherLoginThrottle.failures,
+        TEACHER_LOGIN_BACKOFF_STEPS_MS.length - 1
+    );
+    const delay = Math.min(
+        TEACHER_LOGIN_MAX_BACKOFF_MS,
+        TEACHER_LOGIN_BACKOFF_STEPS_MS[step]
+    );
+    if (delay > 0) teacherLoginThrottle.blockedUntil = Date.now() + delay;
+}
+
 async function signInTeacherAccount(email, password) {
-    await setPersistence(auth, browserSessionPersistence);
-    await signInWithEmailAndPassword(auth, email, password);
-    if (!hasTeacherSession()) {
-        await signOut(auth);
-        await signInAnonymously(auth);
-        throw new Error('Tài khoản này chưa được cấp quyền giáo viên.');
+    if (teacherLoginThrottle.inFlight) {
+        const error = new Error("Đang xử lý một yêu cầu đăng nhập. Vui lòng chờ.");
+        error.code = "app/auth-request-in-progress";
+        throw error;
+    }
+
+    const waitMs = getTeacherLoginWaitMs();
+    if (waitMs > 0) {
+        const seconds = Math.ceil(waitMs / 1000);
+        const error = new Error(`Thử sai nhiều lần. Vui lòng chờ ${seconds} giây rồi thử lại.`);
+        error.code = "app/auth-rate-limited";
+        throw error;
+    }
+
+    teacherLoginThrottle.inFlight = true;
+    try {
+        await setPersistence(auth, browserSessionPersistence);
+        await signInWithEmailAndPassword(auth, email, password);
+        if (!hasTeacherSession()) {
+            await signOut(auth);
+            await signInAnonymously(auth);
+            throw new Error('Tài khoản này chưa được cấp quyền giáo viên.');
+        }
+        teacherLoginThrottle.failures = 0;
+        teacherLoginThrottle.blockedUntil = 0;
+    } catch (error) {
+        registerTeacherLoginFailure(error);
+        throw error;
+    } finally {
+        teacherLoginThrottle.inFlight = false;
     }
 }
 
