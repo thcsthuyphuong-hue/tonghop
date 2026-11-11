@@ -132,48 +132,61 @@ document.getElementById('topic-select').addEventListener('change', (e) => {
 
 function autocomplete(inp, arr) {
     let currentFocus;
-    inp.addEventListener("input", function(e) {
-        let a, b, val = this.value;
+    const normalizeName = value => String(value || "")
+        .normalize("NFD")
+        .replace(/[\\u0300-\\u036f]/g, "")
+        .replace(/đ/gi, "d")
+        .toLocaleLowerCase("vi")
+        .trim();
+
+    inp.addEventListener("input", function() {
+        const val = this.value;
         closeAllLists();
-        if (!val) { return false;}
+        if (!val) return false;
         currentFocus = -1;
-        a = document.createElement("DIV");
-        a.setAttribute("id", this.id + "autocomplete-list");
-        a.setAttribute("class", "autocomplete-items");
-        this.parentNode.appendChild(a);
 
+        const list = document.createElement("div");
+        list.id = this.id + "autocomplete-list";
+        list.className = "autocomplete-items";
+        this.parentNode.appendChild(list);
+
+        const query = normalizeName(val);
         let count = 0;
-        for (let i = 0; i < arr.length; i++) {
-            const student = arr[i];
-            let sName = student.name || "";
-            if (sName.toLowerCase().includes(val.toLowerCase())) {
-                b = document.createElement("DIV");
-                let matchIdx = sName.toLowerCase().indexOf(val.toLowerCase());
-                b.innerHTML = sName.substring(0, matchIdx);
-                b.innerHTML += "<strong>" + sName.substring(matchIdx, matchIdx + val.length) + "</strong>";
-                b.innerHTML += sName.substring(matchIdx + val.length);
-                b.innerHTML += ` <span style="color:#64748b; font-size:0.8rem;">(Lớp ${student.class} - SBD ${student.sbd})</span>`;
+        for (const student of arr) {
+            const sName = String(student.name || "");
+            const normalizedName = normalizeName(sName);
+            const matchIdx = normalizedName.indexOf(query);
+            if (matchIdx === -1) continue;
 
-                b.innerHTML += "<input type='hidden' value='" + sName.replace(/'/g, "&#39;") + "'>";
-                b.addEventListener("click", function(e) {
-                    inp.value = this.getElementsByTagName("input")[0].value;
-                    document.getElementById("user_class").value = student.class || "";
-                    document.getElementById("user_sbd").value = student.sbd || "";
-                    document.getElementById("user_school").value = student.school || "";
-                    document.getElementById("user_class").setAttribute("readonly", true);
-                    document.getElementById("user_sbd").setAttribute("readonly", true);
-                    document.getElementById("user_school").setAttribute("readonly", true);
-                    closeAllLists();
-                });
-                a.appendChild(b);
-                count++;
-                if(count > 10) break;
-            }
+            const item = document.createElement("div");
+            const before = document.createTextNode(sName.slice(0, matchIdx));
+            const match = document.createElement("strong");
+            match.textContent = sName.slice(matchIdx, matchIdx + val.length);
+            const after = document.createTextNode(sName.slice(matchIdx + val.length));
+            item.append(before, match, after);
+
+            const meta = document.createElement("span");
+            meta.style.cssText = "color:#64748b;font-size:0.8rem;";
+            meta.textContent = ` (Lớp ${student.class || "-"} - SBD ${student.sbd || "-"})`;
+            item.appendChild(meta);
+
+            item.addEventListener("click", function() {
+                inp.value = sName;
+                document.getElementById("user_class").value = student.class || "";
+                document.getElementById("user_sbd").value = student.sbd || "";
+                document.getElementById("user_school").value = student.school || "";
+                document.getElementById("user_class").setAttribute("readonly", true);
+                document.getElementById("user_sbd").setAttribute("readonly", true);
+                document.getElementById("user_school").setAttribute("readonly", true);
+                closeAllLists();
+            });
+            list.appendChild(item);
+            if (++count >= 10) break;
         }
-        if(count === 0) {
-            b = document.createElement("DIV");
-            b.innerHTML = `<span style="color:#ef4444; font-size:0.8rem;">Không tìm thấy trong danh sách. Hãy tick chọn "Thí sinh tự do" ở trên nếu bạn thuộc trường khác.</span>`;
-            a.appendChild(b);
+        if (count === 0) {
+            const empty = document.createElement("div");
+            empty.textContent = 'Không tìm thấy trong danh sách. Hãy tick chọn "Thí sinh tự do" ở trên nếu bạn thuộc trường khác.';
+            list.appendChild(empty);
         }
     });
 
