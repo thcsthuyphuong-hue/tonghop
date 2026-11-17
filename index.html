@@ -316,13 +316,50 @@
             </div>
 
             <div class="admin-tabs">
-                <div class="admin-tab active" id="tab-results">📊 QUẢN LÍ KẾT QUẢ</div>
+                <div class="admin-tab active" id="tab-dashboard" role="button" tabindex="0">⌂ TỔNG QUAN</div>
+                <div class="admin-tab" id="tab-results" role="button" tabindex="0">📊 KẾT QUẢ</div>
                 <div class="admin-tab" id="tab-students">👥 QUẢN LÍ HỌC SINH</div>
                 <div class="admin-tab" id="tab-questions">📚 QUẢN LÍ ĐỀ THI</div>
                 <div class="admin-tab" id="tab-graphics" role="button" tabindex="0">🎨 ĐỒ HỌA</div>
             </div>
 
             
+            <section id="admin-dashboard-section" class="admin-dashboard-section">
+                <div class="dashboard-welcome">
+                    <div>
+                        <span class="dashboard-eyebrow">HUE SMART TEST · TEACHER CENTER</span>
+                        <h2>Chào mừng trở lại, Giáo viên 👋</h2>
+                        <p>Tổng quan hoạt động và truy cập nhanh các khu vực quản trị.</p>
+                    </div>
+                    <div class="dashboard-live"><span></span> Dữ liệu trực tiếp</div>
+                </div>
+
+                <div class="dashboard-kpis">
+                    <article class="dashboard-kpi"><span class="dashboard-kpi-icon">👥</span><div><small>HỌC SINH</small><strong id="dashboard-student-count">—</strong><span id="dashboard-student-note">Đăng nhập để xem dữ liệu</span></div></article>
+                    <article class="dashboard-kpi"><span class="dashboard-kpi-icon">📚</span><div><small>NGÂN HÀNG ĐỀ</small><strong id="dashboard-bank-count">—</strong><span id="dashboard-question-count">Đang tải số câu hỏi…</span></div></article>
+                    <article class="dashboard-kpi"><span class="dashboard-kpi-icon">📝</span><div><small>LƯỢT LÀM BÀI</small><strong id="dashboard-attempt-count">—</strong><span>Tổng kết quả đang lưu</span></div></article>
+                    <article class="dashboard-kpi"><span class="dashboard-kpi-icon">🏅</span><div><small>ĐIỂM TRUNG BÌNH</small><strong id="dashboard-average-score">—</strong><span>Trên thang điểm 10</span></div></article>
+                </div>
+
+                <div class="dashboard-main-grid">
+                    <section class="dashboard-panel dashboard-shortcuts">
+                        <div class="dashboard-panel-heading"><div><span class="dashboard-eyebrow">LÀM VIỆC NHANH</span><h3>Truy cập nhanh</h3></div></div>
+                        <div class="dashboard-shortcut-grid">
+                            <button type="button" class="dashboard-shortcut" data-dashboard-tab="students"><span>👥</span><b>Quản lý học sinh</b><small>Danh sách, lọc và nhập Excel</small><i>→</i></button>
+                            <button type="button" class="dashboard-shortcut" data-dashboard-tab="questions"><span>📚</span><b>Ngân hàng đề</b><small>Quản lý câu hỏi và chuyên đề</small><i>→</i></button>
+                            <button type="button" class="dashboard-shortcut" data-dashboard-tab="results"><span>📊</span><b>Kết quả kiểm tra</b><small>Xem, lọc và xuất báo cáo</small><i>→</i></button>
+                            <button type="button" class="dashboard-shortcut" data-dashboard-tab="graphics"><span>🎨</span><b>Giao diện</b><small>Tùy chỉnh giao diện quản trị</small><i>→</i></button>
+                        </div>
+                    </section>
+
+                    <section class="dashboard-panel dashboard-activity">
+                        <div class="dashboard-panel-heading"><div><span class="dashboard-eyebrow">CẬP NHẬT MỚI</span><h3>Kết quả gần đây</h3></div><button type="button" class="dashboard-text-button" data-dashboard-tab="results">Xem tất cả →</button></div>
+                        <div id="dashboard-recent-results" class="dashboard-recent-list"><div class="dashboard-empty">Đang tải hoạt động…</div></div>
+                    </section>
+                </div>
+                <div class="dashboard-footnote" id="dashboard-status">Đang đồng bộ dữ liệu từ hệ thống…</div>
+            </section>
+
             <div id="admin-results-section">
                 <div class="card" style="padding: 20px; margin-bottom: 20px; background: #fffbeb; border: 2px solid #fcd34d;">
                     <h4 style="margin: 0 0 15px 0; color: #92400e; text-transform: uppercase;">⚙️ Cài đặt Thời gian & Gợi ý</h4>
