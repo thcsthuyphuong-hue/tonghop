@@ -1672,3 +1672,47 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
 @media (max-width: 700px) {
   .computer-exam-guide-grid { grid-template-columns: 1fr; }
 }
+
+
+/* Hands-on computer exam familiarization */
+.computer-exam-demo .demo-heading { align-items: flex-start; margin-bottom: 18px; }
+.demo-clock { flex: 0 0 auto; min-width: 130px; padding: 12px 16px; border: 1px solid #ffffff30; border-radius: 14px; background: #ffffff12; text-align: center; }
+.demo-clock small { display: block; color: #d9d5f4; font-size: .76rem; }
+.demo-clock strong { display: block; margin-top: 3px; font-size: 1.7rem; font-variant-numeric: tabular-nums; }
+.demo-layout { display: grid; grid-template-columns: minmax(180px, 240px) minmax(0, 1fr); gap: 14px; }
+.demo-map, .demo-question-card { min-width: 0; padding: 16px; border: 1px solid #ffffff24; border-radius: 15px; background: #ffffff08; }
+.demo-map h2 { margin: 0 0 12px; }
+.demo-question-map { display: grid; gap: 7px; }
+.demo-map-item { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 12px !important; border: 1px solid #ffffff24 !important; background: #ffffff0c !important; text-align: left; }
+.demo-map-item small { color: #d4cfee; font-size: .72rem; }
+.demo-map-item.current { border-color: #c2b5ff !important; box-shadow: 0 0 0 2px #a99aff33; }
+.demo-map-item.answered { background: #177e6140 !important; }
+.demo-map-item.marked { border-style: dashed !important; }
+.demo-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 12px; color: #d4cfee; font-size: .72rem; }
+.demo-dot { width: 9px; height: 9px; border-radius: 50%; background: #64748b; }
+.demo-dot.answered { background: #34d399; }
+.demo-dot.marked { background: #fbbf24; }
+.demo-question-meta { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 18px; color: #d4cfee; font-size: .82rem; }
+.demo-question-card h2 { line-height: 1.55; }
+.demo-option { display: flex; align-items: flex-start; gap: 10px; margin: 9px 0; padding: 12px; border: 1px solid #ffffff26; border-radius: 11px; cursor: pointer; }
+.demo-option input { flex: 0 0 auto; width: auto; margin-top: 4px; }
+.demo-option:has(input:checked) { border-color: #b6a9ff; background: #8d75ff24; }
+.demo-question-card input[type=text] { margin-top: 6px; }
+.demo-controls { align-items: center; }
+.demo-controls .demo-submit { margin-left: auto; background: #16845e; }
+.demo-submit-confirm, .demo-finished { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+.demo-submit-confirm p, .demo-finished p { margin: 4px 0 0; }
+.demo-finished { border-color: #34d39966 !important; background: #0c644733 !important; }
+.demo-map-item:focus-visible, .demo-option:focus-within, .computer-exam-demo button:focus-visible { outline: 3px solid #fbbf24; outline-offset: 2px; }
+@media (max-width: 700px) {
+  .demo-layout { grid-template-columns: 1fr; }
+  .demo-question-map { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .demo-map-item { flex-direction: column; align-items: flex-start; }
+  .demo-controls .demo-submit { margin-left: 0; }
+}
+@media (max-width: 460px) {
+  .computer-exam-demo .demo-heading { display: block; }
+  .demo-clock { width: 100%; margin-top: 12px; }
+  .demo-question-meta { flex-direction: column; }
+  .demo-controls > button { flex: 1 1 42%; }
+}

@@ -3240,6 +3240,143 @@ function routeExamRoomScreen() {
     header.style.display = "flex";
   }
 }
+
+const demoQuestions = [
+  {type:"mcq", prompt:"Một điện trở 2 Ω mắc vào hiệu điện thế 6 V. Cường độ dòng điện qua điện trở là bao nhiêu?", options:["2 A","3 A","4 A","12 A"]},
+  {type:"mcq", prompt:"Đơn vị đo công suất điện là gì?", options:["Jun (J)","Vôn (V)","Oát (W)","Ôm (Ω)"]},
+  {type:"tf", prompt:"Khi hai điện trở giống nhau mắc nối tiếp, điện trở tương đương lớn hơn mỗi điện trở thành phần.", options:["Đúng","Sai"]},
+  {type:"short", prompt:"Hãy nhập tên đơn vị đo cường độ dòng điện."}
+];
+let demoAnswers = {};
+let demoMarked = new Set();
+let demoIndex = 0;
+let demoSeconds = 600;
+let demoTimer = null;
+let demoIsFinished = false;
+
+function startComputerExamDemo() {
+  clearInterval(demoTimer);
+  demoAnswers = {};
+  demoMarked = new Set();
+  demoIndex = 0;
+  demoSeconds = 600;
+  demoIsFinished = false;
+  show("computer-exam-guide", false);
+  show("exam-room-live-entry", false);
+  show("computer-exam-demo", true);
+  show("demo-submit-confirm", false);
+  show("demo-finished", false);
+  renderComputerExamDemo();
+  demoTimer = setInterval(() => {
+    if (demoIsFinished) return;
+    demoSeconds = Math.max(0, demoSeconds - 1);
+    const clock = $("demo-clock");
+    clock.textContent = String(Math.floor(demoSeconds / 60)).padStart(2, "0") + ":" + String(demoSeconds % 60).padStart(2, "0");
+    if (demoSeconds === 0) finishComputerExamDemo();
+  }, 1000);
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function renderComputerExamDemo() {
+  const q = demoQuestions[demoIndex];
+  const answered = Object.prototype.hasOwnProperty.call(demoAnswers, demoIndex)
+    && String(demoAnswers[demoIndex]).trim() !== "";
+  const isMarked = demoMarked.has(demoIndex);
+  $("demo-clock").textContent = String(Math.floor(demoSeconds / 60)).padStart(2, "0") + ":" + String(demoSeconds % 60).padStart(2, "0");
+  $("demo-question-map").innerHTML = demoQuestions.map((item, i) => {
+    const done = Object.prototype.hasOwnProperty.call(demoAnswers, i) && String(demoAnswers[i]).trim() !== "";
+    return `<button type="button" class="demo-map-item ${i===demoIndex?"current":""} ${done?"answered":""} ${demoMarked.has(i)?"marked":""}" data-demo-index="${i}" aria-current="${i===demoIndex?"step":"false"}"><span>Câu ${i+1}</span><small>${done?"Đã trả lời":"Chưa trả lời"}${demoMarked.has(i)?" · Xem lại":""}</small></button>`;
+  }).join("");
+  $("demo-question-card").innerHTML = `<div class="demo-question-meta"><span>Câu ${demoIndex+1} / ${demoQuestions.length}</span><span>${q.type==="short"?"Trả lời ngắn":q.type==="tf"?"Đúng / Sai":"Chọn một đáp án"}</span></div><h2>${q.prompt}</h2>${q.type==="short"
+    ? `<label for="demo-short-answer">Câu trả lời</label><input id="demo-short-answer" type="text" maxlength="120" autocomplete="off" placeholder="Nhập câu trả lời">`
+    : q.options.map((option,i)=>`<label class="demo-option"><input type="radio" name="demo-answer-${demoIndex}" value="${i}" ${demoAnswers[demoIndex]===i?"checked":""}><span><b>${String.fromCharCode(65+i)}.</b> ${option}</span></label>`).join("")}`;
+  if (q.type === "short") {
+    const input = $("demo-short-answer");
+    input.value = demoAnswers[demoIndex] || "";
+    input.disabled = demoIsFinished;
+    input.addEventListener("input", () => { demoAnswers[demoIndex] = input.value; renderDemoMapOnly(); });
+  } else {
+    $("demo-question-card").querySelectorAll('input[type="radio"]').forEach(input => {
+      input.disabled = demoIsFinished;
+      input.addEventListener("change", () => { demoAnswers[demoIndex] = Number(input.value); renderDemoMapOnly(); });
+    });
+  }
+  $("demo-question-map").querySelectorAll("[data-demo-index]").forEach(button => button.addEventListener("click", () => {
+    demoIndex = Number(button.dataset.demoIndex);
+    show("demo-submit-confirm", false);
+    renderComputerExamDemo();
+  }));
+  $("btn-demo-back").disabled = demoIndex === 0 || demoIsFinished;
+  $("btn-demo-next").disabled = demoIndex === demoQuestions.length - 1 || demoIsFinished;
+  $("btn-demo-mark").disabled = demoIsFinished;
+  $("btn-demo-mark").textContent = isMarked ? "★ Bỏ đánh dấu xem lại" : "☆ Đánh dấu xem lại";
+  $("btn-demo-submit").disabled = demoIsFinished;
+}
+
+function renderDemoMapOnly() {
+  $("demo-question-map").innerHTML = demoQuestions.map((item, i) => {
+    const done = Object.prototype.hasOwnProperty.call(demoAnswers, i) && String(demoAnswers[i]).trim() !== "";
+    return `<button type="button" class="demo-map-item ${i===demoIndex?"current":""} ${done?"answered":""} ${demoMarked.has(i)?"marked":""}" data-demo-index="${i}" aria-current="${i===demoIndex?"step":"false"}"><span>Câu ${i+1}</span><small>${done?"Đã trả lời":"Chưa trả lời"}${demoMarked.has(i)?" · Xem lại":""}</small></button>`;
+  }).join("");
+  $("demo-question-map").querySelectorAll("[data-demo-index]").forEach(button => button.addEventListener("click", () => {
+    demoIndex = Number(button.dataset.demoIndex);
+    show("demo-submit-confirm", false);
+    renderComputerExamDemo();
+  }));
+}
+
+function goToDemoQuestion(delta) {
+  if (demoIsFinished) return;
+  demoIndex = Math.min(demoQuestions.length - 1, Math.max(0, demoIndex + delta));
+  show("demo-submit-confirm", false);
+  renderComputerExamDemo();
+}
+
+function requestDemoSubmit() {
+  const unanswered = demoQuestions.length - Object.keys(demoAnswers).filter(i => String(demoAnswers[i]).trim() !== "").length;
+  const marked = demoMarked.size;
+  $("demo-submit-summary").textContent = unanswered
+    ? `Còn ${unanswered} câu chưa trả lời${marked ? ` và ${marked} câu được đánh dấu xem lại` : ""}.`
+    : marked ? `Em đã trả lời tất cả câu hỏi; còn ${marked} câu được đánh dấu xem lại.` : "Em đã trả lời tất cả câu hỏi.";
+  show("demo-submit-confirm", true);
+  $("demo-submit-confirm").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+
+function finishComputerExamDemo() {
+  if (demoIsFinished) return;
+  demoIsFinished = true;
+  clearInterval(demoTimer);
+  demoTimer = null;
+  show("demo-submit-confirm", false);
+  show("demo-finished", true);
+  renderComputerExamDemo();
+}
+
+$("btn-start-computer-demo").addEventListener("click", startComputerExamDemo);
+$("btn-demo-back-guide").addEventListener("click", () => {
+  clearInterval(demoTimer);
+  demoTimer = null;
+  show("computer-exam-demo", false);
+  show("computer-exam-guide", true);
+});
+$("btn-demo-return-guide").addEventListener("click", () => {
+  clearInterval(demoTimer);
+  demoTimer = null;
+  show("computer-exam-demo", false);
+  show("computer-exam-guide", true);
+});
+$("btn-demo-restart").addEventListener("click", startComputerExamDemo);
+$("btn-demo-back").addEventListener("click", () => goToDemoQuestion(-1));
+$("btn-demo-next").addEventListener("click", () => goToDemoQuestion(1));
+$("btn-demo-mark").addEventListener("click", () => {
+  if (demoMarked.has(demoIndex)) demoMarked.delete(demoIndex);
+  else demoMarked.add(demoIndex);
+  renderComputerExamDemo();
+});
+$("btn-demo-submit").addEventListener("click", requestDemoSubmit);
+$("btn-demo-continue").addEventListener("click", () => show("demo-submit-confirm", false));
+$("btn-demo-finish").addEventListener("click", finishComputerExamDemo);
+
 document.getElementById("btn-open-host-client").addEventListener("click", () => {
   show("computer-exam-guide", false);
   show("exam-room-live-entry", true);

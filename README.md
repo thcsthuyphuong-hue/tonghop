@@ -41,7 +41,7 @@ Giáo viên có thể tải ngân hàng câu hỏi lên Firebase theo từng chu
 
 ## Hướng dẫn thi trên máy tính và phòng Host & Client
 
-Mở trang **[Hướng dẫn thi trên máy tính](./index.html#exam-room)** hoặc truy cập `https://thcsthuyphuong-hue.github.io/tonghop/index.html#exam-room`. Trang hướng dẫn giúp học sinh làm quen với thao tác; chức năng phòng thi Host & Client được mở từ nút trên trang.
+Mở trang **[Hướng dẫn thi trên máy tính](./index.html#exam-room)** hoặc truy cập `https://thcsthuyphuong-hue.github.io/tonghop/index.html#exam-room`. Trang hướng dẫn có bài thao tác mẫu để học sinh tập chọn đáp án, chuyển câu, đánh dấu xem lại và nộp bài; bài mẫu không tính điểm và không lưu dữ liệu thật. Chức năng phòng thi Host & Client được mở từ nút trên trang.
 
 ### Quy trình tổ chức thi
 

@@ -545,8 +545,38 @@
   </div>
   <div class="notice guide-notice"><strong>Lưu ý:</strong> Nhà trường thông báo trước hình thức kiểm tra và yêu cầu kỹ thuật. Nếu gặp sự cố thiết bị hoặc cần hỗ trợ phù hợp, hãy báo giáo viên/giám thị ngay.</div>
   <div class="actions">
-    <button id="btn-open-host-client" type="button">Mở phòng thi Host &amp; Client</button>
+    <button id="btn-start-computer-demo" type="button">🖥️ Bắt đầu làm bài mẫu</button>
+    <button id="btn-open-host-client" type="button" class="secondary">Mở phòng thi Host &amp; Client</button>
   </div>
+</section>
+<section id="computer-exam-demo" class="exam-room-panel computer-exam-demo hidden" aria-labelledby="demo-title">
+  <div class="row demo-heading">
+    <div><span class="guide-eyebrow">BÀI THAO TÁC MẪU · KHÔNG TÍNH ĐIỂM</span><h1 id="demo-title">Làm quen giao diện bài thi</h1><p class="muted">Tập trả lời, chuyển câu, đánh dấu để xem lại và nộp bài. Bài làm chỉ nằm trong phiên này, không lưu điểm.</p></div>
+    <div class="demo-clock"><small>Thời gian mô phỏng</small><strong id="demo-clock">10:00</strong></div>
+  </div>
+  <div class="demo-layout">
+    <aside class="demo-map" aria-label="Danh sách câu hỏi">
+      <h2>Danh sách câu</h2>
+      <div id="demo-question-map" class="demo-question-map"></div>
+      <div class="demo-legend"><span class="demo-dot answered"></span> Đã trả lời <span class="demo-dot marked"></span> Xem lại</div>
+    </aside>
+    <article id="demo-question-card" class="demo-question-card" aria-live="polite"></article>
+  </div>
+  <div class="actions demo-controls">
+    <button id="btn-demo-back" type="button" class="secondary">← Câu trước</button>
+    <button id="btn-demo-mark" type="button" class="secondary">☆ Đánh dấu xem lại</button>
+    <button id="btn-demo-next" type="button">Câu tiếp theo →</button>
+    <button id="btn-demo-submit" type="button" class="demo-submit">Nộp bài thử</button>
+  </div>
+  <div id="demo-submit-confirm" class="notice demo-submit-confirm hidden" role="status">
+    <div><strong id="demo-submit-summary"></strong><p>Đây chỉ là bài mẫu để luyện thao tác. Không có điểm được gửi hoặc lưu.</p></div>
+    <div class="actions"><button id="btn-demo-continue" type="button" class="secondary">Tiếp tục xem bài</button><button id="btn-demo-finish" type="button">Kết thúc bài mẫu</button></div>
+  </div>
+  <div id="demo-finished" class="notice demo-finished hidden" role="status">
+    <strong>Em đã hoàn thành bài thao tác mẫu.</strong><p>Không chấm điểm và không lưu bài làm. Em có thể làm lại để luyện thao tác.</p>
+    <div class="actions"><button id="btn-demo-restart" type="button">Làm lại bài mẫu</button><button id="btn-demo-return-guide" type="button" class="secondary">Quay lại hướng dẫn</button></div>
+  </div>
+  <div class="actions"><button id="btn-demo-back-guide" type="button" class="secondary">← Về hướng dẫn</button></div>
 </section>
 <section id="exam-room-live-entry" class="exam-room-panel hidden">
 <button id="btn-back-to-guide" type="button" class="secondary">← Quay lại hướng dẫn</button>
@@ -604,6 +634,6 @@
     </div>
 </div>
 
-<script type="module" src="script.js?v=20261117-computer-exam-guide"></script>
+<script type="module" src="script.js?v=20261117-computer-exam-demo"></script>
 </body>
 </html>
