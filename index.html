@@ -263,7 +263,7 @@
                 <div class="start-actions" id="start-buttons">
                     <button id="btn-init-practice" class="btn btn-gray">📝 LUYỆN TẬP</button>
                     <button id="btn-init-test" class="btn btn-fire">🔥 KIỂM TRA</button>
-                    <button id="btn-open-exam-room" type="button" class="btn btn-gray" style="grid-column:1/-1">🏫 PHÒNG THI HOST &amp; CLIENT</button>
+                    <button id="btn-open-exam-room" type="button" class="btn btn-gray" style="grid-column:1/-1">🖥️ HƯỚNG DẪN THI TRÊN MÁY TÍNH</button>
                 </div>
             </div>
         </div>
@@ -529,11 +529,27 @@
         <section id="screen-exam-room" class="screen">
   <div class="exam-room-root">
     <div class="exam-room-head">
-      <div><strong>HUE SMART TEST 7991</strong><small>Phòng thi trực tuyến · Host &amp; Client</small></div>
+      <div><strong>HUE SMART TEST 7991</strong><small>Hướng dẫn thi trên máy tính</small></div>
       <button id="btn-back-from-exam-room" type="button" class="exam-room-back">Về trang chính</button>
     </div>
     <div class="exam-room-content">
-<section class="exam-room-panel">
+<section id="computer-exam-guide" class="exam-room-panel computer-exam-guide">
+  <span class="guide-eyebrow">LÀM QUEN VỚI BÀI KIỂM TRA TRÊN MÁY TÍNH</span>
+  <h1>Hướng dẫn thi trên máy tính</h1>
+  <p>Trang này giúp em làm quen với các thao tác cơ bản. Khi có bài kiểm tra chính thức, hãy đọc thông báo của nhà trường và làm theo yêu cầu kỹ thuật được hướng dẫn.</p>
+  <div class="computer-exam-guide-grid">
+    <article class="guide-step"><span>01</span><div><h2>Chuẩn bị thiết bị</h2><p>Dùng thiết bị và trình duyệt theo thông báo của trường. Kiểm tra pin, kết nối mạng, kích thước chữ và khả năng nhìn rõ màn hình trước giờ làm bài.</p></div></article>
+    <article class="guide-step"><span>02</span><div><h2>Đọc kỹ thông tin bài thi</h2><p>Kiểm tra họ tên, lớp, số báo danh, môn thi và thời gian. Nếu thông tin sai hoặc màn hình có lỗi, báo giám thị trước khi bắt đầu.</p></div></article>
+    <article class="guide-step"><span>03</span><div><h2>Trả lời câu hỏi</h2><p>Chọn phương án bằng cách bấm vào đáp án; với câu trả lời ngắn, nhập câu trả lời vào ô. Cuộn trang để xem hết câu hỏi và các lựa chọn.</p></div></article>
+    <article class="guide-step"><span>04</span><div><h2>Rà soát và nộp bài</h2><p>Kiểm tra lại các câu trả lời trước khi nộp. Chỉ bấm “Nộp bài” khi đã sẵn sàng; sau khi nộp, em không thể sửa bài trong phiên này.</p></div></article>
+  </div>
+  <div class="notice guide-notice"><strong>Lưu ý:</strong> Nhà trường thông báo trước hình thức kiểm tra và yêu cầu kỹ thuật. Nếu gặp sự cố thiết bị hoặc cần hỗ trợ phù hợp, hãy báo giáo viên/giám thị ngay.</div>
+  <div class="actions">
+    <button id="btn-open-host-client" type="button">Mở phòng thi Host &amp; Client</button>
+  </div>
+</section>
+<section id="exam-room-live-entry" class="exam-room-panel hidden">
+<button id="btn-back-to-guide" type="button" class="secondary">← Quay lại hướng dẫn</button>
 <h1>Phòng thi Host & Client</h1>
 <p>Host đăng nhập bằng tài khoản giáo viên. Học sinh vào bằng mã phòng; 5 phút đầu chỉ đọc đề, sau đó hệ thống đồng bộ giờ làm bài qua Firebase.</p>
 <div id="global-message" class="notice hidden" role="status"></div>

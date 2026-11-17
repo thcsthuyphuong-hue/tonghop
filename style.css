@@ -1618,3 +1618,57 @@ footer { background:rgba(14,9,40,.30); color:rgba(255,255,255,.62); border-color
 #screen-start .student-card .guest-switch-row .switch-label small {
   color: rgba(255, 255, 255, .88) !important;
 }
+
+
+/* Computer exam familiarization guide */
+.computer-exam-guide .guide-eyebrow {
+  display: inline-block;
+  margin-bottom: 8px;
+  color: #d9caff;
+  font-size: .72rem;
+  font-weight: 850;
+  letter-spacing: .12em;
+}
+.computer-exam-guide-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 20px 0;
+}
+.computer-exam-guide .guide-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid #ffffff24;
+  border-radius: 14px;
+  background: #ffffff0a;
+}
+.computer-exam-guide .guide-step > span {
+  flex: 0 0 38px;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  color: #fff;
+  background: #7359ee;
+  font-size: .78rem;
+  font-weight: 850;
+}
+.computer-exam-guide .guide-step h2 {
+  margin: 1px 0 6px;
+}
+.computer-exam-guide .guide-step p {
+  margin: 0;
+  font-size: .9rem;
+}
+.computer-exam-guide .guide-notice {
+  color: #f4f0ff;
+}
+.computer-exam-guide .guide-notice strong {
+  color: #fff;
+}
+@media (max-width: 700px) {
+  .computer-exam-guide-grid { grid-template-columns: 1fr; }
+}

@@ -39,9 +39,9 @@ Giáo viên có thể tải ngân hàng câu hỏi lên Firebase theo từng chu
 - **Hộp thư báo lỗi:** xem phản hồi và ảnh học sinh gửi.
 - Các thao tác quản trị yêu cầu quyền truy cập được cấu hình cho hệ thống.
 
-## Thi trực tuyến theo phòng (Host & Client)
+## Hướng dẫn thi trên máy tính và phòng Host & Client
 
-Mở trang **[Phòng thi Host & Client](./index.html#exam-room)** hoặc truy cập `https://thcsthuyphuong-hue.github.io/tonghop/index.html#exam-room`.
+Mở trang **[Hướng dẫn thi trên máy tính](./index.html#exam-room)** hoặc truy cập `https://thcsthuyphuong-hue.github.io/tonghop/index.html#exam-room`. Trang hướng dẫn giúp học sinh làm quen với thao tác; chức năng phòng thi Host & Client được mở từ nút trên trang.
 
 ### Quy trình tổ chức thi
 

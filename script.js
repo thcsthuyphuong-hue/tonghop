@@ -3240,6 +3240,14 @@ function routeExamRoomScreen() {
     header.style.display = "flex";
   }
 }
+document.getElementById("btn-open-host-client").addEventListener("click", () => {
+  show("computer-exam-guide", false);
+  show("exam-room-live-entry", true);
+});
+document.getElementById("btn-back-to-guide").addEventListener("click", () => {
+  show("exam-room-live-entry", false);
+  show("computer-exam-guide", true);
+});
 document.getElementById("btn-open-exam-room").addEventListener("click", () => {
   location.hash = "exam-room";
   if (location.hash === "#exam-room") routeExamRoomScreen();
