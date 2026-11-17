@@ -37,7 +37,9 @@ function getFirebaseErrorMessage(error, appCode, fallback) {
         "auth/wrong-password": "Email hoặc mật khẩu không hợp lệ.",
         "auth/user-not-found": "Không tìm thấy tài khoản.",
         "auth/user-disabled": "Tài khoản đã bị vô hiệu hóa.",
-        "auth/too-many-requests": "Có quá nhiều lần thử. Hãy chờ rồi thử lại.",
+        "auth/too-many-requests": "Firebase tạm khóa yêu cầu do thử quá nhiều lần. Hãy chờ rồi thử lại.",
+        "app/auth-rate-limited": "Bạn vừa thử đăng nhập thất bại nhiều lần. Vui lòng chờ trước khi thử tiếp.",
+        "app/auth-request-in-progress": "Đang xử lý một yêu cầu đăng nhập. Vui lòng chờ.",
         "auth/network-request-failed": "Không thể kết nối dịch vụ xác thực. Kiểm tra mạng."
     };
     const detail = messages[code] || fallback || "Đã xảy ra lỗi không xác định.";
@@ -132,48 +134,61 @@ document.getElementById('topic-select').addEventListener('change', (e) => {
 
 function autocomplete(inp, arr) {
     let currentFocus;
-    inp.addEventListener("input", function(e) {
-        let a, b, val = this.value;
+    const normalizeName = value => String(value || "")
+        .normalize("NFD")
+        .replace(/[\\u0300-\\u036f]/g, "")
+        .replace(/đ/gi, "d")
+        .toLocaleLowerCase("vi")
+        .trim();
+
+    inp.addEventListener("input", function() {
+        const val = this.value;
         closeAllLists();
-        if (!val) { return false;}
+        if (!val) return false;
         currentFocus = -1;
-        a = document.createElement("DIV");
-        a.setAttribute("id", this.id + "autocomplete-list");
-        a.setAttribute("class", "autocomplete-items");
-        this.parentNode.appendChild(a);
 
+        const list = document.createElement("div");
+        list.id = this.id + "autocomplete-list";
+        list.className = "autocomplete-items";
+        this.parentNode.appendChild(list);
+
+        const query = normalizeName(val);
         let count = 0;
-        for (let i = 0; i < arr.length; i++) {
-            const student = arr[i];
-            let sName = student.name || "";
-            if (sName.toLowerCase().includes(val.toLowerCase())) {
-                b = document.createElement("DIV");
-                let matchIdx = sName.toLowerCase().indexOf(val.toLowerCase());
-                b.innerHTML = sName.substring(0, matchIdx);
-                b.innerHTML += "<strong>" + sName.substring(matchIdx, matchIdx + val.length) + "</strong>";
-                b.innerHTML += sName.substring(matchIdx + val.length);
-                b.innerHTML += ` <span style="color:#64748b; font-size:0.8rem;">(Lớp ${student.class} - SBD ${student.sbd})</span>`;
+        for (const student of arr) {
+            const sName = String(student.name || "");
+            const normalizedName = normalizeName(sName);
+            const matchIdx = normalizedName.indexOf(query);
+            if (matchIdx === -1) continue;
 
-                b.innerHTML += "<input type='hidden' value='" + sName.replace(/'/g, "&#39;") + "'>";
-                b.addEventListener("click", function(e) {
-                    inp.value = this.getElementsByTagName("input")[0].value;
-                    document.getElementById("user_class").value = student.class || "";
-                    document.getElementById("user_sbd").value = student.sbd || "";
-                    document.getElementById("user_school").value = student.school || "";
-                    document.getElementById("user_class").setAttribute("readonly", true);
-                    document.getElementById("user_sbd").setAttribute("readonly", true);
-                    document.getElementById("user_school").setAttribute("readonly", true);
-                    closeAllLists();
-                });
-                a.appendChild(b);
-                count++;
-                if(count > 10) break;
-            }
+            const item = document.createElement("div");
+            const before = document.createTextNode(sName.slice(0, matchIdx));
+            const match = document.createElement("strong");
+            match.textContent = sName.slice(matchIdx, matchIdx + val.length);
+            const after = document.createTextNode(sName.slice(matchIdx + val.length));
+            item.append(before, match, after);
+
+            const meta = document.createElement("span");
+            meta.style.cssText = "color:#64748b;font-size:0.8rem;";
+            meta.textContent = ` (Lớp ${student.class || "-"} - SBD ${student.sbd || "-"})`;
+            item.appendChild(meta);
+
+            item.addEventListener("click", function() {
+                inp.value = sName;
+                document.getElementById("user_class").value = student.class || "";
+                document.getElementById("user_sbd").value = student.sbd || "";
+                document.getElementById("user_school").value = student.school || "";
+                document.getElementById("user_class").setAttribute("readonly", true);
+                document.getElementById("user_sbd").setAttribute("readonly", true);
+                document.getElementById("user_school").setAttribute("readonly", true);
+                closeAllLists();
+            });
+            list.appendChild(item);
+            if (++count >= 10) break;
         }
-        if(count === 0) {
-            b = document.createElement("DIV");
-            b.innerHTML = `<span style="color:#ef4444; font-size:0.8rem;">Không tìm thấy trong danh sách. Hãy tick chọn "Thí sinh tự do" ở trên nếu bạn thuộc trường khác.</span>`;
-            a.appendChild(b);
+        if (count === 0) {
+            const empty = document.createElement("div");
+            empty.textContent = 'Không tìm thấy trong danh sách. Hãy tick chọn "Thí sinh tự do" ở trên nếu bạn thuộc trường khác.';
+            list.appendChild(empty);
         }
     });
 
@@ -240,6 +255,7 @@ onAuthStateChanged(auth, async user => {
     currentUser = user;
     syncTeacherAuthButton();
     if (!user) return;
+    await loadTopicCatalog().catch(e => console.error('Lỗi tải chuyên đề:', e));
     await loadTimeConfig();
     if (user.isAnonymous) {
         const guestToggle = document.getElementById('guest-mode-toggle');
@@ -835,8 +851,58 @@ async function renderAdminStudents() {
     } catch(e) { listBody.innerHTML = "<tr><td colspan='6' style='text-align: center; color: red;'>Lỗi kết nối CSDL.</td></tr>"; }
 }
 
+
+const topicCollection = 'question_topics';
+const defaultTopics = [
+ {id:'bai_11',name:'Bài 11: Điện trở. Định luật Ohm',order:11},
+ {id:'bai_12',name:'Bài 12: Đoạn mạch nối tiếp, song song',order:12},
+ {id:'bai_13',name:'Bài 13: Năng lượng điện và công suất',order:13},
+ {id:'bai_14',name:'Bài 14: Cảm ứng điện từ. Dòng điện XC',order:14},
+ {id:'bai_15',name:'Bài 15: Tác dụng của dòng điện XC',order:15}
+];
+let topicCatalog = [...defaultTopics];
+const topicRoot = () => collection(db,'artifacts',appId_fixed,'public','data',topicCollection);
+const safeTopicId = name => name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/đ/g,'d').replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'').slice(0,50);
+async function loadTopicCatalog() {
+ const snap = await getDocs(topicRoot());
+ if (snap.empty) {
+   topicCatalog = [...defaultTopics];
+   if (currentUser && !currentUser.isAnonymous) {
+     for (const t of defaultTopics) await setDoc(doc(topicRoot(),t.id),{name:t.name,order:t.order});
+   }
+ } else {
+   topicCatalog = snap.docs.map(d=>({id:d.id,...d.data()})).filter(t=>typeof t.name==='string').sort((a,b)=>(a.order||0)-(b.order||0)||a.name.localeCompare(b.name,'vi'));
+ }
+ refreshTopicSelects();
+ renderTopicManager();
+}
+function refreshTopicSelects() {
+ const specs=[['topic-select',true],['import-q-topic',false]];
+ for (const [id,includeMix] of specs) {
+   const select=document.getElementById(id); if(!select) continue;
+   const previous=select.value;
+   select.innerHTML=(includeMix?'<option value="mix">🔥 ĐỀ TỔNG HỢP (Tất cả các bài)</option>':'<option value="">-- Vui lòng chọn chuyên đề trước khi thao tác --</option>')+
+     topicCatalog.map(t=>'<option value="'+escapeHtml(t.id)+'">'+escapeHtml(t.name)+'</option>').join('');
+   if([...select.options].some(o=>o.value===previous)) select.value=previous;
+   const wrapper=select.previousElementSibling;
+   if(wrapper && (wrapper.classList.contains('topic-select-glass')||wrapper.classList.contains('admin-single-filter'))) wrapper.remove();
+   select.hidden=false; delete select.dataset.glassMenuReady;
+   if(id==='topic-select') setupLoginTopicGlassMenu(); else setupAdminQuestionTopicMenu();
+ }
+}
+function renderTopicManager() {
+ const root=document.getElementById('topic-manager-list'); if(!root)return;
+ const count=document.getElementById('topic-manager-count'); if(count)count.textContent=topicCatalog.length+' chuyên đề';
+ root.innerHTML=topicCatalog.map(t=>'<div class="topic-manager-row"><span class="topic-manager-name">'+escapeHtml(t.name)+'</span><div class="topic-manager-actions"><button type="button" class="btn-topic-rename" data-id="'+escapeHtml(t.id)+'">✏️ Sửa</button><button type="button" class="btn-topic-delete" data-id="'+escapeHtml(t.id)+'">🗑️ Xóa</button></div></div>').join('')||'<p class="topic-manager-empty">Chưa có chuyên đề. Thêm chuyên đề đầu tiên ở phía trên.</p>';
+ const refresh=document.getElementById('btn-topic-refresh');
+ if(refresh) refresh.onclick=async function(){const status=document.getElementById('topic-manager-status');refresh.disabled=true;refresh.textContent='⟳ Đang tải…';if(status)status.textContent='Đang đồng bộ từ Firebase…';try{await loadTopicCatalog();if(status)status.textContent='Đã làm mới danh sách từ Firebase.';}catch(e){if(status)status.textContent='Không làm mới được; danh sách hiện tại được giữ nguyên.';showCustomAlert(getFirebaseErrorMessage(e,'APP-TOPIC-004','Không tải được chuyên đề.'));}finally{refresh.disabled=false;refresh.textContent='↻ Làm mới';}};
+ root.querySelectorAll('.btn-topic-rename').forEach(b=>b.onclick=async()=>{const item=topicCatalog.find(t=>t.id===b.dataset.id);const name=prompt('Tên chuyên đề mới:',item?.name||'');if(!name?.trim())return;try{await updateDoc(doc(topicRoot(),item.id),{name:name.trim()});await loadTopicCatalog();}catch(e){showCustomAlert(getFirebaseErrorMessage(e,'APP-TOPIC-002','Không sửa được chuyên đề.'));}});
+ root.querySelectorAll('.btn-topic-delete').forEach(b=>b.onclick=async()=>{const item=topicCatalog.find(t=>t.id===b.dataset.id);if(!item||!confirm('Xóa "'+item.name+'" và toàn bộ ngân hàng câu hỏi của chuyên đề này?'))return;try{await deleteDoc(doc(db,'artifacts',appId_fixed,'public','data',collectionBanks,item.id));await deleteDoc(doc(topicRoot(),item.id));await loadTopicCatalog();}catch(e){showCustomAlert(getFirebaseErrorMessage(e,'APP-TOPIC-003','Không xóa được chuyên đề.'));}});
+}
+document.getElementById('btn-topic-add')?.addEventListener('click',async()=>{const input=document.getElementById('topic-name-input');const name=input.value.trim();if(!name){showCustomAlert('Nhập tên chuyên đề trước.');return;}let id=safeTopicId(name);if(!id){showCustomAlert('Tên chuyên đề chưa tạo được mã hợp lệ.');return;}if(topicCatalog.some(t=>t.id===id)){showCustomAlert('Chuyên đề này đã tồn tại.');return;}try{let suffix=2,base=id;while(topicCatalog.some(t=>t.id===id))id=base+'_'+suffix++;await setDoc(doc(topicRoot(),id),{name,order:Date.now()});input.value='';await loadTopicCatalog();showCustomAlert('✅ Đã thêm chuyên đề.');}catch(e){showCustomAlert(getFirebaseErrorMessage(e,'APP-TOPIC-001','Không thêm được chuyên đề.'));}});
+
 async function renderAdminQuestions() {
-    setupAdminQuestionTopicMenu(); const listBody = document.getElementById('question-bank-body');
+    await loadTopicCatalog(); const listBody = document.getElementById('question-bank-body');
     listBody.innerHTML = "<tr><td colspan='5' style='text-align: center;'>Đang tải dữ liệu...</td></tr>";
     try {
         const snap = await getDocs(collection(db, 'artifacts', appId_fixed, 'public', 'data', collectionBanks));
@@ -1015,23 +1081,16 @@ document.getElementById('file-import-students').onchange = (e) => {
             const json = XLSX.utils.sheet_to_json(worksheet);
 
             importedStudentsCache = []; let duplicateCount = 0;
-            const existingStudentKeys = new Set(globalStudentList.map(student => JSON.stringify([
-                student.name || '', student.class || '', student.school || ''
-            ])));
 
             json.forEach(row => {
                 let name = (row["Họ và Tên"] || row["Họ tên"] || row["Name"] || "").toString().trim();
                 let cls = (row["Lớp"] || row["Class"] || "").toString().trim();
                 let sbd = (row["SBD"] || row["Số báo danh"] || "").toString().trim();
                 let sch = (row["Trường"] || row["School"] || "THCS Thuỷ Phương").toString().trim();
-                if (name) {
-                    const studentKey = JSON.stringify([name, cls, sch]);
-                    if (!existingStudentKeys.has(studentKey)) {
-                        existingStudentKeys.add(studentKey);
-                        importedStudentsCache.push({ name, class: cls, sbd, school: sch, timestamp: new Date().toISOString() });
-                    } else {
-                        duplicateCount++;
-                    }
+                if(name) {
+                    let isDupDB = globalStudentList.some(s => s.name === name && s.class === cls && s.school === sch);
+                    let isDupCache = importedStudentsCache.some(s => s.name === name && s.class === cls && s.school === sch);
+                    if(!isDupDB && !isDupCache) { importedStudentsCache.push({ name: name, class: cls, sbd: sbd, school: sch, timestamp: new Date().toISOString() }); } else { duplicateCount++; }
                 }
             });
 
@@ -1780,6 +1839,13 @@ const parseQuestionBankFromHtml = (html, sourceType = 'DOCX', libraryMessages = 
             } else saveKeyBlock(text);
             return;
         }
+        if (!section && marker) {
+            const rest = cleanLine(text.slice(marker.length));
+            const hasMcqOptions = /(?:^|\s)A\s*[.)-:]\s*.+(?:^|\s)B\s*[.)-:]\s*.+(?:^|\s)C\s*[.)-:]\s*/i.test(rest);
+            const hasTfItems = /(?:^|\s)a\s*[.)-:]\s*.+(?:^|\s)b\s*[.)-:]\s*.+(?:^|\s)c\s*[.)-:]\s*/i.test(rest);
+            section = hasTfItems ? 'tf' : hasMcqOptions ? 'mcq' : 'short';
+            warnings.push('Không thấy tiêu đề phần; tự nhận dạng dạng câu từ cấu trúc nội dung (' + (section === 'tf' ? 'Đúng/Sai' : section === 'mcq' ? 'Trắc nghiệm' : 'Trả lời ngắn') + '). Hãy kiểm tra kỹ bản xem trước.');
+        }
         if (!section) return;
         if (marker) {
             const rest = cleanLine(text.slice(marker.length));
@@ -1988,7 +2054,7 @@ const renderQuestionImportPreview = (topic, result) => {
                 !pendingQuestionImport || pendingQuestionImport.result.total === 0 ||
                 !pendingQuestionImport.result.importReady ||
                 pendingQuestionImport.result.estimatedBytes > 900 * 1024 ||
-                (pendingQuestionImport.result.total < 40 && !modal.querySelector('#question-import-preview-ack').checked);
+                (pendingQuestionImport.needsAcknowledgement && !modal.querySelector('#question-import-preview-ack').checked);
         };
         modal.querySelector('#question-import-preview-confirm').onclick = () => {
             const staged = pendingQuestionImport;
@@ -2004,7 +2070,7 @@ const renderQuestionImportPreview = (topic, result) => {
                 showCustomAlert('Dữ liệu đề quá lớn để ghi an toàn vào một tài liệu Firebase. Hãy giảm kích thước ảnh.');
                 return;
             }
-            if (staged.result.total < 40 && !modal.querySelector('#question-import-preview-ack').checked) {
+            if (staged.needsAcknowledgement && !modal.querySelector('#question-import-preview-ack').checked) {
                 showCustomAlert('Hãy xác nhận đã xem các cảnh báo trước khi tải lên.');
                 return;
             }
@@ -2028,7 +2094,7 @@ const renderQuestionImportPreview = (topic, result) => {
     pendingQuestionImport = {
         topic,
         result,
-        needsAcknowledgement: result.total > 0 && result.total < 40
+        needsAcknowledgement: result.rejected.length > 0 || result.warnings.length > 0
     };
     const counts = result.sections;
     const topicOption = document.getElementById('import-q-topic').selectedOptions[0];
@@ -2042,8 +2108,7 @@ const renderQuestionImportPreview = (topic, result) => {
     status.textContent = 'Tìm thấy ' + result.candidateCount + ' câu; hợp lệ ' + result.total +
         (result.rejected.length ? '; lỗi ' + result.rejected.length + ' câu.' : '') +
         (!result.importReady ? ' Có lỗi cấu trúc cần sửa trước khi tải lên.' :
-            (result.total < 40 ? ' Đề dưới 40 câu; hãy chọn ô xác nhận bên dưới để tiếp tục.' :
-                (result.warnings.length ? ' Hãy đọc cảnh báo trước khi xác nhận.' : ' Đủ điều kiện tải lên.')));
+            (result.warnings.length || result.rejected.length ? ' Hãy đọc cảnh báo và xác nhận trước khi tải lên.' : ' Đủ điều kiện tải lên; số lượng câu không bị giới hạn ở 40.'));
     status.classList.toggle('has-warning', !!(result.rejected.length || result.warnings.length));
     const details = modal.querySelector('#question-import-preview-details');
     details.replaceChildren();
@@ -2066,15 +2131,12 @@ const renderQuestionImportPreview = (topic, result) => {
     const ackWrap = modal.querySelector('#question-import-preview-ack-wrap');
     const ack = modal.querySelector('#question-import-preview-ack');
     ack.checked = false;
-    ackWrap.hidden = false;
+    ackWrap.hidden = !pendingQuestionImport.needsAcknowledgement;
     modal.querySelector('#question-import-preview-ack-text').textContent =
-        (result.total < 40
-            ? 'Tôi biết mình đang làm gì — đề dưới 40 câu, vẫn tải lên ' + result.total + ' câu hợp lệ.'
-            : 'Tôi biết mình đang làm gì — chấp nhận các cảnh báo và tải lên ' + result.total + ' câu hợp lệ.') +
-        ' Ngân hàng đề hiện tại của chuyên đề này sẽ bị thay thế.';
+        'Tôi đã xem cảnh báo và xác nhận tải lên ' + result.total + ' câu hợp lệ. Ngân hàng đề hiện tại của chuyên đề này sẽ bị thay thế.';
     const confirm = modal.querySelector('#question-import-preview-confirm');
     confirm.disabled = !result.importReady || result.estimatedBytes > 900 * 1024 ||
-        (result.total < 40 && pendingQuestionImport.needsAcknowledgement);
+        (pendingQuestionImport.needsAcknowledgement && !modal.querySelector('#question-import-preview-ack').checked);
     modal.style.display = 'flex';
 };
 
@@ -2118,93 +2180,7 @@ function deleteEntry(id, type) {
     document.getElementById('delete-auth-modal').style.display = 'flex';
 }
 
-const STUDENT_IMPORT_BATCH_SIZE = 400;
-
-function createImportProgress(title, total, unit = 'học sinh') {
-    const overlay = document.createElement('div');
-    overlay.className = 'import-progress-overlay';
-    overlay.setAttribute('role', 'dialog');
-    overlay.setAttribute('aria-modal', 'true');
-    overlay.setAttribute('aria-live', 'polite');
-
-    const panel = document.createElement('div');
-    panel.className = 'import-progress-panel';
-    const eyebrow = document.createElement('div');
-    eyebrow.className = 'import-progress-eyebrow';
-    eyebrow.textContent = 'HUE SMART TEST 7991 · ĐANG XỬ LÝ';
-    const heading = document.createElement('h3');
-    heading.className = 'import-progress-title';
-    heading.textContent = title;
-    const detail = document.createElement('p');
-    detail.className = 'import-progress-detail';
-    detail.textContent = 'Đang chuẩn bị dữ liệu...';
-    const numbers = document.createElement('div');
-    numbers.className = 'import-progress-numbers';
-    const count = document.createElement('strong');
-    count.textContent = '0 / ' + total;
-    const percent = document.createElement('span');
-    percent.textContent = '0%';
-    numbers.append(count, percent);
-    const track = document.createElement('div');
-    track.className = 'import-progress-track';
-    track.setAttribute('role', 'progressbar');
-    track.setAttribute('aria-valuemin', '0');
-    track.setAttribute('aria-valuemax', String(total));
-    track.setAttribute('aria-valuenow', '0');
-    const fill = document.createElement('div');
-    fill.className = 'import-progress-fill';
-    track.appendChild(fill);
-    const footer = document.createElement('div');
-    footer.className = 'import-progress-footer';
-    footer.textContent = 'Vui lòng giữ trang mở cho đến khi hoàn tất.';
-    const close = document.createElement('button');
-    close.type = 'button';
-    close.className = 'import-progress-close';
-    close.textContent = 'ĐÓNG';
-    close.hidden = true;
-    close.onclick = () => overlay.remove();
-
-    panel.append(eyebrow, heading, detail, numbers, track, footer, close);
-    overlay.appendChild(panel);
-    document.body.appendChild(overlay);
-
-    const update = (done, message) => {
-        const safeDone = Math.max(0, Math.min(total, done));
-        const ratio = total > 0 ? Math.round(safeDone / total * 100) : 100;
-        count.textContent = safeDone.toLocaleString('vi-VN') + ' / ' + total.toLocaleString('vi-VN') + ' ' + unit;
-        percent.textContent = ratio + '%';
-        fill.style.width = ratio + '%';
-        track.setAttribute('aria-valuenow', String(safeDone));
-        if (message) detail.textContent = message;
-    };
-    const finish = message => {
-        update(total, message || 'Đã hoàn tất!');
-        overlay.classList.add('is-complete');
-        footer.textContent = 'Dữ liệu đã được xử lý thành công.';
-        close.hidden = false;
-        setTimeout(() => overlay.remove(), 1300);
-    };
-    const fail = (message, retryAction) => {
-        overlay.classList.add('is-error');
-        detail.textContent = message || 'Đã xảy ra lỗi. Dữ liệu chưa hoàn tất.';
-        footer.textContent = 'Dữ liệu đã ghi thành công trước lỗi vẫn được giữ nguyên.';
-        close.hidden = false;
-        if (retryAction) {
-            const retry = document.createElement('button');
-            retry.type = 'button';
-            retry.className = 'import-progress-retry';
-            retry.textContent = 'THỬ LẠI';
-            retry.onclick = () => {
-                overlay.remove();
-                retryAction();
-            };
-            close.before(retry);
-        }
-    };
-    return { update, finish, fail };
-}
-
-async function executePendingAdminAction() {\n    let preservePendingAction = false;
+async function executePendingAdminAction() {
     if (pendingAuthAction === 'delete_result' && currentDeleteId) {
         const batch = writeBatch(db);
         batch.delete(doc(db, 'artifacts', appId_fixed, 'public', 'data', collectionName, currentDeleteId));
@@ -2217,61 +2193,28 @@ async function executePendingAdminAction() {\n    let preservePendingAction = fa
         renderAdminStudents(); currentDeleteId = null;
     }
     else if (pendingAuthAction === 'delete_all_students') {
-        let progress = null;
+        showCustomAlert("Đang xóa toàn bộ học sinh, vui lòng đợi...");
         try {
             const snap = await getDocs(collection(db, 'artifacts', appId_fixed, 'public', 'data', collectionStudents));
-            const total = snap.size;
-            progress = createImportProgress('Đang xóa danh sách học sinh', total, 'học sinh');
-            if (!total) {
-                progress.finish('Danh sách học sinh hiện đang trống.');
-            } else {
-                let deleted = 0;
-                for (let offset = 0; offset < snap.docs.length; offset += STUDENT_IMPORT_BATCH_SIZE) {
-                    const batch = writeBatch(db);
-                    const chunk = snap.docs.slice(offset, offset + STUDENT_IMPORT_BATCH_SIZE);
-                    chunk.forEach(studentDoc => batch.delete(studentDoc.ref));
-                    await batch.commit();
-                    deleted += chunk.length;
-                    progress.update(deleted, 'Đã xóa ' + deleted.toLocaleString('vi-VN') + ' / ' + total.toLocaleString('vi-VN') + ' học sinh');
-                }
-                progress.finish('Đã xóa sạch ' + total.toLocaleString('vi-VN') + ' học sinh!');
-                globalStudentList = [];
-                renderAdminStudents();
-            }
-        } catch(e) {
-            const message = getFirebaseErrorMessage(e, "APP-STU-002", "Không thể xóa dữ liệu học sinh.");
-            if (progress) progress.fail(message); else showCustomAlert(message);
-        }
+            const deletePromises = []; snap.forEach(docSnap => { deletePromises.push(deleteDoc(doc(db, 'artifacts', appId_fixed, 'public', 'data', collectionStudents, docSnap.id))); });
+            await Promise.all(deletePromises);
+            showCustomAlert("✅ Đã làm sạch toàn bộ danh sách học sinh!"); renderAdminStudents();
+        } catch(e) { showCustomAlert(getFirebaseErrorMessage(e, "APP-STU-002", "Không thể xóa dữ liệu học sinh.")); }
     }
     else if (pendingAuthAction === 'import_students' && importedStudentsCache.length > 0) {
-        let progress = null;
+        showCustomAlert("Đang tiến hành nhập dữ liệu, vui lòng đợi...");
         try {
             const studentsRef = collection(db, 'artifacts', appId_fixed, 'public', 'data', collectionStudents);
-            const total = importedStudentsCache.length;
-            importedStudentsCache.forEach(student => {
-                if (!student._importDocId) student._importDocId = doc(studentsRef).id;
-            });
-            progress = createImportProgress('Đang nhập danh sách học sinh', total, 'học sinh');
-            let imported = 0;
-            for (let offset = 0; offset < total; offset += STUDENT_IMPORT_BATCH_SIZE) {
+            for (let offset = 0; offset < importedStudentsCache.length; offset += 500) {
                 const batch = writeBatch(db);
-                const chunk = importedStudentsCache.slice(offset, offset + STUDENT_IMPORT_BATCH_SIZE);
-                chunk.forEach(student => {
-                    const { _importDocId, ...studentData } = student;
-                    batch.set(doc(studentsRef, _importDocId), studentData);
+                importedStudentsCache.slice(offset, offset + 500).forEach(student => {
+                    batch.set(doc(studentsRef), student);
                 });
                 await batch.commit();
-                imported += chunk.length;
-                progress.update(imported, 'Đã ghi thành công ' + imported.toLocaleString('vi-VN') + ' / ' + total.toLocaleString('vi-VN') + ' học sinh');
             }
-            progress.finish('Đã import thành công ' + total.toLocaleString('vi-VN') + ' học sinh!');
-            importedStudentsCache = [];
-            await renderAdminStudents();
-        } catch(e) {
-            const message = getFirebaseErrorMessage(e, "APP-STU-001", "Không thể import danh sách học sinh.");
-            preservePendingAction = true;
-            if (progress) progress.fail(message, () => executePendingAdminAction()); else showCustomAlert(message);
-        }
+            showCustomAlert(`✅ Đã import thành công ${importedStudentsCache.length} học sinh!`);
+            importedStudentsCache = []; renderAdminStudents();
+        } catch(e) { showCustomAlert(getFirebaseErrorMessage(e, "APP-STU-001", "Không thể import danh sách học sinh.")); }
     }
     else if (pendingAuthAction === 'import_questions' && Object.keys(importedQuestionsCache).length > 0) {
         const invalidBank = Object.values(importedQuestionsCache).some(bank => !bank || !['mcq','tf','short'].some(key => Array.isArray(bank[key]) && bank[key].length));
@@ -2282,22 +2225,16 @@ async function executePendingAdminAction() {\n    let preservePendingAction = fa
             pendingAuthAction = null;
             return;
         }
-        let progress = null;
+        showCustomAlert("Đang tiến hành đẩy kho đề lên Đám mây, vui lòng đợi...");
         try {
             const topics = Object.keys(importedQuestionsCache);
-            progress = createImportProgress('Đang đẩy ngân hàng đề', topics.length, 'chuyên đề');
-            for (let i = 0; i < topics.length; i++) {
+            for(let i = 0; i < topics.length; i++) {
                 const tCode = topics[i];
                 await setDoc(doc(db, 'artifacts', appId_fixed, 'public', 'data', collectionBanks, tCode), importedQuestionsCache[tCode], { merge: false });
-                progress.update(i + 1, 'Đã lưu ' + (i + 1) + ' / ' + topics.length + ' chuyên đề');
             }
-            progress.finish('Đã đẩy thành công ' + topics.length + ' chuyên đề!');
-            importedQuestionsCache = {};
-            renderAdminQuestions();
-        } catch(e) {
-            const message = getFirebaseErrorMessage(e, "APP-BANK-001", "Không thể import ngân hàng đề.");
-            if (progress) progress.fail(message); else showCustomAlert(message);
-        }
+            showCustomAlert(`✅ Đã đẩy thành công dữ liệu của ${topics.length} chuyên đề!`);
+            importedQuestionsCache = {}; renderAdminQuestions();
+        } catch(e) { showCustomAlert(getFirebaseErrorMessage(e, "APP-BANK-001", "Không thể import ngân hàng đề.")); }
     }
     else if (pendingAuthAction === 'delete_all_questions') {
         showCustomAlert("Đang xóa toàn bộ Ngân hàng đề, vui lòng đợi...");
@@ -2313,7 +2250,7 @@ async function executePendingAdminAction() {\n    let preservePendingAction = fa
         if(isNaN(pTime) || isNaN(tTime) || isNaN(mHints) || pTime <= 0 || tTime <= 0 || mHints < 0) { showCustomAlert("⚠️ Vui lòng nhập số hợp lệ!"); return; }
         try { await setDoc(doc(db, 'artifacts', appId_fixed, 'public', 'data', 'config', 'timer_settings'), { practice: pTime, test: tTime, maxHints: mHints, lastUpdated: new Date().toISOString() }, { merge: true }); practiceTimeLimit = pTime * 60; testTimeLimit = tTime * 60; maxHintsAllowed = mHints; showCustomAlert("Đã cập nhật cấu hình thành công!"); } catch(e) { showCustomAlert(getFirebaseErrorMessage(e, "APP-CFG-001", "Không thể lưu cấu hình.")); }
     } else if (pendingAuthAction === 'inbox') { renderAdminInbox(); }
-    if (!preservePendingAction) pendingAuthAction = null;
+    pendingAuthAction = null;
 }
 
 document.getElementById('btn-save-config').onclick = () => {
@@ -2339,15 +2276,19 @@ document.getElementById('btn-delete-confirm').onclick = async () => {
     const pw = document.getElementById('delete-pw').value;
     if (!email || !pw) { showCustomAlert("Vui lòng nhập Email và Mật khẩu!"); return; }
 
-    document.getElementById('btn-delete-confirm').innerText = "...";
+    const button = document.getElementById('btn-delete-confirm');
+    button.disabled = true;
+    button.innerText = "ĐANG XÁC THỰC...";
     try {
         await signInTeacherAccount(email, pw);
         document.getElementById('delete-auth-modal').style.display = 'none';
         executePendingAdminAction();
     } catch (error) {
         showCustomAlert(getFirebaseErrorMessage(error, "APP-AUTH-001", "Xác thực giáo viên thất bại."));
+    } finally {
+        button.disabled = false;
+        button.innerText = "XÁC NHẬN";
     }
-    document.getElementById('btn-delete-confirm').innerText = "XÁC NHẬN";
 };
 
 function syncTeacherAuthButton() {
@@ -2356,13 +2297,80 @@ function syncTeacherAuthButton() {
     button.textContent = hasTeacherSession() ? '🚪 ĐĂNG XUẤT GIÁO VIÊN' : '🔐 ĐĂNG NHẬP GIÁO VIÊN';
 }
 
+// Client-side retry backoff is only a usability layer.
+// Firebase Authentication throttling remains the actual server-side protection.
+const teacherLoginThrottle = {
+    failures: 0,
+    blockedUntil: 0,
+    inFlight: false
+};
+
+const TEACHER_LOGIN_MAX_BACKOFF_MS = 60 * 1000;
+const TEACHER_LOGIN_BACKOFF_STEPS_MS = [0, 0, 0, 2000, 5000, 15000, 30000, 60000];
+
+function isTeacherCredentialFailure(error) {
+    return [
+        "auth/invalid-credential",
+        "auth/invalid-login-credentials",
+        "auth/wrong-password",
+        "auth/user-not-found"
+    ].includes(error?.code);
+}
+
+function getTeacherLoginWaitMs() {
+    return Math.max(0, teacherLoginThrottle.blockedUntil - Date.now());
+}
+
+function registerTeacherLoginFailure(error) {
+    if (error?.code === "auth/too-many-requests") {
+        teacherLoginThrottle.blockedUntil = Date.now() + TEACHER_LOGIN_MAX_BACKOFF_MS;
+        return;
+    }
+    if (!isTeacherCredentialFailure(error)) return;
+
+    teacherLoginThrottle.failures += 1;
+    const step = Math.min(
+        teacherLoginThrottle.failures,
+        TEACHER_LOGIN_BACKOFF_STEPS_MS.length - 1
+    );
+    const delay = Math.min(
+        TEACHER_LOGIN_MAX_BACKOFF_MS,
+        TEACHER_LOGIN_BACKOFF_STEPS_MS[step]
+    );
+    if (delay > 0) teacherLoginThrottle.blockedUntil = Date.now() + delay;
+}
+
 async function signInTeacherAccount(email, password) {
-    await setPersistence(auth, browserSessionPersistence);
-    await signInWithEmailAndPassword(auth, email, password);
-    if (!hasTeacherSession()) {
-        await signOut(auth);
-        await signInAnonymously(auth);
-        throw new Error('Tài khoản này chưa được cấp quyền giáo viên.');
+    if (teacherLoginThrottle.inFlight) {
+        const error = new Error("Đang xử lý một yêu cầu đăng nhập. Vui lòng chờ.");
+        error.code = "app/auth-request-in-progress";
+        throw error;
+    }
+
+    const waitMs = getTeacherLoginWaitMs();
+    if (waitMs > 0) {
+        const seconds = Math.ceil(waitMs / 1000);
+        const error = new Error(`Thử sai nhiều lần. Vui lòng chờ ${seconds} giây rồi thử lại.`);
+        error.code = "app/auth-rate-limited";
+        throw error;
+    }
+
+    teacherLoginThrottle.inFlight = true;
+    try {
+        await setPersistence(auth, browserSessionPersistence);
+        await signInWithEmailAndPassword(auth, email, password);
+        if (!hasTeacherSession()) {
+            await signOut(auth);
+            await signInAnonymously(auth);
+            throw new Error('Tài khoản này chưa được cấp quyền giáo viên.');
+        }
+        teacherLoginThrottle.failures = 0;
+        teacherLoginThrottle.blockedUntil = 0;
+    } catch (error) {
+        registerTeacherLoginFailure(error);
+        throw error;
+    } finally {
+        teacherLoginThrottle.inFlight = false;
     }
 }
 

@@ -37,7 +37,7 @@
         })();
 </script>
     
-    <link rel="stylesheet" href="style.css?v=20261020-adaptive-graphics">
+    <link rel="stylesheet" href="style.css?v=20261030-topic-manager-theme">
 </head>
 
 <body>
@@ -250,14 +250,7 @@
 
                 <div class="topic-card">
                     <label for="topic-select">🎯 Chọn chuyên đề ôn tập</label>
-                    <select id="topic-select">
-                        <option value="mix">🔥 ĐỀ TỔNG HỢP (Tất cả các bài)</option>
-                        <option value="bai_11">Bài 11: Điện trở. Định luật Ohm</option>
-                        <option value="bai_12">Bài 12: Đoạn mạch nối tiếp, song song</option>
-                        <option value="bai_13">Bài 13: Năng lượng điện và công suất</option>
-                        <option value="bai_14">Bài 14: Cảm ứng điện từ. Dòng điện XC</option>
-                        <option value="bai_15">Bài 15: Tác dụng của dòng điện XC</option>
-                    </select>
+                    <select id="topic-select"><option value="mix">🔥 ĐỀ TỔNG HỢP (Tất cả các bài)</option></select>
                 </div>
 
                 <p id="start-error">⚠️ Vui lòng điền đầy đủ các thông tin!</p>
@@ -456,20 +449,14 @@
 
             
             <div id="admin-questions-section" style="display: none;">
+<section class="topic-manager-card"><div class="topic-manager-heading"><div><span class="topic-manager-eyebrow">NGÂN HÀNG ĐỀ</span><h4>🗂️ Quản lý chuyên đề</h4><p>Thêm, đổi tên hoặc xóa chuyên đề và ngân hàng câu hỏi đi kèm.</p></div><span id="topic-manager-count" class="topic-manager-count">0 chuyên đề</span></div><div class="topic-manager-toolbar"><input id="topic-name-input" maxlength="100" placeholder="Nhập tên chuyên đề mới…"><button id="btn-topic-add" type="button" class="topic-action-primary">＋ Thêm chuyên đề</button><button id="btn-topic-refresh" type="button" class="topic-action-refresh">↻ Làm mới</button></div><div id="topic-manager-status" class="topic-manager-status" aria-live="polite"></div><div id="topic-manager-list" class="topic-manager-list"></div></section>
                 <div class="card" style="padding: 20px; margin-bottom: 20px; background: #eff6ff; border: 2px solid #bfdbfe;">
                     <h4 style="margin: 0 0 15px 0; color: #1e40af; text-transform: uppercase;">📥 Import Ngân Hàng Đề Theo Từng Bài</h4>
                     <p style="font-size: 0.85rem; color: #1d4ed8; margin-bottom: 15px;">*Tải file mẫu, soạn câu hỏi cho <b>1 bài cụ thể</b>. Chọn bài tương ứng ở menu bên dưới rồi tải file lên. Lưu ý: Dữ liệu mới sẽ <b>GHI ĐÈ</b> lên dữ liệu cũ của bài đó trên hệ thống.</p>
                     
                     <div style="margin-bottom: 15px;">
                         <label style="font-size: 0.85rem; font-weight: bold; color: #1e40af; display:block; margin-bottom:5px;">1. CHỌN CHUYÊN ĐỀ ĐỂ IMPORT:</label>
-                        <select id="import-q-topic" style="width: 100%; border-color: #bfdbfe; color: #1e40af; font-weight: bold; padding: 12px;">
-                            <option value="">-- Vui lòng chọn chuyên đề trước khi thao tác --</option>
-                            <option value="bai_11">Bài 11: Điện trở. Định luật Ohm</option>
-                            <option value="bai_12">Bài 12: Đoạn mạch nối tiếp, song song</option>
-                            <option value="bai_13">Bài 13: Năng lượng điện và công suất</option>
-                            <option value="bai_14">Bài 14: Cảm ứng điện từ. Dòng điện XC</option>
-                            <option value="bai_15">Bài 15: Tác dụng của dòng điện XC</option>
-                        </select>
+                        <select id="import-q-topic" style="width: 100%; border-color: #bfdbfe; color: #1e40af; font-weight: bold; padding: 12px;"><option value="">-- Vui lòng chọn chuyên đề trước khi thao tác --</option></select>
                     </div>
 
                     <div class="grid-2-col">
@@ -601,6 +588,6 @@
     </div>
 </div>
 
-<script type="module" src="script.js?v=20261030-ack-visible"></script>
+<script type="module" src="script.js?v=20261030-unbounded-import"></script>
 </body>
 </html>

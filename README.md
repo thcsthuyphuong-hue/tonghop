@@ -103,11 +103,9 @@ Danh sách Firebase trên chỉ gồm một số mã thường gặp, không ph�
 - Kết nối Firebase của dự án cần hoạt động để tải danh sách học sinh, ngân hàng đề, lưu kết quả và sử dụng công cụ quản trị.
 - Đề cần được tải lên đúng chuyên đề trước khi học sinh có thể làm bài theo chuyên đề đó.
 
-## Chủ sở hữu
+## Author
 
 Văn Hùng Nguyễn
-## AI được sử dụng cho việc phát triển dự án và giúp đỡ chúng tôi.
-
 ## Luư ý về bản quyền
 
-Tác giả là người nắm toàn bộ bản quyền về những file code của dự án này nhưng không bao gồm các câu hỏi và những thành phần có bản quyền bên thứ ba có giấy phép riêng được sử dụng trong dự án.
+Tác giả là người nắm toàn bộ bản quyền về những file code của dự án này nhưng không bao gồm các câu hỏi xuất hiện trong phần mềm.
