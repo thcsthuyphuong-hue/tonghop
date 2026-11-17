@@ -920,13 +920,91 @@ async function renderAdminQuestions() {
 }
 
 
+async function renderAdminDashboard() {
+    const setText = (id, value) => {
+        const element = document.getElementById(id);
+        if (element) element.textContent = value;
+    };
+    const recentBox = document.getElementById('dashboard-recent-results');
+    const statusBox = document.getElementById('dashboard-status');
+    if (recentBox) recentBox.innerHTML = '<div class="dashboard-empty">Đang tải hoạt động…</div>';
+
+    try {
+        const resultsRef = collection(db, 'artifacts', appId_fixed, 'public', 'data', collectionPublicResults);
+        const banksRef = collection(db, 'artifacts', appId_fixed, 'public', 'data', collectionBanks);
+        const [resultsSnap, banksSnap] = await Promise.all([getDocs(resultsRef), getDocs(banksRef)]);
+        const results = [];
+        resultsSnap.forEach(item => results.push({ id: item.id, ...item.data() }));
+        results.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+
+        const bankCount = banksSnap.size;
+        let questionCount = 0;
+        banksSnap.forEach(item => {
+            const bank = item.data() || {};
+            questionCount += (Array.isArray(bank.mcq) ? bank.mcq.length : 0)
+                + (Array.isArray(bank.tf) ? bank.tf.length : 0)
+                + (Array.isArray(bank.short) ? bank.short.length : 0);
+        });
+        const average = results.length
+            ? (results.reduce((sum, item) => sum + (Number(item.score) || 0), 0) / results.length).toFixed(2)
+            : '0.00';
+
+        setText('dashboard-bank-count', bankCount.toLocaleString('vi-VN'));
+        setText('dashboard-question-count', questionCount.toLocaleString('vi-VN') + ' câu hỏi');
+        setText('dashboard-attempt-count', results.length.toLocaleString('vi-VN'));
+        setText('dashboard-average-score', average);
+
+        if (hasTeacherSession()) {
+            try {
+                const studentsSnap = await getDocs(collection(db, 'artifacts', appId_fixed, 'public', 'data', collectionStudents));
+                setText('dashboard-student-count', studentsSnap.size.toLocaleString('vi-VN'));
+                setText('dashboard-student-note', 'Học sinh trong danh sách');
+            } catch (studentError) {
+                setText('dashboard-student-count', '—');
+                setText('dashboard-student-note', 'Không tải được danh sách');
+            }
+        } else {
+            setText('dashboard-student-count', '🔒');
+            setText('dashboard-student-note', 'Đăng nhập giáo viên để xem');
+        }
+
+        if (recentBox) {
+            const recent = results.slice(0, 5);
+            if (!recent.length) {
+                recentBox.innerHTML = '<div class="dashboard-empty">Chưa có lượt làm bài nào được ghi nhận.</div>';
+            } else {
+                const safe = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+                recentBox.innerHTML = recent.map(item => {
+                    const name = safe(item.name || 'Thí sinh');
+                    const meta = [item.class ? 'Lớp ' + safe(item.class) : '', item.topic ? safe(item.topic) : ''].filter(Boolean).join(' · ');
+                    const score = Number(item.score);
+                    const scoreText = Number.isFinite(score) ? score.toFixed(2) : '—';
+                    const date = item.timestamp ? new Date(item.timestamp).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' }) : 'Không rõ thời gian';
+                    return '<article class="dashboard-result-row"><span class="dashboard-result-avatar">✦</span><div class="dashboard-result-info"><b>' + name + '</b><small>' + safe(meta || 'Bài kiểm tra') + ' · ' + safe(date) + '</small></div><strong>' + scoreText + '</strong></article>';
+                }).join('');
+            }
+        }
+        setText('dashboard-status', 'Đã cập nhật từ dữ liệu Firebase · ' + new Date().toLocaleTimeString('vi-VN'));
+    } catch (error) {
+        console.error('[APP-DASHBOARD-001] Không thể tải dữ liệu tổng quan.', error);
+        setText('dashboard-bank-count', '—');
+        setText('dashboard-question-count', 'Chưa thể tải dữ liệu');
+        setText('dashboard-attempt-count', '—');
+        setText('dashboard-average-score', '—');
+        if (recentBox) recentBox.innerHTML = '<div class="dashboard-empty">Không tải được hoạt động gần đây. Kiểm tra kết nối rồi thử lại.</div>';
+        setText('dashboard-status', 'Một phần dữ liệu chưa tải được. Hãy thử đăng nhập giáo viên hoặc làm mới trang.');
+    }
+}
+
 const adminPanelTabs = {
+    dashboard: document.getElementById('tab-dashboard'),
     results: document.getElementById('tab-results'),
     students: document.getElementById('tab-students'),
     questions: document.getElementById('tab-questions'),
     graphics: document.getElementById('tab-graphics')
 };
 const adminPanelSections = {
+    dashboard: document.getElementById('admin-dashboard-section'),
     results: document.getElementById('admin-results-section'),
     students: document.getElementById('admin-students-section'),
     questions: document.getElementById('admin-questions-section'),
@@ -941,6 +1019,7 @@ function setAdminPanelTab(activeTab) {
     }
     Object.entries(adminPanelTabs).forEach(([name, tab]) => tab.classList.toggle('active', name === activeTab));
     Object.entries(adminPanelSections).forEach(([name, section]) => section.style.display = name === activeTab ? 'block' : 'none');
+    if (activeTab === 'dashboard') renderAdminDashboard();
     if (activeTab === 'results') renderAdmin();
     if (activeTab === 'students') renderAdminStudents();
     if (activeTab === 'questions') renderAdminQuestions();
@@ -2376,7 +2455,7 @@ async function signInTeacherAccount(email, password) {
 
 document.getElementById('btn-admin-open').onclick = () => {
     showScreen('screen-admin');
-    setAdminPanelTab('results');
+    setAdminPanelTab('dashboard');
 };
 document.getElementById('btn-auth-cancel').onclick = () => closeOverlay(document.getElementById('admin-auth-modal'));
 document.getElementById('btn-auth-confirm').onclick = async () => {
@@ -3251,3 +3330,8 @@ document.getElementById("btn-back-from-exam-room").addEventListener("click", () 
 });
 window.addEventListener("hashchange", routeExamRoomScreen);
 if (location.hash === "#exam-room") routeExamRoomScreen();
+
+
+document.querySelectorAll('[data-dashboard-tab]').forEach(button => {
+    button.addEventListener('click', () => setAdminPanelTab(button.dataset.dashboardTab));
+});
