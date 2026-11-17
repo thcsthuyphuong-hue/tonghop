@@ -1018,7 +1018,7 @@ function setAdminPanelTab(activeTab) {
         return;
     }
     Object.entries(adminPanelTabs).forEach(([name, tab]) => tab.classList.toggle('active', name === activeTab));
-    Object.entries(adminPanelSections).forEach(([name, section]) => section.style.display = name === activeTab ? 'block' : 'none');
+    Object.entries(adminPanelSections).forEach(([name, section]) => section.style.display = name !== activeTab ? 'none' : (name === 'dashboard' ? 'grid' : 'block'));
     if (activeTab === 'dashboard') renderAdminDashboard();
     if (activeTab === 'results') renderAdmin();
     if (activeTab === 'students') renderAdminStudents();
